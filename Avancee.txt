@@ -1,0 +1,55 @@
+AVANCEE DU PROJET 
+
+Pauline (22.12.25)
+
+* Initialisation du projet Django et de l'application 'biolib'
+* Configuration de settings.py 
+* Création des Modèles (BD) dans biolib/models.py :
+    - Collection (Dossiers de plasmides)
+    - Plasmid (Fichiers GenBank + Séquence)
+    - Correspondence (Fichiers mapping CSV)
+    - CorrespondenceEntry (Lignes des CSV : ID <-> Nom <-> Type)
+    - CampaignTemplate (Fichiers Excel)
+* Création d'une commande de gestion personnalisée :
+    - Fichier : biolib/management/commands/load_initial_data.py
+    - Fonction : Scanne automatiquement le dossier data_web/ et remplit la BD.
+* Configuration de l'interface Admin pour visualiser les données importées.
+
+! ! ! !  ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !! ! ! !! ! ! !! ! !! !! ! ! ! !! 
+! ! ! !  ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !! ! ! !! ! ! !! ! !! !! ! ! ! !! 
+! ! ! !  ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !! ! ! !! ! ! !! ! !! !! ! ! ! !!  
+
+Ce que tout le groupe doit faire maintenant : 
+(je vous met toutes les commandes comme ça vous allez gagner du temps)
+
+# tous
+git pull origin main
+
+# si Windows 
+python -m venv venv
+venv\Scripts\activate
+
+# si Mac/Linux 
+python3 -m venv venv
+source venv/bin/activate
+
+# tous
+pip install django django-extensions
+python manage.py migrate
+
+# tous
+# pour faire en sorte que ça lise le dossier data_web et remplisse votre base en locale
+python manage.py load_initial_data 
+# message "CHARGEMENT TERMINE" à la fin si tout est ok
+
+# tous 
+# HYPER IMPORTANT 
+# CREER UN COMPTE ADMIN pour se connecter au site
+python manage.py createsuperuser
+
+# tous
+# lancement du serveur et vérifier si tout ets bon
+python manage.py runserver
+Allez sur http://127.0.0.1:8000/admin/
+
+Vérifiez que les tables "Collections" et "Plasmids" sont bien remplies.
