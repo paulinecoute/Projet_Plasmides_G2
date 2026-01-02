@@ -4,7 +4,7 @@
 
 ---
 
-## 📋 Prérequis
+## Prérequis
 
 - **Python 3.13.5**
 - **Dossier `data_web/`** (à télécharger sur Ecampus)
