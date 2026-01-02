@@ -19,37 +19,42 @@ git clone https://github.com/Ange-Louis/Projet_Plasmides_G2.git
 cd Projet_Plasmides_G2
 ```
 
-### 3. Créer un environnement virtuel
+### 2. Créer un environnement virtuel
 Sur Linux & Mac :
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
-### 4. Installer les dépendances
+### 3. Installer les dépendances
 ```bash
 pip install -r requirements.txt
 ```
+Sur Mac, il faut préalablement télécharger des bibliothèques avec Homebrew : 
+```bash
+brew install pkg-config cairo cmake
+```
+(je ne sais pas comment ça fonctionne sur linux ou windows à vérifier)
 
-### 5. Appliquer les migrations
+### 4. Appliquer les migrations
 ```bash
 python manage.py makemigrations
 python manage.py migrate
 ```
 
-### 6. Créer un superutilisateur (admin)
+### 5. Créer un superutilisateur (admin)
 ```bash
 python manage.py createsuperuser
 ```
 (Suivre les instructions pour définir un nom d’utilisateur, email, et mot de passe.)
 
-### 7. Importer les données 
+### 6. Importer les données 
 Copier le dossier `data_web/` dans le répertoire du projet puis
 ```bash
 python manage.py load_initial_data
 ```
 
-### 8. Lancer l'application
+### 7. Lancer l'application
 #### A. Démarrer le serveur : 
 ```bash
 python manage.py runserver
@@ -58,7 +63,7 @@ python manage.py runserver
 - Site : http://127.0.0.1:8000/
 - Admin : http://127.0.0.1:8000/admin/ (Se connecter avec le compte admin créé précédemment.)
 
-### 9. Vérifier les données
+### 8. Vérifier les données
 Dans l'interface admin, nous devrions voir les bases de données.
 
 ---
