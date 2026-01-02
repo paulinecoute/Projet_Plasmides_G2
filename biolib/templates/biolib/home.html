@@ -1,0 +1,35 @@
+{% extends "biolib/base.html" %}
+
+{% block title %}Accueil - InSillyClo{% endblock %}
+
+{% block content %}
+<div class="text-center my-5">
+    <h1 class="display-4">Bienvenue sur InSillyClo</h1>
+    <p class="lead">
+        Outil web pour la planification et la simulation d'assemblage de plasmides par <strong>MoClo</strong> et <strong>Golden Gate</strong>.
+    </p>
+    <p>
+        Gérez vos campagnes, créez des templates, simulez vos assemblages et visualisez vos résultats en quelques clics.
+    </p>
+
+    
+
+    <div class="mt-5">
+        <h3>Fonctionnalités clés</h3>
+        <div class="row justify-content-center">
+            <div class="col-md-3 m-2 p-3 border rounded">
+                <h5>Création de Templates</h5>
+                <p>Générez et modifiez des templates de campagne pour vos assemblages.</p>
+            </div>
+            <div class="col-md-3 m-2 p-3 border rounded">
+                <h5>Simulation</h5>
+                <p>Simulez vos campagnes et visualisez les gels d'électrophorèse attendus.</p>
+            </div>
+            <div class="col-md-3 m-2 p-3 border rounded">
+                <h5>Recherche Avancée</h5>
+                <p>Trouvez des plasmides par nom, type, séquence ou site de fixation.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
