@@ -61,6 +61,8 @@ python manage.py runserver
 ### 9. Vérifier les données
 Dans l'interface admin, nous devrions voir les bases de données.
 
+---
+
 ## Structure du projet
 ```
 Projet_Plasmides_G2/
