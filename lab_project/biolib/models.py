@@ -82,7 +82,7 @@ class Team(models.Model):
     # 'related_name' permet d'accéder aux équipes dirigées via user.led_teams.
     leader = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='led_teams',
         verbose_name="Responsable d'équipe"
     )
