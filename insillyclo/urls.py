@@ -17,10 +17,9 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path
 from biolib import views
 from django.contrib.auth import views as auth_views
-
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -28,7 +27,8 @@ urlpatterns = [
     path('create-template/', views.create_template, name='create_template'),
     path('simulation/', views.simulation, name='simulation'),
     path('search/', views.search, name='search'),
+    path('signup/', views.signup, name='signup'),
     path('login/', auth_views.LoginView.as_view(template_name='biolib/login.html'), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(template_name='biolib/logout.html'), name='logout'),
-    path('signup/', views.signup, name='signup'),  # À créer
+    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
 ]
+

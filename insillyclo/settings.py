@@ -37,8 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'biolib',
-    'accounts'
+    'biolib'
 ]
 
 MIDDLEWARE = [
@@ -120,5 +119,5 @@ USE_TZ = True
 STATIC_URL = 'static/'
 LOGIN_URL = '/login/'  # URL de redirection pour la connexion
 LOGIN_REDIRECT_URL = '/'  # Redirection après connexion
-LOGOUT_REDIRECT_URL = '/login/'  # Redirection après déconnexion
+LOGOUT_REDIRECT_URL = '/'  # Redirection après déconnexion
 
