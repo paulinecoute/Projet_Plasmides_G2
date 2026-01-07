@@ -1,0 +1,46 @@
+{% extends "biolib/base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Créer un template de campagne</h2>
+    <p>
+        Vous pouvez créer un template de campagne de deux manières :
+    </p>
+    <ul>
+        <li>
+            <strong>Créer un template de novo</strong> : Utilisez notre interface pour construire votre template pas à pas.
+        </li>
+        <li>
+            <strong>Télécharger un template existant</strong> : Téléchargez un fichier Excel pré-rempli, remplissez-le, puis importez-le dans l’application.
+        </li>
+    </ul>
+
+    <div class="row mt-4">
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Créer un template de novo</h5>
+                    <p class="card-text">
+                        Construisez votre template directement dans l’application.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Télécharger un template vierge</h5>
+                    <p class="card-text">
+                        Téléchargez un fichier Excel vierge pour le remplir manuellement.
+                    </p>
+                    <a href="{% url 'download_empty_template' %}?type=campaign"
+                       class="btn btn-success">
+                        Télécharger le template
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

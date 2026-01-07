@@ -3,6 +3,13 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib import messages
 from django.contrib.auth import login
+from django.http import FileResponse
+import os
+from django.conf import settings
+
+def download_empty_template(request):
+    file_path = os.path.join(settings.BASE_DIR, 'data_web', 'Typed_assembly', 'Campaign_display_L1.xlsx')
+    return FileResponse(open(file_path, 'rb'), as_attachment=True, filename='Campaign_display_L1.xlsx')
 
 
 def home(request):
