@@ -20,8 +20,8 @@ def home(request):
     return render(request, 'biolib/home.html')
 
 
-def account(request):
-    return render(request, 'biolib/account.html')
+def profile(request):
+    return render(request, 'biolib/profile.html')
 
 
 def create_template(request):

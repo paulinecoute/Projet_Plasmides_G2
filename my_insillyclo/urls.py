@@ -27,7 +27,7 @@ urlpatterns = [
 
     # pages web
     path('', views.home, name='home'),
-    path('account/', views.account, name='account'),
+    path('profile/', views.profile, name='profile'),
     path('create-template/', views.create_template, name='create_template'),
     path('simulation/', views.simulation, name='simulation'),
     path('search/', views.search, name='search'),
