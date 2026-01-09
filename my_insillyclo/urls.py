@@ -35,6 +35,8 @@ urlpatterns = [
     path('login/', auth_views.LoginView.as_view(template_name='biolib/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('create_template/', views.create_template, name='create_template'),
+    path('simulation/result/', views.simulation_result, name='simulation_result'),
+    path('template/detail/', views.template_detail, name='template_detail'),
 
     # autre
     path('download_empty_template/', views.download_empty_template, name='download_empty_template'),

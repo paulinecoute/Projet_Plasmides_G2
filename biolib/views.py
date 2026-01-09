@@ -28,6 +28,10 @@ def create_template(request):
     return render(request, 'biolib/create_template.html')
 
 
+def template_detail(request):
+    return render(request, 'biolib/template_detail.html')
+
+
 def simulation(request):
     if request.method == 'POST':
         # Récupérer les fichiers uploadés
@@ -85,6 +89,10 @@ def simulation(request):
     return render(request, 'biolib/simulation.html')
 
 
+def simulation_result(request):
+    return render(request, 'biolib/simulation_result.html')
+
+
 def search(request):
     return render(request, 'biolib/search.html')
 
@@ -99,6 +107,3 @@ def signup(request):
     else:
         form = UserCreationForm()
     return render(request, 'biolib/signup.html', {'form': form})
-
-
-
