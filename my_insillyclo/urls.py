@@ -1,4 +1,4 @@
-# insillyclo/urls.py
+# my_insillyclo/urls.py
 
 """
 URL configuration for insillyclo project.

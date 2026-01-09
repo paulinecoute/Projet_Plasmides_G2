@@ -1,17 +1,27 @@
-{% extends "biolib/base.html" %}
+<!-- biolib/templates/biolib/simulation.html -->
+{% extends 'biolib/base.html' %}
 
 {% block content %}
-<div class="container mt-5">
-    <h2>Simulation de campagne</h2>
-    <p>Déposez votre feuille de calcul pour simuler une campagne.</p>
-
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <div class="mb-3">
-            <label for="campaign_file" class="form-label">Fichier de campagne (Excel/CSV) :</label>
-            <input type="file" class="form-control" id="campaign_file" name="campaign_file" accept=".xlsx, .xls, .csv" required>
-        </div>
-        <button type="submit" class="btn btn-success">Charger</button>
-    </form>
-</div>
+<h1>Simulation de campagne</h1>
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div>
+        <label for="template">Template Excel :</label>
+        <input type="file" id="template" name="template" required>
+    </div>
+    <div>
+        <label for="parts">Fichier de correspondance :</label>
+        <input type="file" id="parts" name="parts" required>
+    </div>
+    <div>
+        <label for="primers">Fichier des amorces PCR :</label>
+        <input type="file" id="primers" name="primers" required>
+    </div>
+    <div>
+        <label for="concentration">Fichier des concentrations :</label>
+        <input type="file" id="concentration" name="concentration" required>
+    </div>
+    <button type="submit">Lancer la simulation</button>
+</form>
 {% endblock %}
+
