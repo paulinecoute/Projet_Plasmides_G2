@@ -113,7 +113,7 @@ class PlasmidCollection(models.Model):
     # Créateur de la collection
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         null=True, blank=True
     )
 
@@ -219,7 +219,7 @@ class Simulation(models.Model):
     # ou pour des tâches automatiques (cron jobs).
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True, blank=True
     )
 
