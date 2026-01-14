@@ -1,0 +1,13 @@
+<!-- biolib/templates/biolib/login.html -->
+{% extends 'biolib/base.html' %}
+
+{% block content %}
+<h2>Se connecter</h2>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Se connecter</button>
+</form>
+<p>Pas de compte ? <a href="{% url 'signup' %}">S'inscrire</a></p>
+{% endblock %}
+

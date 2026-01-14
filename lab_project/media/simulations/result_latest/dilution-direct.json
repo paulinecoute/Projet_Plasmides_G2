@@ -1,0 +1,38 @@
+[
+    {
+        "plasmid_id": "pSA001",
+        "h2o_volume": 7.387,
+        "buffer": 2.0,
+        "pMYT039": 0.203,
+        "pYTK009": 0.145,
+        "pYTK033": 0.147,
+        "pYTK053": 0.117
+    },
+    {
+        "plasmid_id": "pSA002",
+        "h2o_volume": 7.386,
+        "buffer": 2.0,
+        "pMYT039": 0.203,
+        "pYTK014": 0.146,
+        "pYTK033": 0.147,
+        "pYTK053": 0.117
+    },
+    {
+        "plasmid_id": "pSA003",
+        "h2o_volume": 7.386,
+        "buffer": 2.0,
+        "pMYT039": 0.203,
+        "pYTK018": 0.146,
+        "pYTK033": 0.147,
+        "pYTK053": 0.117
+    },
+    {
+        "plasmid_id": "pSA004",
+        "h2o_volume": 7.386,
+        "buffer": 2.0,
+        "pMYT039": 0.203,
+        "pYTK027": 0.146,
+        "pYTK033": 0.147,
+        "pYTK053": 0.117
+    }
+]

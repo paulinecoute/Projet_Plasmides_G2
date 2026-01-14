@@ -1,0 +1,36 @@
+{% extends 'biolib/base.html' %}
+{% block content %}
+<div class="container">
+    <h2>Résultats de la Simulation</h2>
+
+    <div class="alert alert-success">
+        Simulation terminée avec succès !
+    </div>
+
+    <h3>Fichiers générés :</h3>
+
+    <div class="results-grid">
+        {% for file in files %}
+            <div class="result-item" style="margin-bottom: 20px; padding: 10px; border: 1px solid #ccc;">
+                <strong>{{ file }}</strong>
+                <br>
+
+                {# Si c'est une image (le gel), on l'affiche #}
+                {% if file|lower|slice:"-4:" == ".png" or file|lower|slice:"-4:" == ".jpg" %}
+                    <img src="{{ MEDIA_URL }}{{ output_dir }}/{{ file }}" style="max-width: 100%; height: auto; margin-top: 10px;">
+
+                {# Sinon (CSV, Excel), on propose un lien de téléchargement #}
+                {% else %}
+                    <a href="{{ MEDIA_URL }}{{ output_dir }}/{{ file }}" class="btn btn-primary" download>
+                        Télécharger ce fichier
+                    </a>
+                {% endif %}
+            </div>
+        {% empty %}
+            <p>Aucun fichier n'a été généré. Vérifiez les logs d'erreur.</p>
+        {% endfor %}
+    </div>
+
+    <a href="{% url 'simulation' %}" class="btn btn-secondary">Lancer une nouvelle simulation</a>
+</div>
+{% endblock %}
