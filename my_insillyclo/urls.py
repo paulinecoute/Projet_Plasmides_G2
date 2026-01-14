@@ -27,9 +27,15 @@ urlpatterns = [
 
     # pages principales
     path('', views.home, name='home'),
-    path('create-template/', views.create_template, name='create_template'),
+    path('template/', views.template, name='template'),
     path('simulation/', views.simulation, name='simulation'),
-    path('search/', views.search, name='search'),
+
+    # page creation de templates
+    path('create_template/', views.create_template, name='create_template'),
+
+    # page résultats détaillé
+    path('simulation_result/', views.simulation_result, name='simulation_result'),
+    path('template_detail/', views.template_detail, name='template_detail'),
 
     # authentification
     path('signup/', views.signup, name='signup'),
@@ -46,11 +52,4 @@ urlpatterns = [
 
     # espace personnel
     path('dashboard/', views.dashboard, name='dashboard'),
-
-    # autres
-    path(
-        'download_empty_template/',
-        views.download_empty_template,
-        name='download_empty_template'
-    ),
 ]
