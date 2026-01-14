@@ -22,20 +22,35 @@ from biolib import views
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
-    # administrateur
+    # administration
     path('admin/', admin.site.urls),
 
-    # pages web
+    # pages principales
     path('', views.home, name='home'),
     path('create-template/', views.create_template, name='create_template'),
     path('simulation/', views.simulation, name='simulation'),
     path('search/', views.search, name='search'),
+
+    # authentification
     path('signup/', views.signup, name='signup'),
-    path('login/', auth_views.LoginView.as_view(template_name='biolib/login.html'), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
-    path('create_template/', views.create_template, name='create_template'),
+    path(
+        'login/',
+        auth_views.LoginView.as_view(template_name='biolib/login.html'),
+        name='login'
+    ),
+    path(
+        'logout/',
+        auth_views.LogoutView.as_view(),
+        name='logout'
+    ),
 
-    # autre
-    path('download_empty_template/', views.download_empty_template, name='download_empty_template'),
+    # espace personnel
+    path('dashboard/', views.dashboard, name='dashboard'),
+
+    # autres
+    path(
+        'download_empty_template/',
+        views.download_empty_template,
+        name='download_empty_template'
+    ),
 ]
-

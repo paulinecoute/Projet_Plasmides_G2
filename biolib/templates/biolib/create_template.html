@@ -1,46 +1,131 @@
 {% extends "biolib/base.html" %}
 
+{% block title %}Templates{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
-    <h2>Créer un template de campagne</h2>
-    <p>
-        Vous pouvez créer un template de campagne de deux manières :
-    </p>
-    <ul>
-        <li>
-            <strong>Créer un template de novo</strong> : Utilisez notre interface pour construire votre template pas à pas.
-        </li>
-        <li>
-            <strong>Télécharger un template existant</strong> : Téléchargez un fichier Excel pré-rempli, remplissez-le, puis importez-le dans l’application.
-        </li>
-    </ul>
 
-    <div class="row mt-4">
-        <div class="col-md-6 mb-3">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h5 class="card-title">Créer un template de novo</h5>
-                    <p class="card-text">
-                        Construisez votre template directement dans l’application.
-                    </p>
-                </div>
-            </div>
-        </div>
+<!-- ACTIONS -->
 
-        <div class="col-md-6 mb-3">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h5 class="card-title">Télécharger un template vierge</h5>
-                    <p class="card-text">
-                        Téléchargez un fichier Excel vierge pour le remplir manuellement.
-                    </p>
-                    <a href="{% url 'download_empty_template' %}?type=campaign"
-                       class="btn btn-success">
-                        Télécharger le template
-                    </a>
-                </div>
+<div class="mb-5">
+    <h2>Templates</h2>
+</div>
+
+<div class="row g-4 mb-5">
+
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Créer un template</h5>
+                <p class="text-muted mb-3">
+                    Créer un template de campagne directement dans l’application.
+                </p>
+                <a href="#" class="btn btn-outline-primary disabled">
+                    Créer (à venir)
+                </a>
             </div>
         </div>
     </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Télécharger un template vierge</h5>
+                <p class="text-muted mb-3">
+                    Télécharger un fichier Excel vierge pour le remplir manuellement.
+                </p>
+                <a href="{% url 'download_empty_template' %}"
+                   class="btn btn-success">
+                    Télécharger
+                </a>
+            </div>
+        </div>
+    </div>
+
 </div>
+
+<hr class="my-5">
+
+<!-- TEMPLATES PUBLICS -->
+
+<h4 class="mb-4">Templates publics</h4>
+
+<div class="list-group">
+
+    <!-- Template 1 -->
+    <div class="list-group-item py-3">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h6 class="mb-1">YTK_L1</h6>
+                <small class="text-muted">
+                    Enzyme : BsaI · Séparateur : - · Niveau : L1
+                </small>
+                <div class="mt-2 small text-muted">
+                    Composition : ConL, Promoter, Gene, Terminator, ConR, Backbone
+                </div>
+            </div>
+            <div class="ms-3 text-nowrap">
+                <a href="{% url 'download_empty_template' %}"
+                   class="btn btn-sm btn-outline-secondary">
+                    Télécharger
+                </a>
+                <a href="{% url 'simulation' %}"
+                   class="btn btn-sm btn-outline-primary ms-2">
+                    Utiliser
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template 2 -->
+    <div class="list-group-item py-3">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h6 class="mb-1">Vnat_L2</h6>
+                <small class="text-muted">
+                    Enzyme : BsmBI · Séparateur : ~ · Niveau : L2
+                </small>
+                <div class="mt-2 small text-muted">
+                    Composition : 5con, TU1–TU5, 3con, Replication origin, Backbone
+                </div>
+            </div>
+            <div class="ms-3 text-nowrap">
+                <a href="{% url 'download_empty_template' %}"
+                   class="btn btn-sm btn-outline-secondary">
+                    Télécharger
+                </a>
+                <a href="{% url 'simulation' %}"
+                   class="btn btn-sm btn-outline-primary ms-2">
+                    Utiliser
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template 3 -->
+    <div class="list-group-item py-3">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h6 class="mb-1">Raw_BsaI</h6>
+                <small class="text-muted">
+                    Enzyme : BsaI · Séparateur : - · Niveau : libre
+                </small>
+                <div class="mt-2 small text-muted">
+                    Composition : input plasmid 1 → input plasmid n
+                </div>
+            </div>
+            <div class="ms-3 text-nowrap">
+                <a href="{% url 'download_empty_template' %}"
+                   class="btn btn-sm btn-outline-secondary">
+                    Télécharger
+                </a>
+                <a href="{% url 'simulation' %}"
+                   class="btn btn-sm btn-outline-primary ms-2">
+                    Utiliser
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
 {% endblock %}
