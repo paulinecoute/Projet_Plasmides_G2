@@ -119,7 +119,7 @@ def download_empty_template(request):
     return HttpResponse("Téléchargement du template vide (En construction)")
 
 def download_simulation_csv(request):
-    # 1. On retrouve le fichier comme avant
+    # On retrouve le fichier
     result_dir = os.path.join(settings.MEDIA_ROOT, 'simulations', 'result_latest')
     if not os.path.exists(result_dir):
         raise Http404("Aucune simulation trouvée.")
@@ -136,17 +136,17 @@ def download_simulation_csv(request):
 
     file_path = os.path.join(result_dir, target_file)
 
-    # 2. On prépare la réponse HTTP (type CSV)
+    # On prépare la réponse HTTP (type CSV)
     response = HttpResponse(content_type='text/csv; charset=utf-8-sig') # 'utf-8-sig' aide Excel à lire les accents
     response['Content-Disposition'] = f'attachment; filename="{target_file}"'
 
-    # 3. CONVERSION : On lit avec ',' et on écrit avec ';'
+    # CONVERSION : On lit avec ',' et on écrit avec ';'
     try:
-        # Écrivain CSV configuré pour le format Français (point-virgule)
+        # Écrivain CSV configuré pour le format Français
         writer = csv.writer(response, delimiter=';')
 
         with open(file_path, 'r', encoding='utf-8') as f:
-            # Lecteur qui lit le format original (virgule)
+            # Lecteur qui lit le format original
             reader = csv.reader(f, delimiter=',')
 
             for row in reader:

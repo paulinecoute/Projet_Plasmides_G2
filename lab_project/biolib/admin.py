@@ -13,7 +13,7 @@ class CustomUserAdmin(UserAdmin):
 class TeamAdmin(admin.ModelAdmin):
     list_display = ('name', 'leader')
 
-# Collections de plasmides (Correction du nom ici)
+# Collections de plasmides
 @admin.register(PlasmidCollection)
 class PlasmidCollectionAdmin(admin.ModelAdmin):
     list_display = ('name', 'owner', 'team', 'is_public', 'created_at')
@@ -27,7 +27,7 @@ class PlasmidAdmin(admin.ModelAdmin):
     list_filter = ('collection', 'plasmid_type')
     search_fields = ('identifier', 'name', 'sequence')
 
-# Tables de correspondance (Correction du nom ici)
+# Tables de correspondance
 @admin.register(CorrespondenceTable)
 class CorrespondenceTableAdmin(admin.ModelAdmin):
     list_display = ('name', 'owner', 'is_public')

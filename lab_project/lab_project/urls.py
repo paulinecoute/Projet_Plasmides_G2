@@ -27,6 +27,6 @@ urlpatterns = [
     path('download-result/', views.download_simulation_csv, name='download_simulation_csv')
 ]
 
-# INDISPENSABLE pour voir les résultats de simulation (images)
+# INDISPENSABLE pour voir les résultats de simulation
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
