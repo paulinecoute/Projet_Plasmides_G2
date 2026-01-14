@@ -30,7 +30,7 @@ source venv/bin/activate
 ```bash
 pip install -r requirements.txt
 ```
-Sur Mac, il faut préalablement télécharger des bibliothèques avec Homebrew : 
+Sur Mac, il faut éventuellement télécharger préalablement des bibliothèques avec Homebrew : 
 ```bash
 brew install pkg-config cairo cmake
 ```
