@@ -24,8 +24,8 @@ def profile(request):
     return render(request, 'biolib/profile.html')
 
 
-def create_template(request):
-    return render(request, 'biolib/create_template.html')
+def template(request):
+    return render(request, 'biolib/template.html')
 
 
 def template_detail(request):
