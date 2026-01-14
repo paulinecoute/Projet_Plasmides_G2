@@ -1,0 +1,115 @@
+{% extends "biolib/base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Détails du template : [Nom du template]</h1>
+
+    <!-- Informations générales -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>Propriétés générales</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Nom de l’assemblage :</strong> [Nom]</p>
+                    <p><strong>Enzyme de restriction :</strong> [BsaI/BbsI]</p>
+                    <p><strong>Convention de nommage :</strong> [Ex : {Promoter}_{Gene}_{Terminator}]</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Nombre de parties d’entrée :</strong> [X]</p>
+                    <p><strong>Visibilité :</strong> [Public/Privé]</p>
+                    <p><strong>Équipe :</strong> [Nom de l’équipe]</p>
+                    <p><strong>Date de création :</strong> [Date]</p>
+                </div>
+            </div>
+            <p><strong>Description :</strong> [Description complète du template]</p>
+        </div>
+    </div>
+
+    <!-- Liste des InputParts -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>Configuration des InputParts</h3>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Type</th>
+                            <th>Présence dans le nom</th>
+                            <th>Obligatoire</th>
+                            <th>Typé</th>
+                            <th>Séparable</th>
+                            <th>Ordre</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>[Nom de la partie]</td>
+                            <td>[Type numérique]</td>
+                            <td>[Oui/Non]</td>
+                            <td>[Oui/Non]</td>
+                            <td>[Oui/Non]</td>
+                            <td>[Oui/Non + Séparateur]</td>
+                            <td>[Ordre numérique]</td>
+                            <td>[Description]</td>
+                        </tr>
+                        <tr>
+                            <td>pTDH3</td>
+                            <td>1 (Promoteur)</td>
+                            <td>Oui</td>
+                            <td>Oui</td>
+                            <td>Non</td>
+                            <td>Non</td>
+                            <td>1</td>
+                            <td>Promoteur constitutif de levure.</td>
+                        </tr>
+                        <tr>
+                            <td>Venus</td>
+                            <td>3 (Gène)</td>
+                            <td>Oui</td>
+                            <td>Oui</td>
+                            <td>Oui</td>
+                            <td>Non</td>
+                            <td>2</td>
+                            <td>Gène rapporteur fluorescent.</td>
+                        </tr>
+                        <tr>
+                            <td>tADH1</td>
+                            <td>5 (Terminateur)</td>
+                            <td>Oui</td>
+                            <td>Oui</td>
+                            <td>Non</td>
+                            <td>Non</td>
+                            <td>3</td>
+                            <td>Terminateur pour levure.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>Actions</h3>
+        </div>
+        <div class="card-body">
+            <div class="d-grid gap-2 d-md-flex">
+                <a href="#" class="btn btn-primary me-md-2" disabled>Modifier le template</a>
+                <a href="#" class="btn btn-outline-danger" disabled>Supprimer</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Retour -->
+    <div class="text-center mb-4">
+        <a href="#" class="btn btn-link" disabled>← Retour à la liste des templates</a>
+    </div>
+</div>
+{% endblock %}

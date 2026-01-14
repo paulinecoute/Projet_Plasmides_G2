@@ -1,0 +1,111 @@
+{% extends "biolib/base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Gestion des templates d’assemblage</h2>
+
+    <div class="row">
+        <!-- Colonne de gauche : Filtres -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Filtres</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Date de publication</label>
+                        <input type="text" class="form-control" placeholder="[Encadrement de date]" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Recherche par mot-clé</label>
+                        <input type="text" class="form-control" placeholder="[Nom/Auteur/Description du template]" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Visibilité</label>
+                        <select class="form-select" disabled>
+                            <option>Tous</option>
+                            <option>Publics</option>
+                            <option>Privés</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Équipe</label>
+                        <select class="form-select" disabled>
+                            <option>Toutes les équipes</option>
+                            <option>Équipe 1</option>
+                            <option>Équipe 2</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Enzyme de restriction</label>
+                        <select class="form-select" disabled>
+                            <option>Toutes</option>
+                            <option>BsaI</option>
+                            <option>BbsI</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Colonne centrale : Liste des templates -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Templates d’assemblage disponibles</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Template 1 -->
+                    <a href="{% url 'template_detail' %}" class="btn btn-outline-secondary btn-lg d-block mb-3 text-start">
+                        <h6>YTK_4parts_Promoter-Venus-Term</h6>
+                        <p>
+                            <strong>Enzyme de restriction :</strong> BsaI<br>
+                            <strong>Convention de nommage :</strong> {Promoter}_{Gene}_{Terminator}<br>
+                            <strong>Nombre de parties d’entrée :</strong> 4<br>
+                            <strong>Visibilité :</strong> Public<br>
+                            <strong>Équipe :</strong> Équipe A<br>
+                            <strong>Date de publication :</strong> 01/01/2026<br>
+                            <strong>Description :</strong> Template pour assemblage Yeast Toolkit (YTK) avec promoteur constitutif, gène rapporteur Venus, terminateur ADH1 et connecteur. Compatible avec les levures S. cerevisiae.
+                        </p>
+                    </a>
+
+                    <!-- Template 2 -->
+                    <a href="{% url 'template_detail' %}" class="btn btn-outline-secondary btn-lg d-block mb-3 text-start">
+                        <h6>MoClo_3parts_GFP</h6>
+                        <p>
+                            <strong>Enzyme de restriction :</strong> BbsI<br>
+                            <strong>Convention de nommage :</strong> {Promoter}_{GFP}_{Terminator}<br>
+                            <strong>Nombre de parties d’entrée :</strong> 3<br>
+                            <strong>Visibilité :</strong> Privé<br>
+                            <strong>Équipe :</strong> Équipe B<br>
+                            <strong>Date de publication :</strong> 02/01/2026<br>
+                            <strong>Description :</strong> Template MoClo optimisé pour l’expression de GFP chez E. coli. Utilise des parties standardisées pour promoteur T7, GFP et terminateur T0.
+                        </p>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <nav aria-label="Page navigation">
+                <ul class="pagination">
+                    <li class="page-item"><a class="page-link" href="#">Précédent</a></li>
+                    <li class="page-item"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                    <li class="page-item"><a class="page-link" href="#">Suivant</a></li>
+                </ul>
+            </nav>
+        </div>
+
+        <!-- Colonne de droite : Lien pour créer un template -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5>Créer un nouveau template</h5>
+                    <p>Utilisez ce lien pour construire votre propre template d’assemblage.</p>
+                    <a href="#" class="btn btn-primary btn-lg d-block" disabled>Créer un template</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

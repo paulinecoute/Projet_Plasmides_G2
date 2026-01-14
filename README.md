@@ -82,7 +82,7 @@ Projet_Plasmides_G2/
 │   ├── apps.py
 |   ├── templates/          # pages web
 │   └── ...
-├── insillyclo/              # Configuration du projet Django
+├── my_insillyclo/              # Configuration du projet Django
 ├── manage.py               # Script de gestion
 └── README.md               
 ```
