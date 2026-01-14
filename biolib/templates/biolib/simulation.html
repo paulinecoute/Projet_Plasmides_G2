@@ -1,0 +1,167 @@
+{% extends "biolib/base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Gestion des simulations</h2>
+
+    <div class="row">
+        <!-- Colonne de gauche : Filtres -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Filtres</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Date de publication</label>
+                        <input type="text" class="form-control" placeholder="[Encadrement de date]" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Recherche par mot-clé</label>
+                        <input type="text" class="form-control" placeholder="[Nom/Auteur/Description]" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Visibilité</label>
+                        <select class="form-select" disabled>
+                            <option>Tous</option>
+                            <option>Public</option>
+                            <option>Privé</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Équipe</label>
+                        <select class="form-select" disabled>
+                            <option>Toutes</option>
+                            <option>Équipe A</option>
+                            <option>Équipe B</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Contenu de la simulation</label>
+                        <select class="form-select" disabled>
+                            <option>Tous</option>
+                            <option>Plasmid Maps (PDF/GenBank)</option>
+                            <option>Output Sequences (GenBank)</option>
+                            <option>DB Produced (CSV/Excel)</option>
+                            <option>Dilution Files (CSV/Excel)</option>
+                            <option>Gel Simulation (PDF/Image)</option>
+                            <option>SBOL File (XML)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Colonne centrale : Volets de simulations -->
+        <div class="col-md-6">
+            <!-- Volet 1 : Simulations publiques -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Simulations publiques</h5>
+                </div>
+                <div class="card-body">
+                    <a href="{% url 'simulation_result' %}" class="btn btn-outline-secondary btn-lg d-block mb-3 text-start">
+                        <h6>Simulation publique 1</h6>
+                        <p>
+                            <strong>Date :</strong> 01/01/2026<br>
+                            <strong>Description :</strong> Exemple de simulation publique pour démonstration.<br>
+                            <strong>Contenu :</strong> Plasmid Maps (PDF), Output Sequences (GenBank)
+                        </p>
+                    </a>
+                    <a href="{% url 'simulation_result' %}" class="btn btn-outline-secondary btn-lg d-block mb-3 text-start">
+                        <h6>Simulation publique 2</h6>
+                        <p>
+                            <strong>Date :</strong> 02/01/2026<br>
+                            <strong>Description :</strong> Modèle d’assemblage génétique standard.<br>
+                            <strong>Contenu :</strong> Gel Simulation (PDF), SBOL File (XML)
+                        </p>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Volet 2 : Simulations d’équipes -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Simulations de mes équipes</h5>
+                </div>
+                <div class="card-body">
+                    <a href="{% url 'simulation_result' %}" class="btn btn-outline-secondary btn-lg d-block mb-3 text-start">
+                        <h6>Simulation Équipe A</h6>
+                        <p>
+                            <strong>Équipe :</strong> Équipe A<br>
+                            <strong>Date :</strong> 03/01/2026<br>
+                            <strong>Description :</strong> Simulation collaborative pour le projet X.<br>
+                            <strong>Contenu :</strong> DB Produced (CSV), Dilution Files (Excel)
+                        </p>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Volet 3 : Mes simulations -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Mes simulations</h5>
+                </div>
+                <div class="card-body">
+                    <a href="{% url 'simulation_result' %}" class="btn btn-outline-secondary btn-lg d-block mb-3 text-start">
+                        <h6>Ma simulation 1</h6>
+                        <p>
+                            <strong>Date :</strong> 04/01/2026<br>
+                            <strong>Description :</strong> Test personnel d’assemblage avec le template YTK.<br>
+                            <strong>Contenu :</strong> Plasmid Maps (GenBank), Gel Simulation (Image)
+                        </p>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <nav aria-label="Page navigation">
+                <ul class="pagination">
+                    <li class="page-item"><a class="page-link" href="#">Précédent</a></li>
+                    <li class="page-item"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                    <li class="page-item"><a class="page-link" href="#">Suivant</a></li>
+                </ul>
+            </nav>
+        </div>
+
+        <!-- Colonne de droite : Lien pour créer une simulation + Simulations en cours -->
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <a href="#" class="btn btn-primary btn-lg d-block mb-3" disabled>Nouvelle simulation</a>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h5>Simulations en cours</h5>
+                </div>
+                <div class="card-body">
+                    <a href="{% url 'simulation_result' %}" class="btn btn-outline-secondary btn-lg d-block mb-3 text-start">
+                        <h6>Simulation en cours 1</h6>
+                        <p>
+                            <strong>Statut :</strong> En génération (75%)<br>
+                            <strong>Type :</strong> Gel Simulation<br>
+                            <strong>Heure de début :</strong> 10:30
+                        </p>
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 75%"></div>
+                        </div>
+                    </a>
+                    <a href="{% url 'simulation_result' %}" class="btn btn-outline-secondary btn-lg d-block mb-3 text-start">
+                        <h6>Simulation en cours 2</h6>
+                        <p>
+                            <strong>Statut :</strong> En génération (40%)<br>
+                            <strong>Type :</strong> Output Sequences<br>
+                            <strong>Heure de début :</strong> 11:15
+                        </p>
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 40%"></div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
