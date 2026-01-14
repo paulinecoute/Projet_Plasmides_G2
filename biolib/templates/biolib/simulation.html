@@ -1,0 +1,27 @@
+<!-- biolib/templates/biolib/simulation.html -->
+{% extends 'biolib/base.html' %}
+
+{% block content %}
+<h1>Simulation de campagne</h1>
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div>
+        <label for="template">Template Excel :</label>
+        <input type="file" id="template" name="template" required>
+    </div>
+    <div>
+        <label for="parts">Fichier de correspondance :</label>
+        <input type="file" id="parts" name="parts" required>
+    </div>
+    <div>
+        <label for="primers">Fichier des amorces PCR :</label>
+        <input type="file" id="primers" name="primers" required>
+    </div>
+    <div>
+        <label for="concentration">Fichier des concentrations :</label>
+        <input type="file" id="concentration" name="concentration" required>
+    </div>
+    <button type="submit">Lancer la simulation</button>
+</form>
+{% endblock %}
+
