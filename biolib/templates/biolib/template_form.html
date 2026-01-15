@@ -9,11 +9,11 @@
         
         <div class="card mb-4 shadow-sm">
             <div class="card-header bg-light">
-                <h5 class="mb-0">Informations générales</h5>
+                <h5 class="mb-0">Informations générales (Assembly Settings)</h5>
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-4 mb-3">
                         <label class="form-label">Nom du template</label>
                         {{ form.name }}
                         {% if form.name.errors %}
@@ -21,9 +21,15 @@
                         {% endif %}
                     </div>
                     
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-4 mb-3">
                         <label class="form-label">Enzyme de restriction</label>
                         {{ form.enzyme }}
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Séparateur (Output separator)</label>
+                        {{ form.output_separator }}
+                        <div class="form-text small">Ex: - ou _ (Sépare les parties dans le nom final)</div>
                     </div>
                 </div>
 
@@ -48,7 +54,7 @@
                     </div>
                     <input type="hidden" name="visibility" value="private">
                 {% endif %}
-                </div>
+            </div>
         </div>
 
         <div class="card mb-4 shadow-sm">
@@ -61,14 +67,15 @@
                 {{ formset.management_form }}
                 
                 <div class="table-responsive">
-                    <table class="table table-bordered table-hover">
+                    <table class="table table-bordered table-hover align-middle">
                         <thead class="table-secondary">
                             <tr>
-                                <th style="width: 30%">Nom (ex: Promoteur)</th>
+                                <th style="width: 25%">Nom (ex: Promoteur)</th>
                                 <th style="width: 15%">Type (ex: 1)</th>
                                 <th style="width: 10%">Ordre</th>
-                                <th style="width: 15%">Obligatoire ?</th>
-                                <th style="width: 10%">Supprimer</th>
+                                <th style="width: 15%" class="text-center">Obligatoire ?</th>
+                                <th style="width: 15%" class="text-center">Dans le nom ?</th>
+                                <th style="width: 10%" class="text-center">Suppr.</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -87,6 +94,13 @@
                                             {{ part_form.is_mandatory }}
                                         </div>
                                     </td>
+                                    
+                                    <td class="text-center">
+                                        <div class="form-check d-flex justify-content-center">
+                                            {{ part_form.include_in_output }}
+                                        </div>
+                                    </td>
+
                                     <td class="text-center">
                                         {% if formset.can_delete %}
                                             {{ part_form.DELETE }}
