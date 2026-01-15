@@ -12,6 +12,9 @@ urlpatterns = [
     path('template/', views.template, name='template'),
     path('simulation/', views.simulation, name='simulation'),
 
+    # télécharger doc excel
+    path('template/export/<int:template_id>/', views.export_template_excel, name='export_template_excel'),
+
     # gestion des templates 
     # le menu (choix entre créer ou télécharger)
     path('create_template/', views.create_template, name='create_template'),
