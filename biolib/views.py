@@ -10,6 +10,9 @@ from django.core.files.storage import FileSystemStorage
 import os
 import pathlib
 
+from .forms import CampaignTemplateForm, TemplatePartFormSet
+from .models import CampaignTemplate
+
 # import insillyclo.data_source
 # import insillyclo.observer
 # import insillyclo.simulator
@@ -20,11 +23,41 @@ def home(request):
 
 
 def template(request):
-    return render(request, 'biolib/template.html')
+    templates = CampaignTemplate.objects.all()
+    return render(request, 'biolib/template.html', {'templates': templates})
 
 
 def create_template(request):
     return render(request, 'biolib/create_template.html')
+
+@login_required
+def template_create_view(request):
+    """Logique de création du template avec ses parties"""
+    if request.method == 'POST':
+        form = CampaignTemplateForm(request.POST, request.FILES)
+        formset = TemplatePartFormSet(request.POST)
+        
+        if form.is_valid() and formset.is_valid():
+
+            template = form.save(commit=False)
+            template.owner = request.user 
+            template.save() 
+            
+            parts = formset.save(commit=False)
+            for part in parts:
+                part.template = template
+                part.save()
+            
+            return redirect('template')
+    else:
+
+        form = CampaignTemplateForm()
+        formset = TemplatePartFormSet()
+
+    return render(request, 'biolib/template_form.html', {
+        'form': form,
+        'formset': formset
+    })
 
 
 def simulation(request):
@@ -35,6 +68,7 @@ def simulation_result(request):
 
 def template_detail(request):
     return render(request, 'biolib/template_detail.html')
+
 def signup(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
