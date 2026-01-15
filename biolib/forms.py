@@ -2,15 +2,16 @@ from django import forms
 from django.forms import inlineformset_factory
 from .models import CampaignTemplate, TemplatePart
 
+
 class CampaignTemplateForm(forms.ModelForm):
     class Meta:
         model = CampaignTemplate
-        fields = ['name', 'description', 'enzyme', 'is_public']
+        fields = ['name', 'description', 'enzyme', 'visibility']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'enzyme': forms.Select(attrs={'class': 'form-select'}),
-            'is_public': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'visibility': forms.Select(attrs={'class': 'form-select'}),
         }
 
 class TemplatePartForm(forms.ModelForm):
