@@ -1,0 +1,126 @@
+{% extends "biolib/base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Créer un nouveau template</h2>
+    
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Informations générales (Assembly Settings)</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Nom du template</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div class="text-danger small">{{ form.name.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Enzyme de restriction</label>
+                        {{ form.enzyme }}
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Séparateur (Output separator)</label>
+                        {{ form.output_separator }}
+                        <div class="form-text small">Ex: - ou _ (Sépare les parties dans le nom final)</div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Description</label>
+                    {{ form.description }}
+                </div>
+                
+                {% if user.is_authenticated %}
+                    <div class="mb-3">
+                        <label class="form-label">Qui peut voir ce template ?</label>
+                        {{ form.visibility }}
+                        <small class="text-muted">
+                            Privé = Visible uniquement par vous. Équipe = Visible par vos collaborateurs.
+                        </small>
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning d-flex align-items-center" role="alert">
+                        <div>
+                            <strong>Mode invité :</strong> Ce template sera créé en mode <u>Privé</u> et ne sera pas lié à un compte.
+                        </div>
+                    </div>
+                    <input type="hidden" name="visibility" value="private">
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Configuration des parties (Input Parts)</h5>
+                <small class="text-muted">Définissez l'ordre et le type des fragments (ex: Promoteur, Gène...)</small>
+            </div>
+            
+            <div class="card-body">
+                {{ formset.management_form }}
+                
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th style="width: 25%">Nom (ex: Promoteur)</th>
+                                <th style="width: 15%">Type (ex: 1)</th>
+                                <th style="width: 10%">Ordre</th>
+                                <th style="width: 15%" class="text-center">Obligatoire ?</th>
+                                <th style="width: 15%" class="text-center">Dans le nom ?</th>
+                                <th style="width: 10%" class="text-center">Suppr.</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for part_form in formset %}
+                                <tr>
+                                    <td>
+                                        {{ part_form.name }}
+                                        {% if part_form.name.errors %}
+                                            <div class="text-danger small">{{ part_form.name.errors }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ part_form.type_id }}</td>
+                                    <td>{{ part_form.order }}</td>
+                                    <td class="text-center">
+                                        <div class="form-check d-flex justify-content-center">
+                                            {{ part_form.is_mandatory }}
+                                        </div>
+                                    </td>
+                                    
+                                    <td class="text-center">
+                                        <div class="form-check d-flex justify-content-center">
+                                            {{ part_form.include_in_output }}
+                                        </div>
+                                    </td>
+
+                                    <td class="text-center">
+                                        {% if formset.can_delete %}
+                                            {{ part_form.DELETE }}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% for hidden in part_form.hidden_fields %}
+                                    {{ hidden }}
+                                {% endfor %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mb-5">
+            <button type="submit" class="btn btn-primary btn-lg">Enregistrer le template</button>
+            <a href="{% url 'create_template' %}" class="btn btn-outline-secondary btn-lg">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

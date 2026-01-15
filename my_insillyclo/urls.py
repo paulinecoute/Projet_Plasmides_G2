@@ -1,21 +1,3 @@
-# my_insillyclo/urls.py
-
-"""
-URL configuration for insillyclo project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/6.0/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.urls import path
 from biolib import views
@@ -30,8 +12,14 @@ urlpatterns = [
     path('template/', views.template, name='template'),
     path('simulation/', views.simulation, name='simulation'),
 
-    # page creation de templates
+    # télécharger doc excel
+    path('template/export/<int:template_id>/', views.export_template_excel, name='export_template_excel'),
+
+    # gestion des templates 
+    # le menu (choix entre créer ou télécharger)
     path('create_template/', views.create_template, name='create_template'),
+    # le formulaire de création 
+    path('create_template/new/', views.template_create_view, name='template_create_view'),
 
     # page résultats détaillé
     path('simulation_result/', views.simulation_result, name='simulation_result'),
