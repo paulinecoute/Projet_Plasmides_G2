@@ -30,9 +30,8 @@ def template(request):
 def create_template(request):
     return render(request, 'biolib/create_template.html')
 
-@login_required
 def template_create_view(request):
-    """Logique de création du template avec ses parties"""
+
     if request.method == 'POST':
         form = CampaignTemplateForm(request.POST, request.FILES)
         formset = TemplatePartFormSet(request.POST)
@@ -40,7 +39,14 @@ def template_create_view(request):
         if form.is_valid() and formset.is_valid():
 
             template = form.save(commit=False)
-            template.owner = request.user 
+        
+            if request.user.is_authenticated:
+                template.owner = request.user
+            else:
+                # Si pas connecté : forcément privé
+                template.owner = None 
+                template.visibility = 'private'
+
             template.save() 
             
             parts = formset.save(commit=False)
@@ -50,7 +56,6 @@ def template_create_view(request):
             
             return redirect('template')
     else:
-
         form = CampaignTemplateForm()
         formset = TemplatePartFormSet()
 
