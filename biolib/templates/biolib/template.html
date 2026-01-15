@@ -55,38 +55,50 @@
                 <div class="card-body">
                     
                     {% for t in templates %}
-                        <a href="{% url 'template_detail' %}" class="btn btn-outline-secondary btn-lg d-block mb-3 text-start shadow-sm">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="mb-0 fw-bold">{{ t.name }}</h6>
-                                {% if t.visibility == 'private' %}
-                                    <span class="badge bg-warning text-dark fs-6">Privé</span>
-                                {% else %}
-                                    <span class="badge bg-info text-dark fs-6">Équipe</span>
-                                {% endif %}
-                            </div>
-                            
-                            <p class="small mb-1">
-                                <strong>Enzyme :</strong> {{ t.enzyme }}<br>
-                                <strong>Description :</strong> {{ t.description|default:"Aucune description"|truncatewords:15 }}<br>
-                                
-                                <strong>Créé par :</strong> 
-                                {% if t.owner %}
-                                    {{ t.owner.username }}
-                                {% else %}
-                                    <span class="text-muted fst-italic">Invité</span>
-                                {% endif %}
-                            </p>
-
-                            {% if t.parts.all %}
-                                <div class="mt-2 pt-2 border-top">
-                                    <small class="text-muted">Structure :</small><br>
-                                    {% for part in t.parts.all %}
-                                        <span class="badge bg-light text-dark border">{{ part.name }}</span>
-                                        {% if not forloop.last %} + {% endif %}
-                                    {% endfor %}
+                        <div class="card mb-3 shadow-sm border">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h5 class="mb-0 fw-bold text-primary">{{ t.name }}</h5>
+                                    
+                                    {% if t.visibility == 'private' %}
+                                        <span class="badge bg-warning text-dark">Privé</span>
+                                    {% else %}
+                                        <span class="badge bg-info text-dark">Équipe</span>
+                                    {% endif %}
                                 </div>
-                            {% endif %}
-                        </a>
+                                
+                                <p class="small mb-2 text-muted">
+                                    <strong>Enzyme :</strong> {{ t.enzyme }}<br>
+                                    <strong>Description :</strong> {{ t.description|default:"Aucune description"|truncatewords:20 }}<br>
+                                    <strong>Créé par :</strong> 
+                                    {% if t.owner %}
+                                        {{ t.owner.username }}
+                                    {% else %}
+                                        <span class="fst-italic">Invité</span>
+                                    {% endif %}
+                                </p>
+
+                                {% if t.parts.all %}
+                                    <div class="mb-3 p-2 bg-light rounded border-start border-4 border-secondary">
+                                        <small class="text-muted d-block mb-1">Structure :</small>
+                                        {% for part in t.parts.all %}
+                                            <span class="badge bg-white text-dark border">{{ part.name }}</span>
+                                            {% if not forloop.last %} + {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+
+                                <div class="d-flex justify-content-between mt-3 pt-2 border-top">
+                                    <a href="{% url 'template_detail' %}" class="btn btn-outline-secondary btn-sm">
+                                        Voir détails
+                                    </a>
+                                    
+                                    <a href="{% url 'export_template_excel' t.id %}" class="btn btn-success btn-sm text-white">
+                                        Exporter Excel
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     
                     {% empty %}
                         <div class="alert alert-info text-center">
@@ -94,7 +106,8 @@
                             Soyez le premier à en créer un !
                         </div>
                     {% endfor %}
-                    </div>
+
+                </div>
             </div>
 
             <nav aria-label="Page navigation">
