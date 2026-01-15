@@ -21,11 +21,9 @@ from .models import CampaignTemplate
 def home(request):
     return render(request, 'biolib/home.html')
 
-
 def template(request):
-    templates = CampaignTemplate.objects.all()
+    templates = CampaignTemplate.objects.order_by('-id') # ceux créés récemment apparaissent en haut
     return render(request, 'biolib/template.html', {'templates': templates})
-
 
 def create_template(request):
     return render(request, 'biolib/create_template.html')
@@ -43,7 +41,7 @@ def template_create_view(request):
             if request.user.is_authenticated:
                 template.owner = request.user
             else:
-                # Si pas connecté : forcément privé
+                # si pas connecté : forcément privé
                 template.owner = None 
                 template.visibility = 'private'
 
