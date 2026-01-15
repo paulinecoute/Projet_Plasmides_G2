@@ -1,5 +1,19 @@
 from django.db import models
 from django.contrib.auth.models import User
+from Bio.Restriction import AllEnzymes # pour avoir toutes les enzymes
+
+# liste complète des enzymes via BioPython 
+ALL_ENZYMES_LIST = sorted([str(e) for e in AllEnzymes])
+ENZYME_CHOICES = [(e, e) for e in ALL_ENZYMES_LIST]
+
+
+SEPARATOR_CHOICES = [
+    ('-', 'Tiret (-)'),
+    ('_', 'Underscore (_)'),
+    ('.', 'Point (.)'),
+    ('', 'Aucun'),
+]
+
 
 class Collection(models.Model):
     name = models.CharField(max_length=255)
@@ -32,21 +46,29 @@ class CorrespondenceEntry(models.Model):
     def __str__(self):
         return f"{self.id_in_file} - {self.name}"
 
+
 class CampaignTemplate(models.Model):
     name = models.CharField(max_length=255, verbose_name="Nom du template")
     description = models.TextField(blank=True, verbose_name="Description")
     
-    ENZYME_CHOICES = [
-        ('BsaI', 'BsaI'),
-        ('BbsI', 'BbsI'),
-        ('NotI', 'NotI'),
-    ]
-    enzyme = models.CharField(max_length=50, choices=ENZYME_CHOICES, verbose_name="Enzyme de restriction")
+    output_separator = models.CharField(
+        max_length=5, 
+        choices=SEPARATOR_CHOICES, 
+        default='-', 
+        verbose_name="Séparateur (Output)"
+    )
+
+    enzyme = models.CharField(
+        max_length=50, 
+        choices=ENZYME_CHOICES, 
+        default='BsaI',
+        verbose_name="Enzyme de restriction"
+    )
     
-    # visibilité
     VISIBILITY_CHOICES = [
         ('private', 'Privé (Moi uniquement)'),
         ('team', 'Visible par mon équipe'),
+        ('public', 'Public (Tout le monde)'),
     ]
     visibility = models.CharField(
         max_length=20, 
@@ -55,7 +77,6 @@ class CampaignTemplate(models.Model):
         verbose_name="Visibilité"
     )
 
-    # ATTENTION ici ce sera pour la validation Admin plus tard (par défaut False) (car on a dit que public ne devait pas être parasité etc)
     is_public = models.BooleanField(default=False, verbose_name="Validé Public (Admin)")
     
     file = models.FileField(upload_to="templates/", blank=True, null=True)
@@ -73,6 +94,14 @@ class TemplatePart(models.Model):
     description = models.CharField(max_length=255, blank=True)
     
     is_mandatory = models.BooleanField(default=True, verbose_name="Obligatoire")
+    
+    include_in_output = models.BooleanField(
+        default=True, 
+        verbose_name="Inclure dans le nom ?",
+        help_text="Si coché, ce nom apparaîtra dans le nom du plasmide final."
+    )
+
+
     is_separable = models.BooleanField(default=False, verbose_name="Séparable")
 
     class Meta:
