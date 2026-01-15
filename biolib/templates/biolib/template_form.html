@@ -32,14 +32,23 @@
                     {{ form.description }}
                 </div>
                 
-                <div class="mb-3">
-                    <label class="form-label">Qui peut voir ce template ?</label>
-                    {{ form.visibility }}
-                    <small class="text-muted">
-                        Note : Pour rendre un template public à tous les utilisateurs, une demande devra être faite aux administrateurs ultérieurement.
-                    </small>
+                {% if user.is_authenticated %}
+                    <div class="mb-3">
+                        <label class="form-label">Qui peut voir ce template ?</label>
+                        {{ form.visibility }}
+                        <small class="text-muted">
+                            Privé = Visible uniquement par vous. Équipe = Visible par vos collaborateurs.
+                        </small>
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning d-flex align-items-center" role="alert">
+                        <div>
+                            <strong>Mode invité :</strong> Ce template sera créé en mode <u>Privé</u> et ne sera pas lié à un compte.
+                        </div>
+                    </div>
+                    <input type="hidden" name="visibility" value="private">
+                {% endif %}
                 </div>
-            </div>
         </div>
 
         <div class="card mb-4 shadow-sm">
