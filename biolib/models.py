@@ -43,10 +43,23 @@ class CampaignTemplate(models.Model):
     ]
     enzyme = models.CharField(max_length=50, choices=ENZYME_CHOICES, verbose_name="Enzyme de restriction")
     
-    file = models.FileField(upload_to="templates/", blank=True, null=True)
+    # visibilité
+    VISIBILITY_CHOICES = [
+        ('private', 'Privé (Moi uniquement)'),
+        ('team', 'Visible par mon équipe'),
+    ]
+    visibility = models.CharField(
+        max_length=20, 
+        choices=VISIBILITY_CHOICES, 
+        default='private', 
+        verbose_name="Visibilité"
+    )
+
+    # ATTENTION ici ce sera pour la validation Admin plus tard (par défaut False) (car on a dit que public ne devait pas être parasité etc)
+    is_public = models.BooleanField(default=False, verbose_name="Validé Public (Admin)")
     
+    file = models.FileField(upload_to="templates/", blank=True, null=True)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
-    is_public = models.BooleanField(default=False, verbose_name="Est public ?")
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
