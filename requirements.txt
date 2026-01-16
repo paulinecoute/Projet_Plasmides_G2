@@ -1,5 +1,7 @@
-django 
+django
 django-extensions
 biopython
 insillyclo
 openpyxl
+pydot
+pyparsing
