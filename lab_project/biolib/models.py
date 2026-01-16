@@ -51,7 +51,6 @@ class User(AbstractUser):
     # Définition des rôles pour restreindre l'accès aux vues et aux fonctionnalités
     ROLE_CHOICES = (
         ('ADMIN', 'Administratrice - Accès total'),
-        ('LEADER', 'Cheffe d\'équipe - Gestion de son équipe et ses projets'),
         ('USER', 'Utilisateur - Création et édition de ses propres données'),
         ('READER', 'Lecteur - Accès en lecture seule'),
     )
@@ -70,6 +69,14 @@ class User(AbstractUser):
 
     def __str__(self):
         return f"{self.email} ({self.get_role_display()})"
+
+    @property
+    def is_leader(self):
+        """
+        Retourne True si l'utilisateur est chef d'au moins une équipe.
+        Utilise le 'related_name' défini dans le modèle Team.
+        """
+        return self.led_teams.exists()
 
 class Team(models.Model):
     """

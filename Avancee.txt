@@ -50,6 +50,8 @@ python manage.py createsuperuser
 # tous
 # lancement du serveur et vérifier si tout ets bon
 python manage.py runserver
-Allez sur http://127.0.0.1:8000/admin/
+Allez sur http://127.0.0.1:8000
+
+Lancer la simulation avec un fichier xlsx et un fichier csv
 
 Vérifiez que les tables "Collections" et "Plasmids" sont bien remplies.
