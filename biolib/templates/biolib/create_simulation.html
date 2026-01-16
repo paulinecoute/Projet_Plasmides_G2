@@ -1,0 +1,55 @@
+{% extends "biolib/base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-flask"></i> Nouvelle Simulation</h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        Sélectionnez un modèle de campagne (Template) pour lancer l'algorithme d'assemblage.
+                    </p>
+
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="mb-4">
+                            <label for="{{ form.template.id_for_label }}" class="form-label fw-bold">Modèle de simulation (Template)</label>
+                            {{ form.template }}
+                            {% if form.template.errors %}
+                                <div class="text-danger small mt-1">{{ form.template.errors }}</div>
+                            {% endif %}
+                            <div class="form-text">
+                                Choisissez le protocole biologique (ex: Golden Gate, MoClo...) défini dans vos fichiers Excel.
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info d-flex align-items-center" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <div>
+                                Une fois lancée, la simulation passera en statut <strong>"En attente"</strong> le temps que le serveur traite les données.
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="#" onclick="history.back()" class="btn btn-outline-secondary">Annuler</a>
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-play"></i> Lancer la simulation
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

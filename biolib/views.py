@@ -1,11 +1,16 @@
 # biolib/views.py
 from django.shortcuts import render, redirect, get_object_or_404
+from datetime import datetime
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.http import FileResponse, HttpResponse
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
+from django.http import Http404
+from .forms import SimulationForm
+from .models import Simulation
+from types import SimpleNamespace
 
 import os
 import pathlib
@@ -17,9 +22,9 @@ import openpyxl
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 
 
-# import insillyclo.data_source
-# import insillyclo.observer
-# import insillyclo.simulator
+import insillyclo.data_source
+import insillyclo.observer
+import insillyclo.simulator
 
 
 def home(request):
@@ -37,25 +42,25 @@ def template_create_view(request):
     if request.method == 'POST':
         form = CampaignTemplateForm(request.POST, request.FILES)
         formset = TemplatePartFormSet(request.POST)
-        
+
         if form.is_valid() and formset.is_valid():
 
             template = form.save(commit=False)
-        
+
             if request.user.is_authenticated:
                 template.owner = request.user
             else:
                 # si pas connecté : forcément privé
-                template.owner = None 
+                template.owner = None
                 template.visibility = 'private'
 
-            template.save() 
-            
+            template.save()
+
             parts = formset.save(commit=False)
             for part in parts:
                 part.template = template
                 part.save()
-            
+
             return redirect('template')
     else:
         form = CampaignTemplateForm()
@@ -103,25 +108,25 @@ def export_template_excel(request, template_id):
     ws = wb.active
     ws.title = "Assembly Template"
 
-    blue_fill = PatternFill(start_color="DDEBF7", end_color="DDEBF7", fill_type="solid") 
-    green_fill = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid") 
+    blue_fill = PatternFill(start_color="DDEBF7", end_color="DDEBF7", fill_type="solid")
+    green_fill = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid")
     bold_font = Font(bold=True)
     center_align = Alignment(horizontal="center", vertical="center")
-    
-    # Assembly Settings 
-    
+
+    # Assembly Settings
+
     # Titre
     ws['A1'] = "Assembly settings"
     ws['A1'].font = bold_font
     ws['A1'].fill = blue_fill
-    
+
     # Enzyme
     ws['A2'] = "Restriction enzyme"
     ws['A2'].font = bold_font
     ws['A2'].fill = blue_fill
     ws['B2'] = template.enzyme
-    ws['B2'].fill = green_fill 
-    
+    ws['B2'].fill = green_fill
+
     # Nom
     ws['A3'] = "Name"
     ws['A3'].font = bold_font
@@ -129,24 +134,24 @@ def export_template_excel(request, template_id):
     ws['B3'] = template.name
     ws['B3'].fill = green_fill
 
-    # Séparateur 
+    # Séparateur
     ws['A4'] = "Output separator"
     ws['A4'].font = bold_font
     ws['A4'].fill = blue_fill
     ws['B4'] = template.output_separator
     ws['B4'].fill = green_fill
 
-    # Assembly Composition 
+    # Assembly Composition
     base_row = 8
-    
+
     headers = [
-        "Assembly composition",                 
-        "Part types ->",                        
-        "Is optional part ->",                  
+        "Assembly composition",
+        "Part types ->",
+        "Is optional part ->",
         "Part name should be in output name ->",
-        "Output plasmid id ↓"                   
+        "Output plasmid id ↓"
     ]
-    
+
     for i, text in enumerate(headers):
         cell = ws.cell(row=base_row + i, column=1, value=text)
         cell.font = bold_font
@@ -155,7 +160,7 @@ def export_template_excel(request, template_id):
     # Boucle pour créer les colonnes (B, C, D...) selon tes parties
     for index, part in enumerate(parts):
         col_num = 2 + index # Colonne B = 2
-        
+
         # 1. Nom de la partie (ex: Promoter)
         c1 = ws.cell(row=base_row, column=col_num, value=part.name)
         c1.fill = green_fill
@@ -177,7 +182,7 @@ def export_template_excel(request, template_id):
         c4 = ws.cell(row=base_row + 3, column=col_num, value=in_output_str)
         c4.fill = green_fill
         c4.alignment = center_align
-        
+
         # 5. La petite flèche du bas
         c5 = ws.cell(row=base_row + 4, column=col_num, value="↓")
         c5.fill = blue_fill
@@ -193,8 +198,123 @@ def export_template_excel(request, template_id):
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     clean_name = template.name.replace(" ", "_")
     response['Content-Disposition'] = f'attachment; filename="Campaign_{clean_name}.xlsx"'
-    
+
     wb.save(response)
     return response
 
 
+
+# Import de votre script de simulation
+try:
+    from my_insillyclo.simulator import compute_all
+except ImportError:
+    print("ATTENTION : my_insillyclo.simulator non trouvé.")
+    def compute_all(*args, **kwargs): pass
+
+# Observateur simple pour les logs
+class ConsoleObserver:
+    def notify_message(self, message):
+        print(f"[SIMULATION] {message}")
+    def notify_progress(self, value):
+        pass
+
+# ==============================================================================
+# 1. LISTE DES SIMULATIONS (C'est celle-ci qui vous manquait !)
+# ==============================================================================
+def simulation_list(request):
+    """ Affiche le tableau de toutes les simulations de l'utilisateur """
+    simulations = Simulation.objects.filter(user=request.user).order_by('-date_run')
+    return render(request, 'biolib/simulation_list.html', {'simulations': simulations})
+
+# ==============================================================================
+# 2. CRÉATION D'UNE SIMULATION
+# ==============================================================================
+def create_simulation(request):
+    """ Gère le formulaire et lance le script de simulation """
+    if request.method == 'POST':
+        form = SimulationForm(request.POST)
+
+        if form.is_valid():
+            # A. Création en base
+            simulation = form.save(commit=False)
+            simulation.user = request.user
+            simulation.status = 'RUNNING'
+            simulation.save()
+
+            # B. Dossiers
+            output_folder = os.path.join(settings.MEDIA_ROOT, 'simulations', str(simulation.id))
+            template = simulation.template
+            gb_plasmids = []
+
+            # C. Lancement du script
+            try:
+                observer = ConsoleObserver()
+                print(f"Lancement de la simulation #{simulation.id}...")
+
+                compute_all(
+                    observer=observer,
+                    settings=None,
+                    input_template_filled=template.file.path if template.file else "No_File",
+                    input_parts_files=[],
+                    gb_plasmids=gb_plasmids,
+                    output_dir=output_folder,
+                    data_source="Django",
+                    enzyme_names=template.enzyme
+                )
+
+                # D. Succès
+                simulation.status = 'COMPLETED'
+                simulation.result_file = f"simulations/{simulation.id}/simulated_gel.png"
+                simulation.save()
+
+                return redirect('simulation_result', pk=simulation.id)
+
+            except Exception as e:
+                print(f"ERREUR PENDANT LA SIMULATION : {e}")
+                simulation.status = 'FAILED'
+                simulation.save()
+                return redirect('simulation_list')
+
+    else:
+        form = SimulationForm()
+
+    return render(request, 'biolib/create_simulation.html', {'form': form})
+
+# ==============================================================================
+# 3. RÉSULTAT D'UNE SIMULATION
+# ==============================================================================
+def simulation_result(request, pk=None):
+    """ Affiche les résultats (pk=None permet l'affichage démo) """
+
+    if pk is not None:
+        # Vraie simulation
+        simulation = get_object_or_404(Simulation, pk=pk, user=request.user)
+    else:
+        # Démo (Objet factice)
+        simulation = SimpleNamespace(
+            id=0,
+            status='COMPLETED',
+            date_run=datetime.now(),
+            template=SimpleNamespace(name="DÉMO - Simulation Publique", enzyme="BsaI"),
+            user=request.user
+        )
+
+    return render(request, 'biolib/simulation_result.html', {
+        'simulation': simulation
+    })
+
+def download_simulation_csv(request, pk):
+    """ Permet de télécharger le fichier CSV de dilutions de manière sécurisée """
+    # 1. On vérifie que la simulation appartient bien à l'utilisateur
+    simulation = get_object_or_404(Simulation, pk=pk, user=request.user)
+
+    # 2. On construit le chemin du fichier
+    file_path = os.path.join(settings.MEDIA_ROOT, 'simulations', str(simulation.id), 'dilutions_calculated.csv')
+
+    # 3. On vérifie si le fichier existe physiquement
+    if os.path.exists(file_path):
+        # On renvoie le fichier en forçant le téléchargement (as_attachment=True)
+        response = FileResponse(open(file_path, 'rb'), as_attachment=True, filename=f"Dilutions_Simulation_{simulation.id}.csv")
+        return response
+    else:
+        raise Http404("Le fichier CSV n'a pas été trouvé sur le serveur.")

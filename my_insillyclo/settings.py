@@ -121,3 +121,5 @@ LOGIN_URL = '/login/'  # URL de redirection pour la connexion
 LOGIN_REDIRECT_URL = '/'  # Redirection après connexion
 LOGOUT_REDIRECT_URL = '/'  # Redirection après déconnexion
 
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+AUTH_USER_MODEL = 'biolib.User'
