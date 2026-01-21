@@ -15,7 +15,7 @@
 
 ### 1. Cloner le répertoire
 ```bash
-git clone https://github.com/Ange-Louis/Projet_Plasmides_G2.git
+git clone https://github.com/paulinecoute/Projet_Plasmides_G2.git
 cd Projet_Plasmides_G2
 ```
 
