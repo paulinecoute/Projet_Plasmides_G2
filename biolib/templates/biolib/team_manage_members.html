@@ -1,0 +1,106 @@
+{% extends "biolib/base.html" %}
+
+{% block title %}Gestion des membres{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-5">
+
+    <!-- Retour -->
+    <div class="mb-4">
+        <a href="{% url 'team_detail' team.id %}" class="btn btn-sm btn-outline-secondary">
+            ← Retour à l’équipe
+        </a>
+    </div>
+
+    <!-- Header -->
+    <div class="mb-4">
+        <h2 class="fw-bold mb-1">
+            Gestion des membres
+        </h2>
+        <p class="text-muted">
+            Équipe : <strong>{{ team.name }}</strong>
+        </p>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- Ajouter un membre -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+
+                    <h5 class="fw-semibold mb-3">
+                        Ajouter un membre
+                    </h5>
+
+                    <p class="text-muted small mb-3">
+                        Entrez l’email d’un utilisateur existant.
+                    </p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <input
+                                type="email"
+                                name="email"
+                                class="form-control"
+                                placeholder="email@exemple.com"
+                                required
+                            >
+                        </div>
+                        <button class="btn btn-primary w-100">
+                            Ajouter
+                        </button>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Liste des membres -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+
+                    <h5 class="fw-semibold mb-3">
+                        Membres de l’équipe
+                        <span class="badge bg-secondary ms-2">
+                            {{ team.members.count }}
+                        </span>
+                    </h5>
+
+                    <div class="list-group list-group-flush">
+
+                        {% for member in team.members.all %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+
+                            <div>
+                                <strong>{{ member.email }}</strong>
+                                {% if member == team.leader %}
+                                    <span class="badge bg-primary ms-2">Cheffe</span>
+                                {% endif %}
+                            </div>
+
+                            {% if member != team.leader %}
+                            <form method="post"
+                                  action="{% url 'team_remove_member' team.id member.id %}">
+                                {% csrf_token %}
+                                <button class="btn btn-sm btn-outline-danger">
+                                    Retirer
+                                </button>
+                            </form>
+                            {% endif %}
+
+                        </div>
+                        {% endfor %}
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

@@ -1,5 +1,30 @@
 from django import forms
+from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import UserCreationForm
+
 from .models import CampaignTemplate, TemplatePart, Simulation
+
+
+# FORMULAIRE D'INSCRIPTION
+
+User = get_user_model()
+
+
+class CustomUserCreationForm(UserCreationForm):
+    """
+    Formulaire d'inscription compatible avec biolib.User
+    (CustomUser avec email comme identifiant)
+    """
+    class Meta:
+        model = User
+        fields = (
+            'email',
+            'username',
+            'first_name',
+            'last_name',
+            'password1',
+            'password2',
+        )
 
 
 class CampaignTemplateForm(forms.ModelForm):
@@ -18,6 +43,7 @@ class CampaignTemplateForm(forms.ModelForm):
             'is_public': forms.CheckboxInput(attrs={'class': 'form-check-input'})
         }
 
+
 # Cela permet d'ajouter/supprimer des parties dynamiquement
 TemplatePartFormSet = forms.inlineformset_factory(
     CampaignTemplate,
@@ -26,6 +52,7 @@ TemplatePartFormSet = forms.inlineformset_factory(
     extra=1,  # Affiche une ligne vide par défaut
     can_delete=True
 )
+
 
 class SimulationForm(forms.ModelForm):
     class Meta:

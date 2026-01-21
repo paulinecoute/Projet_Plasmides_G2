@@ -1,0 +1,57 @@
+{% extends "biolib/base.html" %}
+
+{% block title %}{{ team.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-5">
+
+    <div class="mb-4">
+        <a href="{% url 'teams' %}" class="btn btn-sm btn-outline-secondary">
+            ← Retour aux équipes
+        </a>
+    </div>
+
+    <!-- Team header -->
+    <div class="mb-5">
+        <h2 class="fw-bold">{{ team.name }}</h2>
+        <p class="text-muted">
+            Cheffe d’équipe : {{ team.leader.email }}
+        </p>
+    </div>
+
+    <!-- Members -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="fw-semibold mb-3">Membres</h5>
+
+            <ul class="list-group list-group-flush">
+                {% for member in team.members.all %}
+                <li class="list-group-item d-flex justify-content-between">
+                    {{ member.email }}
+                    {% if member == team.leader %}
+                        <span class="badge bg-primary">Cheffe</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Membre</span>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    {% if is_leader %}
+    <div class="d-flex gap-2">
+        <a href="{% url 'team_manage_members' team.id %}"
+           class="btn btn-outline-primary">
+            Gérer les membres
+        </a>
+
+        <a href="{% url 'team_delete' team.id %}"
+           class="btn btn-outline-danger">
+            Supprimer l’équipe
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

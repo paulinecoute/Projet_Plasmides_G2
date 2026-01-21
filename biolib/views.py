@@ -1,7 +1,7 @@
 # biolib/views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from datetime import datetime
-from django.contrib.auth.forms import UserCreationForm
+from .forms import CustomUserCreationForm
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.http import FileResponse, HttpResponse
@@ -22,9 +22,9 @@ import openpyxl
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 
 
-import insillyclo.data_source
-import insillyclo.observer
-import insillyclo.simulator
+#import insillyclo.data_source
+#import insillyclo.observer
+#import insillyclo.simulator
 
 
 def home(request):
@@ -83,13 +83,13 @@ def template_detail(request):
 
 def signup(request):
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
             return redirect('home')
     else:
-        form = UserCreationForm()
+        form = CustomUserCreationForm()
 
     return render(request, 'biolib/signup.html', {'form': form})
 
@@ -98,7 +98,13 @@ def signup(request):
 
 @login_required
 def dashboard(request):
-    return render(request, 'biolib/dashboard.html')
+    teams_count = Team.objects.filter(
+        Q(leader=request.user) | Q(members=request.user)
+    ).distinct().count()
+
+    return render(request, 'biolib/dashboard.html', {
+        'teams_count': teams_count
+    })
 
 
 def export_template_excel(request, template_id):
@@ -318,3 +324,134 @@ def download_simulation_csv(request, pk):
         return response
     else:
         raise Http404("Le fichier CSV n'a pas été trouvé sur le serveur.")
+
+# ==============================================================================
+# GESTION DES ÉQUIPES
+# ==============================================================================
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponse
+from django.db.models import Q
+
+from .models import Team, User
+
+
+@login_required
+def team_list(request):
+    """
+    Page : Mes équipes
+    Affiche toutes les équipes dont l'utilisateur est membre ou cheffe.
+    """
+    teams = Team.objects.filter(
+        Q(leader=request.user) | Q(members=request.user)
+    ).distinct()
+
+    return render(request, 'biolib/teams.html', {
+        'teams': teams
+    })
+
+
+@login_required
+def team_create(request):
+    """
+    Page : Créer une équipe
+    """
+    if request.method == 'POST':
+        name = request.POST.get('name')
+
+        if name:
+            team = Team.objects.create(
+                name=name,
+                leader=request.user
+            )
+            team.members.add(request.user)
+            return redirect('teams')
+
+    return render(request, 'biolib/team_create.html')
+
+
+@login_required
+def team_detail(request, team_id):
+    """
+    Page : Détail d'une équipe
+    Accessible uniquement aux membres.
+    """
+    team = get_object_or_404(
+        Team,
+        id=team_id,
+        members=request.user
+    )
+
+    is_leader = team.leader == request.user
+
+    return render(request, 'biolib/team_detail.html', {
+        'team': team,
+        'is_leader': is_leader
+    })
+
+
+@login_required
+def team_manage_members(request, team_id):
+    """
+    Page : Gestion des membres d'une équipe
+    Accessible uniquement à la cheffe.
+    """
+    team = get_object_or_404(Team, id=team_id)
+
+    if team.leader != request.user:
+        return HttpResponse("Accès refusé", status=403)
+
+    if request.method == 'POST':
+        email = request.POST.get('email')
+
+        if email:
+            try:
+                user = User.objects.get(email=email)
+                team.members.add(user)
+            except User.DoesNotExist:
+                pass
+
+    return render(request, 'biolib/team_manage_members.html', {
+        'team': team
+    })
+
+
+@login_required
+def team_remove_member(request, team_id, user_id):
+    """
+    Retirer un membre d'une équipe (cheffe uniquement).
+    """
+    team = get_object_or_404(Team, id=team_id)
+
+    if team.leader != request.user:
+        return HttpResponse("Accès refusé", status=403)
+
+    user = get_object_or_404(User, id=user_id)
+
+    if user == team.leader:
+        return HttpResponse("Impossible de retirer la cheffe", status=400)
+
+    if request.method == 'POST':
+        team.members.remove(user)
+
+    return redirect('team_manage_members', team_id=team.id)
+
+
+@login_required
+def team_delete(request, team_id):
+    """
+    Supprimer une équipe (cheffe uniquement).
+    """
+    team = get_object_or_404(Team, id=team_id)
+
+    if team.leader != request.user:
+        return HttpResponse("Accès refusé", status=403)
+
+    if request.method == 'POST':
+        team.delete()
+        return redirect('teams')
+
+    return render(request, 'biolib/team_confirm_delete.html', {
+        'team': team
+    })

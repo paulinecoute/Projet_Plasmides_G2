@@ -1,168 +1,176 @@
 {% extends "biolib/base.html" %}
 
-{% block title %}Espace personnel{% endblock %}
+{% block title %}Mon espace personnel{% endblock %}
 
 {% block content %}
+<div class="container-fluid px-lg-5">
 
-<!-- En-tête utilisateur -->
-<div class="mb-5">
-    <h2>Espace personnel</h2>
-    <p class="text-muted mb-0">
-        Gestion de vos données, campagnes et informations personnelles.
-    </p>
-</div>
-
-<!-- Informations utilisateur -->
-<div class="card shadow-sm mb-4">
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <p><strong>Nom d’utilisateur :</strong> {{ user.username }}</p>
-                <p><strong>Email :</strong> {{ user.email|default:"Non renseigné" }}</p>
-            </div>
-            <div class="col-md-6">
-                <p><strong>Rôle :</strong> Utilisateur</p>
-                <p><strong>Dernière connexion :</strong> {{ user.last_login }}</p>
-            </div>
-        </div>
-        <a href="#" class="btn btn-sm btn-outline-secondary mt-2">
-            Modifier mes informations
-        </a>
-    </div>
-</div>
-
-<!-- Vue synthèse -->
-<div class="row g-4 mb-5">
-
-    <div class="col-md-6 col-lg-3">
-        <div class="card h-100 shadow-sm text-center">
-            <div class="card-body">
-                <h6 class="text-muted">Templates</h6>
-                <h3 class="fw-bold">–</h3>
-                <p class="text-muted small mb-0">Créés par vous</p>
-            </div>
-        </div>
+    <!-- En-tête -->
+    <div class="mb-5">
+        <h2 class="fw-bold mb-1">
+            <i class="bi bi-person-circle me-2"></i>
+            Mon espace personnel
+        </h2>
+        <p class="text-muted mb-0">
+            Gestion de vos données, campagnes et informations personnelles.
+        </p>
     </div>
 
-    <div class="col-md-6 col-lg-3">
-        <div class="card h-100 shadow-sm text-center">
-            <div class="card-body">
-                <h6 class="text-muted">Collections</h6>
-                <h3 class="fw-bold">–</h3>
-                <p class="text-muted small mb-0">Plasmides personnels</p>
+    <!-- Carte profil -->
+    <div class="card shadow-sm mb-5">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
+                             style="width: 56px; height: 56px; font-size: 1.5rem;">
+                            {{ user.username|first|upper }}
+                        </div>
+                        <div>
+                            <h5 class="mb-0 fw-semibold">{{ user.username }}</h5>
+                            <div class="text-muted small">{{ user.email|default:"Email non renseigné" }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <div class="text-muted small">
+                        Dernière connexion<br>
+                        <span class="fw-semibold">{{ user.last_login }}</span>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <div class="col-md-6 col-lg-3">
-        <div class="card h-100 shadow-sm text-center">
-            <div class="card-body">
-                <h6 class="text-muted">Campagnes</h6>
-                <h3 class="fw-bold">–</h3>
-                <p class="text-muted small mb-0">Simulations lancées</p>
-            </div>
-        </div>
-    </div>
+            <hr class="my-4">
 
-    <div class="col-md-6 col-lg-3">
-        <div class="card h-100 shadow-sm text-center">
-            <div class="card-body">
-                <h6 class="text-muted">Équipes</h6>
-                <h3 class="fw-bold">–</h3>
-                <p class="text-muted small mb-0">Appartenances</p>
-            </div>
-        </div>
-    </div>
-
-</div>
-
-<!-- Gestion des données -->
-<div class="row g-4">
-
-    <div class="col-md-6 col-lg-4">
-        <div class="card shadow-sm h-100">
-            <div class="card-body">
-                <h5 class="card-title">Mes templates</h5>
-                <p class="card-text text-muted">
-                    Templates de campagnes que vous avez créés ou importés.
-                </p>
-                <a href="#" class="btn btn-sm btn-outline-primary">
-                    Gérer
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-6 col-lg-4">
-        <div class="card shadow-sm h-100">
-            <div class="card-body">
-                <h5 class="card-title">Mes collections</h5>
-                <p class="card-text text-muted">
-                    Collections de plasmides personnelles ou partagées.
-                </p>
-                <a href="#" class="btn btn-sm btn-outline-primary">
-                    Gérer
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-6 col-lg-4">
-        <div class="card shadow-sm h-100">
-            <div class="card-body">
-                <h5 class="card-title">Tables de correspondance</h5>
-                <p class="card-text text-muted">
-                    Correspondances identifiant / nom / type.
-                </p>
-                <a href="#" class="btn btn-sm btn-outline-primary">
-                    Gérer
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-6 col-lg-4">
-        <div class="card shadow-sm h-100">
-            <div class="card-body">
-                <h5 class="card-title">Campagnes</h5>
-                <p class="card-text text-muted">
-                    Historique des campagnes et résultats.
-                </p>
-                <a href="#" class="btn btn-sm btn-outline-primary">
-                    Consulter
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-6 col-lg-4">
-        <div class="card shadow-sm h-100">
-            <div class="card-body">
-                <h5 class="card-title">Plasmides produits</h5>
-                <p class="card-text text-muted">
-                    Plasmides générés par vos simulations.
-                </p>
-                <a href="#" class="btn btn-sm btn-outline-primary">
-                    Consulter
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-6 col-lg-4">
-        <div class="card shadow-sm h-100 border-secondary">
-            <div class="card-body">
-                <h5 class="card-title">Équipes</h5>
-                <p class="card-text text-muted">
-                    Gestion des équipes et des accès partagés.
-                </p>
+            <div class="text-end">
                 <a href="#" class="btn btn-sm btn-outline-secondary">
-                    Gérer
+                    <i class="bi bi-pencil me-1"></i>
+                    Modifier mes informations
                 </a>
             </div>
         </div>
     </div>
 
-</div>
+    <!-- Statistiques -->
+    <div class="row g-4 mb-5">
 
+        <div class="col-md-6 col-xl-3">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <i class="bi bi-file-earmark-text fs-2 text-primary mb-2"></i>
+                    <h6 class="text-muted">Templates</h6>
+                    <h3 class="fw-bold">–</h3>
+                    <p class="text-muted small">Créés par vous</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <i class="bi bi-collection fs-2 text-primary mb-2"></i>
+                    <h6 class="text-muted">Collections</h6>
+                    <h3 class="fw-bold">–</h3>
+                    <p class="text-muted small">Plasmides personnels</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <i class="bi bi-bar-chart fs-2 text-primary mb-2"></i>
+                    <h6 class="text-muted">Campagnes</h6>
+                    <h3 class="fw-bold">–</h3>
+                    <p class="text-muted small">Simulations lancées</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <i class="bi bi-people fs-2 text-primary mb-2"></i>
+                    <h6 class="text-muted">Équipes</h6>
+                    <h3 class="fw-bold">{{ teams_count }}</h3>
+                    <p class="text-muted small">Appartenances</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Actions -->
+    <h4 class="fw-semibold mb-4">
+        <i class="bi bi-grid me-2"></i>
+        Gestion de mes données
+    </h4>
+
+    <div class="row g-4">
+
+        <div class="col-md-6 col-xl-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5>Mes templates</h5>
+                    <p class="text-muted">Templates de campagnes que vous avez créés.</p>
+                    <a href="#" class="btn btn-sm btn-outline-primary">Gérer</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5>Mes collections</h5>
+                    <p class="text-muted">Collections de plasmides personnelles ou partagées.</p>
+                    <a href="#" class="btn btn-sm btn-outline-primary">Gérer</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5>Tables de correspondance</h5>
+                    <p class="text-muted">Correspondances identifiant / nom / type.</p>
+                    <a href="#" class="btn btn-sm btn-outline-primary">Gérer</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5>Campagnes</h5>
+                    <p class="text-muted">Historique des campagnes et résultats.</p>
+                    <a href="#" class="btn btn-sm btn-outline-primary">Consulter</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5>Plasmides produits</h5>
+                    <p class="text-muted">Plasmides générés par vos simulations.</p>
+                    <a href="#" class="btn btn-sm btn-outline-primary">Consulter</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-4">
+            <div class="card shadow-sm h-100 border-secondary">
+                <div class="card-body">
+                    <h5>Équipes</h5>
+                    <p class="text-muted">Gestion des équipes et accès partagés.</p>
+                    <a href="{% url 'teams' %}" class="btn btn-sm btn-outline-primary">
+                        Gérer
+                    </a>                    
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
 {% endblock %}

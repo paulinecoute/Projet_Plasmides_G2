@@ -47,3 +47,24 @@ urlpatterns = [
     path('simulation/demo/', views.simulation_result, name='simulation_demo'),
     path('simulation/<int:pk>/csv/', views.download_simulation_csv, name='download_simulation_csv'),
 ]
+
+# ==============================================================================
+# ÉQUIPES
+# ==============================================================================
+
+urlpatterns += [
+    path('teams/', views.team_list, name='teams'),
+    path('teams/create/', views.team_create, name='team_create'),
+    path('teams/<int:team_id>/', views.team_detail, name='team_detail'),
+    path('teams/<int:team_id>/manage/', views.team_manage_members, name='team_manage_members'),
+    path(
+        'teams/<int:team_id>/remove/<int:user_id>/',
+        views.team_remove_member,
+        name='team_remove_member'
+    ),
+    path(
+        'teams/<int:team_id>/delete/',
+        views.team_delete,
+        name='team_delete'
+    ),
+]
