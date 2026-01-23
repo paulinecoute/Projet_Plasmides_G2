@@ -5,3 +5,4 @@ insillyclo
 openpyxl
 pydot
 pyparsing
+biopython

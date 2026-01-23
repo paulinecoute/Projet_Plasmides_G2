@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="container mt-5">
-    <h1>Résultats de la simulation #{{ simulation.id }} : {{ simulation.template.name }}</h1>
+    <h1>Résultats de la simulation #{{ simulation.id }}</h1>
 
     <div class="card mb-4">
         <div class="card-header">
@@ -23,7 +23,16 @@
                 {% endif %}
             </p>
 
-            <p><strong>Template utilisé :</strong> {{ simulation.template.name }} (Enzyme: {{ simulation.template.enzyme }})</p>
+            <p>
+                <strong>Fichier Template :</strong>
+                {% if simulation.template_file %}
+                    {{ simulation.template_file.name }}
+                {% else %}
+                    <em>Inconnu</em>
+                {% endif %}
+                <br>
+                <strong>Enzyme :</strong> {{ simulation.enzyme }}
+            </p>
         </div>
     </div>
 
@@ -37,61 +46,81 @@
             <div class="accordion" id="resultFilesAccordion">
 
                 <div class="accordion-item">
-                    <h2 class="accordion-header">
-                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#dilutionFiles">
-                            Dilution Files (CSV/Excel)
+                    <h2 class="accordion-header" id="headingZip">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#zipFiles" aria-expanded="true" aria-controls="zipFiles">
+                            <i class="fas fa-file-archive me-2"></i> <strong>Tout télécharger (.zip)</strong>
                         </button>
                     </h2>
-                    <div id="dilutionFiles" class="accordion-collapse collapse show" data-bs-parent="#resultFilesAccordion">
+                    <div id="zipFiles" class="accordion-collapse collapse show" aria-labelledby="headingZip" data-bs-parent="#resultFilesAccordion">
                         <div class="accordion-body">
-                            <p>Volumes à prélever pour chaque partie génétique.</p>
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <p class="mb-0">Ce dossier compressé contient l'ensemble des résultats :</p>
+                                    <ul class="mb-0 text-muted small">
+                                        <li>🧬 Tous les fichiers GenBank (.gb)</li>
+                                        <li>📊 Les fichiers de dilutions (.csv)</li>
+                                        <li>📄 Le rapport HTML</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <a href="{% url 'download_simulation_zip' pk=simulation.id %}" class="btn btn-primary">
+                                        <i class="fas fa-download"></i> Télécharger le ZIP
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingDilution">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#dilutionFiles" aria-expanded="false" aria-controls="dilutionFiles">
+                            <i class="fas fa-file-csv me-2"></i> Fichier de Dilutions (CSV)
+                        </button>
+                    </h2>
+                    <div id="dilutionFiles" class="accordion-collapse collapse" aria-labelledby="headingDilution" data-bs-parent="#resultFilesAccordion">
+                        <div class="accordion-body">
+                            <p>Tableau contenant les volumes à prélever pour chaque partie.</p>
                             <ul>
                                 <li>dilutions_calculated.csv</li>
                             </ul>
 
                             <a href="{% url 'download_simulation_csv' pk=simulation.id %}" class="btn btn-sm btn-success">
-                                <i class="fas fa-download"></i> Télécharger le CSV
+                                <i class="fas fa-download"></i> Télécharger le CSV seul
                             </a>
                         </div>
                     </div>
                 </div>
 
                 <div class="accordion-item">
-                    <h2 class="accordion-header">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#gelSimulation">
-                            Gel Simulation (Image)
+                    <h2 class="accordion-header" id="headingGel">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#gelSimulation" aria-expanded="false" aria-controls="gelSimulation">
+                            <i class="fas fa-image me-2"></i> Gel Virtuel (Digestion)
                         </button>
                     </h2>
-                    <div id="gelSimulation" class="accordion-collapse collapse" data-bs-parent="#resultFilesAccordion">
+                    <div id="gelSimulation" class="accordion-collapse collapse" aria-labelledby="headingGel" data-bs-parent="#resultFilesAccordion">
                         <div class="accordion-body">
-                            <p>Simulation virtuelle du gel d'électrophorèse.</p>
+                            <p>Visualisation de la digestion virtuelle.</p>
 
                             <div class="text-center mb-3">
-                                <img src="{{ MEDIA_URL }}simulations/{{ simulation.id }}/simulated_gel.png" alt="Gel Simulation" class="img-fluid border rounded" style="max-height: 400px;">
+                                {% if simulation.result_file %}
+                                    <img src="{{ MEDIA_URL }}{{ simulation.result_file }}"
+                                         alt="Résultat Simulation"
+                                         class="img-fluid border rounded"
+                                         style="max-height: 500px; background-color: white;">
+                                {% else %}
+                                    <div class="alert alert-warning">Image non disponible.</div>
+                                {% endif %}
                             </div>
 
-                            <ul>
-                                <li>simulated_gel.png</li>
-                            </ul>
-                            <a href="{{ MEDIA_URL }}simulations/{{ simulation.id }}/simulated_gel.png" target="_blank" class="btn btn-sm btn-primary">
-                                <i class="fas fa-eye"></i> Voir en grand
-                            </a>
-                            <a href="{{ MEDIA_URL }}simulations/{{ simulation.id }}/simulated_gel.png" download class="btn btn-sm btn-secondary">
-                                <i class="fas fa-download"></i> Télécharger l'image
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <h2 class="accordion-header">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#plasmidMaps">
-                            Plasmid Maps & Autres (Non générés par le Mock)
-                        </button>
-                    </h2>
-                    <div id="plasmidMaps" class="accordion-collapse collapse" data-bs-parent="#resultFilesAccordion">
-                        <div class="accordion-body text-muted">
-                            <p>Ces fichiers seront disponibles lorsque l'algorithme complet sera connecté (Actuellement en mode Démo/Mock).</p>
+                            {% if simulation.result_file %}
+                                <a href="{{ MEDIA_URL }}{{ simulation.result_file }}" target="_blank" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye"></i> Voir en grand
+                                </a>
+                                <a href="{{ MEDIA_URL }}{{ simulation.result_file }}" download class="btn btn-sm btn-secondary">
+                                    <i class="fas fa-download"></i> Télécharger l'image
+                                </a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -99,7 +128,10 @@
             </div>
             {% else %}
                 <div class="alert alert-warning">
-                    Les fichiers ne sont pas disponibles car la simulation n'est pas terminée.
+                    <i class="fas fa-hourglass-half"></i> Les fichiers ne sont pas encore disponibles.
+                    {% if simulation.status == 'FAILED' %}
+                    <br><strong>La simulation a rencontré une erreur. Veuillez vérifier vos fichiers d'entrée.</strong>
+                    {% endif %}
                 </div>
             {% endif %}
 

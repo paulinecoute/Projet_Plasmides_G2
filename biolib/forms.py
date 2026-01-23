@@ -53,12 +53,24 @@ TemplatePartFormSet = forms.inlineformset_factory(
     can_delete=True
 )
 
-
 class SimulationForm(forms.ModelForm):
     class Meta:
         model = Simulation
-        fields = ['template']
+        fields = ['template_file', 'enzyme', 'campaign_file']
 
     def __init__(self, *args, **kwargs):
         super(SimulationForm, self).__init__(*args, **kwargs)
-        self.fields['template'].widget.attrs.update({'class': 'form-select form-select-lg'})
+
+        # Template -> CSV
+        self.fields['template_file'].widget.attrs.update({
+            'class': 'form-control',
+            'accept': '.csv, .xlsx, .xls'
+        })
+
+        self.fields['enzyme'].widget.attrs.update({'class': 'form-select'})
+
+        # Campagne -> Excel
+        self.fields['campaign_file'].widget.attrs.update({
+            'class': 'form-control',
+            'accept': '.csv, .xls, .xlsx'
+        })

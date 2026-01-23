@@ -1,0 +1,69 @@
+[
+    {
+        "plasmid_id": "mastermix",
+        "h2o_volume": 0,
+        "pYTK053__10x__": 4.0,
+        "buffer": 8.0,
+        "pMYT039__10x__": 4.0,
+        "pYTK033__10x__": 4.0
+    },
+    {
+        "plasmid_id": "pMYT039__10x__",
+        "h2o_volume": 7.833,
+        "pMYT039": 2.0
+    },
+    {
+        "plasmid_id": "pYTK009__10x__",
+        "h2o_volume": 5.884,
+        "pYTK009": 1.0
+    },
+    {
+        "plasmid_id": "pYTK014__10x__",
+        "h2o_volume": 5.826,
+        "pYTK014": 1.0
+    },
+    {
+        "plasmid_id": "pYTK018__10x__",
+        "h2o_volume": 5.826,
+        "pYTK018": 1.0
+    },
+    {
+        "plasmid_id": "pYTK027__10x__",
+        "h2o_volume": 5.827,
+        "pYTK027": 1.0
+    },
+    {
+        "plasmid_id": "pYTK033__10x__",
+        "h2o_volume": 11.607,
+        "pYTK033": 2.0
+    },
+    {
+        "plasmid_id": "pYTK053__10x__",
+        "h2o_volume": 7.518,
+        "pYTK053": 1.0
+    },
+    {
+        "plasmid_id": "pSA001",
+        "h2o_volume": 4.0,
+        "pYTK009__10x__": 1.0,
+        "mastermix": 5.0
+    },
+    {
+        "plasmid_id": "pSA002",
+        "h2o_volume": 4.0,
+        "pYTK014__10x__": 1.0,
+        "mastermix": 5.0
+    },
+    {
+        "plasmid_id": "pSA003",
+        "h2o_volume": 4.0,
+        "pYTK018__10x__": 1.0,
+        "mastermix": 5.0
+    },
+    {
+        "plasmid_id": "pSA004",
+        "h2o_volume": 4.0,
+        "pYTK027__10x__": 1.0,
+        "mastermix": 5.0
+    }
+]

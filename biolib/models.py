@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.base_user import BaseUserManager
 from django.conf import settings
 from Bio.Restriction import AllEnzymes # Nécessite Biopython installé
+from django.core.validators import FileExtensionValidator
 
 # ==============================================================================
 # 1. GESTION UTILISATEURS (Branche AGASH)
@@ -174,11 +175,42 @@ class TemplatePart(models.Model):
         return f"{self.template.name} - {self.name} ({self.order})"
 
 class Simulation(models.Model):
-    """ Vient de la branche AGASH : Historique des exécutions """
-    STATUS_CHOICES = (('PENDING', 'En attente'), ('COMPLETED', 'Terminé'), ('FAILED', 'Erreur'))
-
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
-    template = models.ForeignKey(CampaignTemplate, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    status = models.CharField(max_length=20, default='PENDING')
     date_run = models.DateTimeField(auto_now_add=True)
-    result_file = models.FileField(upload_to='simulations/', blank=True, null=True)
-    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='PENDING')
+    result_file = models.CharField(max_length=255, blank=True, null=True)
+
+    # --- MODIFICATIONS ---
+
+    # 1. Le lien vers CampaignTemplate devient optionnel ou obsolète
+    # (On le garde en null=True au cas où vous changeriez d'avis, sinon on peut le supprimer)
+    template = models.ForeignKey('CampaignTemplate', on_delete=models.SET_NULL, null=True, blank=True)
+
+    # 2. Le fichier Template (XLSX) uploadé directement
+    template_file = models.FileField(
+        upload_to='simulation_templates/',
+        verbose_name="Fichier Template (Excel)",
+        validators=[FileExtensionValidator(allowed_extensions=['csv', 'xls', 'xlsx'])],
+        null=True, blank=False # Obligatoire
+    )
+
+    # 3. L'enzyme (Puisqu'on n'a plus l'objet Template pour nous le dire, il faut le demander)
+    ENZYME_CHOICES = [
+        ('BsaI', 'BsaI (Golden Gate)'),
+        ('BsmBI', 'BsmBI (Golden Gate)'),
+        ('BbsI', 'BbsI (Golden Gate)'),
+        ('SapI', 'SapI'),
+        ('NotI', 'NotI (BioBrick)'),
+    ]
+    enzyme = models.CharField(max_length=50, choices=ENZYME_CHOICES, default='BsaI')
+
+    # 4. Le fichier Campagne (CSV) - Déjà fait avant
+    campaign_file = models.FileField(
+        upload_to='campaigns_inputs/',
+        verbose_name="Fichier Campagne (CSV)",
+        validators=[FileExtensionValidator(allowed_extensions=['xls', 'xlsx', 'csv'])],
+        null=True, blank=False
+    )
+
+    def __str__(self):
+        return f"Simu #{self.id} ({self.date_run})"

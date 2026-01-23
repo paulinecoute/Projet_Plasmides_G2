@@ -46,6 +46,7 @@ urlpatterns = [
     path('simulations/', views.simulation_list, name='simulation_list'),
     path('simulation/demo/', views.simulation_result, name='simulation_demo'),
     path('simulation/<int:pk>/csv/', views.download_simulation_csv, name='download_simulation_csv'),
+    path('simulation/<int:pk>/download_zip/', views.download_simulation_zip, name='download_simulation_zip')
 ]
 
 # ==============================================================================

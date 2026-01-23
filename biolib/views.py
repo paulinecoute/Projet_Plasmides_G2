@@ -11,20 +11,26 @@ from django.http import Http404
 from .forms import SimulationForm
 from .models import Simulation
 from types import SimpleNamespace
+import traceback
+import glob
 
 import os
 import pathlib
 
 from .forms import CampaignTemplateForm, TemplatePartFormSet
-from .models import CampaignTemplate
+from .models import CampaignTemplate, Plasmid
 
 import openpyxl
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 
 
-#import insillyclo.data_source
-#import insillyclo.observer
-#import insillyclo.simulator
+import insillyclo.data_source
+try:
+    import insillyclo.observer
+    BaseObserver = insillyclo.observer.InSillyCloObserver
+except ImportError:
+    class BaseObserver: pass
+import insillyclo.simulator
 
 
 def home(request):
@@ -224,59 +230,98 @@ class ConsoleObserver:
     def notify_progress(self, value):
         pass
 
-# ==============================================================================
-# 1. LISTE DES SIMULATIONS (C'est celle-ci qui vous manquait !)
-# ==============================================================================
-def simulation_list(request):
-    """ Affiche le tableau de toutes les simulations de l'utilisateur """
-    simulations = Simulation.objects.filter(user=request.user).order_by('-date_run')
-    return render(request, 'biolib/simulation_list.html', {'simulations': simulations})
+
 
 # ==============================================================================
 # 2. CRÉATION D'UNE SIMULATION
 # ==============================================================================
+
+class DjangoConsoleObserver(insillyclo.observer.InSillyCloCliObserver):
+    def __init__(self):
+        # On initialise avec debug=False pour ne pas noyer la console
+        super().__init__(debug=False, fail_on_error=True)
+
+    def notify_message(self, message):
+        # On redirige les messages simples vers la console Django
+        print(f"[INSILLYCLO] {message}")
+
+@login_required
+def simulation_list(request):
+    simulations = Simulation.objects.filter(user=request.user).order_by('-date_run')
+    return render(request, 'biolib/simulation_list.html', {'simulations': simulations})
+
+@login_required
 def create_simulation(request):
-    """ Gère le formulaire et lance le script de simulation """
     if request.method == 'POST':
-        form = SimulationForm(request.POST)
+        form = SimulationForm(request.POST, request.FILES)
 
         if form.is_valid():
-            # A. Création en base
+            # 1. Création de la simulation
             simulation = form.save(commit=False)
             simulation.user = request.user
             simulation.status = 'RUNNING'
             simulation.save()
 
-            # B. Dossiers
             output_folder = os.path.join(settings.MEDIA_ROOT, 'simulations', str(simulation.id))
-            template = simulation.template
-            gb_plasmids = []
 
-            # C. Lancement du script
+            # Fichiers Template et Campagne
+            path_xlsx = simulation.template_file.path
+            path_csv_list = [simulation.campaign_file.path] if simulation.campaign_file else []
+
+            # 2. RÉCUPÉRATION DES PLASMIDES (Le point critique)
+            # On crée une liste vide
+            gb_plasmids_paths = []
+
+            # On récupère TOUS les objets de la base qui ont un fichier
+            # (Si votre modèle s'appelle 'Part', mettez 'Part.objects.all()')
+            all_parts = Plasmid.objects.all()
+
+            print(f"DEBUG: Vérification de {all_parts.count()} éléments en base...")
+
+            for p in all_parts:
+                # Si votre champ s'appelle 'genbank_file'
+                if p.genbank_file:
+                    file_path = p.genbank_file.path
+                    if os.path.exists(file_path):
+                        gb_plasmids_paths.append(file_path)
+
+            print(f"DEBUG: {len(gb_plasmids_paths)} fichiers .gb envoyés au moteur.")
+
             try:
-                observer = ConsoleObserver()
-                print(f"Lancement de la simulation #{simulation.id}...")
+                # 3. LANCEMENT DU CALCUL
+                observer = DjangoConsoleObserver()
+                print(f"--- DÉBUT SIMULATION #{simulation.id} ---")
 
                 compute_all(
                     observer=observer,
                     settings=None,
-                    input_template_filled=template.file.path if template.file else "No_File",
-                    input_parts_files=[],
-                    gb_plasmids=gb_plasmids,
+                    input_template_filled=path_xlsx,
+                    input_parts_files=path_csv_list,
+
+                    gb_plasmids=gb_plasmids_paths,   # <--- On envoie tout le stock de fichiers
+
                     output_dir=output_folder,
                     data_source="Django",
-                    enzyme_names=template.enzyme
+                    enzyme_names=simulation.enzyme,
+                    default_mass_concentration=200
                 )
 
-                # D. Succès
+                # 4. SUCCÈS
                 simulation.status = 'COMPLETED'
-                simulation.result_file = f"simulations/{simulation.id}/simulated_gel.png"
-                simulation.save()
 
+                # Vérification du fichier de sortie
+                if os.path.exists(os.path.join(output_folder, 'digestion.svg')):
+                     simulation.result_file = f"simulations/{simulation.id}/digestion.svg"
+                elif os.path.exists(os.path.join(output_folder, 'dilutions_calculated.csv')):
+                     simulation.result_file = f"simulations/{simulation.id}/dilutions_calculated.csv"
+
+                simulation.save()
                 return redirect('simulation_result', pk=simulation.id)
 
             except Exception as e:
-                print(f"ERREUR PENDANT LA SIMULATION : {e}")
+                # 5. ECHEC
+                print("\n!!! ERREUR INSILLYCLO !!!")
+                traceback.print_exc()
                 simulation.status = 'FAILED'
                 simulation.save()
                 return redirect('simulation_list')
@@ -285,7 +330,6 @@ def create_simulation(request):
         form = SimulationForm()
 
     return render(request, 'biolib/create_simulation.html', {'form': form})
-
 # ==============================================================================
 # 3. RÉSULTAT D'UNE SIMULATION
 # ==============================================================================
@@ -305,25 +349,52 @@ def simulation_result(request, pk=None):
             user=request.user
         )
 
-    return render(request, 'biolib/simulation_result.html', {
-        'simulation': simulation
-    })
+    return render(request, 'biolib/simulation_result.html', {'simulation': simulation})
 
 def download_simulation_csv(request, pk):
-    """ Permet de télécharger le fichier CSV de dilutions de manière sécurisée """
-    # 1. On vérifie que la simulation appartient bien à l'utilisateur
-    simulation = get_object_or_404(Simulation, pk=pk, user=request.user)
+    simulation = get_object_or_404(Simulation, pk=pk)
 
-    # 2. On construit le chemin du fichier
-    file_path = os.path.join(settings.MEDIA_ROOT, 'simulations', str(simulation.id), 'dilutions_calculated.csv')
+    # Construction sécurisée du chemin
+    output_folder = os.path.join(settings.MEDIA_ROOT, 'simulations', str(pk))
+    file_path = os.path.join(output_folder, 'dilutions_calculated.csv')
 
-    # 3. On vérifie si le fichier existe physiquement
-    if os.path.exists(file_path):
-        # On renvoie le fichier en forçant le téléchargement (as_attachment=True)
-        response = FileResponse(open(file_path, 'rb'), as_attachment=True, filename=f"Dilutions_Simulation_{simulation.id}.csv")
+    # Vérification Dossier ET Fichier
+    if not os.path.exists(output_folder):
+        print(f"DEBUG: Dossier introuvable: {output_folder}")
+        raise Http404("Le dossier de simulation n'a pas été créé (Erreur script python).")
+
+    if not os.path.exists(file_path):
+        print(f"DEBUG: Fichier introuvable: {file_path}")
+        raise Http404("Le fichier CSV n'a pas été généré.")
+
+    # Envoi du fichier
+    with open(file_path, 'rb') as fh:
+        response = HttpResponse(fh.read(), content_type="text/csv")
+        response['Content-Disposition'] = 'attachment; filename="dilutions.csv"'
+        return response
+
+def download_simulation_zip(request, pk):
+    """
+    Permet de télécharger le fichier .zip contenant tous les résultats
+    de la simulation spécifiée par pk.
+    """
+    # 1. Construction du chemin vers le fichier ZIP
+    # Structure attendue : racine_projet/simulation/simulation_36/simulation_36_archive.zip
+    nom_dossier = f"simulation_{pk}"
+    nom_fichier_zip = f"{nom_dossier}_archive.zip"
+
+    chemin_complet = os.path.join(settings.BASE_DIR, 'simulation', nom_dossier, nom_fichier_zip)
+
+    # 2. Vérification de l'existence du fichier
+    if os.path.exists(chemin_complet):
+        # 3. Envoi du fichier au navigateur
+        response = FileResponse(open(chemin_complet, 'rb'), content_type='application/zip')
+        # L'en-tête 'attachment' force le téléchargement au lieu de l'affichage
+        response['Content-Disposition'] = f'attachment; filename="{nom_fichier_zip}"'
         return response
     else:
-        raise Http404("Le fichier CSV n'a pas été trouvé sur le serveur.")
+        # Si le zip n'existe pas (script pas encore lancé ou erreur)
+        raise Http404(f"Le fichier ZIP pour la simulation #{pk} est introuvable sur le serveur.")
 
 # ==============================================================================
 # GESTION DES ÉQUIPES

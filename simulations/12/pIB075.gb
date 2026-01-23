@@ -1,0 +1,163 @@
+LOCUS       pIB075                  3646 bp    dna     circular UNK 23-JAN-2026
+DEFINITION  pUPR-Venus-tADH1.
+ACCESSION   pIB075
+VERSION     pIB075
+KEYWORDS    .
+SOURCE      .
+  ORGANISM  .
+            .
+COMMENT     Generated using InSillyClo v1.1.0
+FEATURES             Location/Qualifiers
+     misc_feature    16..158
+                     /label="Con5"
+                     /ApEinfo_fwdcolor="#FFFD6C"
+                     /ApEinfo_revcolor="#FFFD6C"
+                     /ApEinfo_graphicformat="arrow_data {{0 1 2 0 0 -1} {} 0}
+                     width 5 offset 0"
+     misc_feature    166..190
+                     /label="Con5 scar"
+                     /ApEinfo_fwdcolor="#FFFD6C"
+                     /ApEinfo_revcolor="#FFFD6C"
+                     /ApEinfo_graphicformat="arrow_data {{0 1 2 0 0 -1} {} 0}
+                     width 5 offset 0"
+     rep_origin      complement(2871..3634)
+                     /label="ColE1"
+                     /ApEinfo_fwdcolor="#7F7F7F"
+                     /ApEinfo_revcolor="#7F7F7F"
+                     /ApEinfo_graphicformat="arrow_data {{0 1 2 0 0 -1} {} 0}
+                     width 5 offset 0"
+     protein_bind    159..169
+                     /label="BsmBI"
+                     /ApEinfo_fwdcolor="#00FF15"
+                     /ApEinfo_revcolor="#E72E00"
+                     /ApEinfo_graphicformat="arrow_data {{0 1 2 0 0 -1} {} 0}
+                     width 5 offset 0"
+     protein_bind    102..105
+                     /label="BsmBI"
+     rep_origin      complement(2871..3634)
+                     /direction=LEFT
+                     /label="ColE1"
+     misc_binding    272..303
+                     /allele="UPR Element (UPRE) Saccharomyces cerevisiae "
+                     /bound_moiety="UPRE"
+     promoter        395..644
+                     /label="pCYC Yeast Promoter"
+                     /note="The promoter from the yeast gene CYC1. Activity
+                     characterized here:
+                     http://dx.doi.org/10.1016/0378-1119(95)00037-7"
+     promoter        506..608
+                     /label="CYC1 minimal promoter"
+     primer_bind     complement(615..644)
+                     /label="pUPR 3a Rev"
+     CDS             168..171
+                     /codon_start=1
+                     /product="monomeric derivative of DsRed fluorescent protein
+                     (Shaner et al., 2004)"
+                     /label="mCherry"
+                     /note="mammalian codon-optimized"
+                     /translation="V"
+     CDS             649..1359
+                     /label="Venus"
+                     /ApEinfo_fwdcolor="#74FF7B"
+                     /ApEinfo_revcolor="#74FF7B"
+                     /ApEinfo_graphicformat="arrow_data {{0 1 2 0 0 -1} {} 0}
+                     width 5 offset 0"
+     terminator      1375..1599
+                     /label="ScADH1 Terminator"
+                     /ApEinfo_fwdcolor="#FF8EFF"
+                     /ApEinfo_revcolor="#FF8EFF"
+                     /ApEinfo_graphicformat="arrow_data {{0 1 2 0 0 -1} {} 0}
+                     width 5 offset 0"
+     misc_feature    1615..1757
+                     /label="ConE"
+                     /ApEinfo_fwdcolor="#FFFD6C"
+                     /ApEinfo_revcolor="#FFFD6C"
+                     /ApEinfo_graphicformat="arrow_data {{0 1 2 0 0 -1} {} 0}
+                     width 5 offset 0"
+     protein_bind    complement(1604..1614)
+                     /label="BsmBI"
+                     /ApEinfo_fwdcolor="#00FF15"
+                     /ApEinfo_revcolor="#E72E00"
+                     /ApEinfo_graphicformat="arrow_data {{0 1 2 0 0 -1} {} 0}
+                     width 5 offset 0"
+     CDS             complement(1882..2739)
+                     /label="AmpR"
+                     /ApEinfo_fwdcolor="#9F4240"
+                     /ApEinfo_revcolor="#9F4240"
+                     /ApEinfo_graphicformat="arrow_data {{0 1 2 0 0 -1} {} 0}
+                     width 5 offset 0"
+     promoter        complement(2740..2870)
+                     /label="AmpR Promoter"
+                     /ApEinfo_fwdcolor="#FF6666"
+                     /ApEinfo_revcolor="#FF6666"
+                     /ApEinfo_graphicformat="arrow_data {{0 1 2 0 0 -1} {} 0}
+                     width 5 offset 0"
+     terminator      complement(1785..1881)
+                     /label="AmpR Terminator"
+                     /ApEinfo_fwdcolor="#FF6666"
+                     /ApEinfo_revcolor="#FF6666"
+                     /ApEinfo_graphicformat="arrow_data {{0 1 2 0 0 -1} {} 0}
+                     width 5 offset 0"
+ORIGIN
+        1 gaattcgcat ctagaacgca caaggtcagg gcactcatgc gacaatcaac tcgatgcatg
+       61 atccgcacca ttgtcgaggg gccagcgtca atagtgccga tgaccacaga cccggttaag
+      121 acatagccga atggagccgc gccgaccaca gaatgatacg tctcaaagtg aataaagctc
+      181 cacacagtcg aacgccatta ttatcatgac attaacctat aaaaataggc gtatcacgag
+      241 gccctttcgt cttcaagaat tgatctgtcg acaggaactg gacagcgtgt cgaaaaagct
+      301 cgacaggaac tggacagcgt gtcgaaaaag ctcgacagga actggacagc gtgtcgaaaa
+      361 agctcgacag gaactggaca gcgtgtcgaa aaagctcgag cagatccgcc aggcgtgtat
+      421 atatagcgtg gatggccagg caactttagt gctgacacat acaggcatat atatatgtgt
+      481 gcgacgacac atgatcatat ggcatgcatg tgctctgtat gtatataaaa ctcttgtttt
+      541 cttcttttct ctaaatattc tttccttata cattaggtcc tttgtagcat aaattactat
+      601 acttctatag acacgcaaac acaaatacac acactaaatt aatatatgtc taaaggtgaa
+      661 gaattattca ctggtgttgt cccaattttg gttgaattag atggtgatgt taatggtcac
+      721 aaattttctg tctccggtga aggtgaaggt gatgctactt acggtaaatt gaccttaaaa
+      781 ttgatttgta ctactggtaa attgccagtt ccatggccaa ccttagtcac tactttaggt
+      841 tatggtttgc aatgttttgc tagataccca gatcatatga aacaacatga ctttttcaag
+      901 tctgccatgc cagaaggtta tgttcaagaa agaactattt ttttcaaaga tgacggtaac
+      961 tacaagacca gagctgaagt caagtttgaa ggtgatacct tagttaatag aatcgaatta
+     1021 aaaggtattg attttaaaga aggtggtaac attttaggtc acaaattgga atacaactat
+     1081 aactctcaca atgtttacat cactgctgac aaacaaaaga atggtatcaa agctaacttc
+     1141 aaaattagac acaacattga agatggtggt gttcaattag ctgaccatta tcaacaaaat
+     1201 actccaattg gtgatggtcc agtcttgtta ccagacaacc attacttatc ctatcaatct
+     1261 gccttatcca aagatccaaa cgaaaagaga gatcacatgg tcttgttaga atttgttact
+     1321 gctgctggta ttacccatgg tatggatgaa ttgtacaaag gatcctaact cgaggcgaat
+     1381 ttcttatgat ttatgatttt tattattaaa taagttataa aaaaaataag tgtatacaaa
+     1441 ttttaaagtg actcttaggt tttaaaacga aaattcttat tcttgagtaa ctctttcctg
+     1501 taggtcaggt tgctttctca ggtatagcat gaggtcgctc ttattgacca cacctctacc
+     1561 ggcatgccga gcaaatgcct gcaaatcgct ccccatttcg ctgagcatga gacggaaatc
+     1621 tgctcgtcag tggtgctcac actgacgaat catgtacaga tcataccgat gactgcctgg
+     1681 cgactcacaa ctaagcaaga cagccggaac cagcgccggc gaacaccact gcatatatgg
+     1741 catatcacaa cagtccaact agtgcactgc agtacagcgg ccgcgattat caaaaaggat
+     1801 cttcacctag atccttttaa attaaaaatg aagttttaaa tcaatctaaa gtatatatga
+     1861 gtaaacttgg tctgacagtt accaatgctt aatcagtgag gcacctatct cagcgatctg
+     1921 tctatttcgt tcatccatag ttgcctgact ccccgtcgtg tagataacta cgatacggga
+     1981 gggcttacca tctggcccca gtgctgcaat gataccgcgg gacccacgct caccggctcc
+     2041 agatttatca gcaataaacc agccagccgg aagggccgag cgcagaagtg gtcctgcaac
+     2101 tttatccgcc tccatccagt ctattaattg ttgccgggaa gctagagtaa gtagttcgcc
+     2161 agttaatagt ttgcgcaacg ttgttgccat tgctacaggc atcgtggtgt cacgctcgtc
+     2221 gtttggtatg gcttcattca gctccggttc ccaacgatca aggcgagtta catgatcccc
+     2281 catgttgtgc aaaaaagcgg ttagctcctt cggtcctccg atcgttgtca gaagtaagtt
+     2341 ggccgcagtg ttatcactca tggttatggc agcactgcat aattctctta ctgtcatgcc
+     2401 atccgtaaga tgcttttctg tgactggtga gtactcaacc aagtcattct gagaatagtg
+     2461 tatgcggcga ccgagttgct cttgcccggc gtcaatacgg gataataccg cgccacatag
+     2521 cagaacttta aaagtgctca tcattggaaa acgttcttcg gggcgaaaac tctcaaggat
+     2581 cttaccgctg ttgagatcca gttcgatgta acccactcgt gcacccaact gatcttcagc
+     2641 atcttttact ttcaccagcg tttctgggtg agcaaaaaca ggaaggcaaa atgccgcaaa
+     2701 aaagggaata agggcgacac ggaaatgttg aatactcata ctcttccttt ttcaatatta
+     2761 ttgaagcatt tatcagggtt attgtctcat gagcggatac atatttgaat gtatttagaa
+     2821 aaataaacaa ataggggttc cgcgcacatt tccccgaaaa gtgccacctg tcatgaccaa
+     2881 aatcccttaa cgtgagtttt cgttccactg agcgtcagac cccgtagaaa agatcaaagg
+     2941 atcttcttga gatccttttt ttctgcgcgt aatctgctgc ttgcaaacaa aaaaaccacc
+     3001 gctaccagcg gtggtttgtt tgccggatca agagctacca actctttttc cgaaggtaac
+     3061 tggcttcagc agagcgcaga taccaaatac tgttcttcta gtgtagccgt agttaggcca
+     3121 ccacttcaag aactctgtag caccgcctac atacctcgct ctgctaatcc tgttaccagt
+     3181 ggctgctgcc agtggcgata agtcgtgtct taccgggttg gactcaagac gatagttacc
+     3241 ggataaggcg cagcggtcgg gctgaacggg gggttcgtgc acacagccca gcttggagcg
+     3301 aacgacctac accgaactga gatacctaca gcgtgagcta tgagaaagcg ccacgcttcc
+     3361 cgaagggaga aaggcggaca ggtatccggt aagcggcagg gtcggaacag gagagcgcac
+     3421 gagggagctt ccagggggaa acgcctggta tctttatagt cctgtcgggt ttcgccacct
+     3481 ctgacttgag cgtcgatttt tgtgatgctc gtcagggggg cggagcctat ggaaaaacgc
+     3541 cagcaacgcg gcctttttac ggttcctggc cttttgctgg ccttttgctc acatgttctt
+     3601 tcctgcgtta tcccctgatt ctgtggataa ccgtgcggcc gcccct
+//

@@ -1,0 +1,72 @@
+{% extends "biolib/base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-list"></i> Mes Simulations</h2>
+        <a href="{% url 'create_simulation' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nouvelle Simulation
+        </a>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-body p-0">
+            <table class="table table-hover table-striped mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th scope="col">ID</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Template utilisé</th>
+                        <th scope="col">Enzyme</th>
+                        <th scope="col">Statut</th>
+                        <th scope="col" class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sim in simulations %}
+                    <tr>
+                        <th scope="row">#{{ sim.id }}</th>
+                        <td>{{ sim.date_run|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            {% if sim.template_file %}
+                                {{ sim.template_file.name|cut:"simulation_templates/" }}
+                            {% else %}
+                                <em>(Ancien format)</em>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge bg-secondary">{{ sim.enzyme }}</span></td>
+                        <td>
+                            {% if sim.status == 'COMPLETED' %}
+                                <span class="badge bg-success">Terminé</span>
+                            {% elif sim.status == 'FAILED' %}
+                                <span class="badge bg-danger">Échec</span>
+                            {% elif sim.status == 'RUNNING' %}
+                                <span class="badge bg-warning text-dark">En cours...</span>
+                            {% else %}
+                                <span class="badge bg-info">{{ sim.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'simulation_result' pk=sim.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i> Voir Résultats
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <h5 class="text-muted">Aucune simulation trouvée.</h5>
+                            <p>Lancez votre première simulation d'assemblage ADN dès maintenant !</p>
+                            <a href="{% url 'create_simulation' %}" class="btn btn-success mt-2">
+                                Commencer
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
