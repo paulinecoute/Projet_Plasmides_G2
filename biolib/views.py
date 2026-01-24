@@ -52,9 +52,7 @@ def template(request):
 
 
 def create_template(request):
-    return render(request, 'biolib/create_template.html')
 
-def template_create_view(request):
     if request.method == 'POST':
         form = CampaignTemplateForm(request.POST, request.FILES)
         formset = TemplatePartFormSet(request.POST)
@@ -83,14 +81,15 @@ def template_create_view(request):
 
             return redirect('template')
     else:
+        # Affichage du formulaire vide
         form = CampaignTemplateForm()
         formset = TemplatePartFormSet()
 
-    return render(request, 'biolib/template_form.html', {
+    # On envoie les formulaires au bon fichier HTML
+    return render(request, 'biolib/create_template.html', {
         'form': form,
         'formset': formset
     })
-
 
 def simulation(request):
     return render(request, 'biolib/simulation.html')
@@ -185,7 +184,6 @@ try:
     from my_insillyclo.simulator import compute_all
 except ImportError:
     print("ATTENTION : my_insillyclo.simulator non trouvé.")
-    # C'EST ICI QUE TU AVAIS L'ERREUR, LE PASS EST AJOUTÉ :
     def compute_all(*args, **kwargs): pass
 
 class ConsoleObserver:
@@ -223,8 +221,8 @@ def create_simulation(request):
             gb_plasmids_paths = []
             all_parts = Plasmid.objects.all()
             for p in all_parts:
-                if p.genbank_file: # Assure-toi que le nom du champ est bon dans models.py (genbank_file ou file ?)
-                    file_path = p.genbank_file.path # idem ici
+                if p.genbank_file: 
+                    file_path = p.genbank_file.path
                     if os.path.exists(file_path):
                         gb_plasmids_paths.append(file_path)
 
@@ -287,7 +285,7 @@ def download_simulation_zip(request, pk):
     else:
         raise Http404(f"Fichier ZIP introuvable.")
 
-# GESTION EQUIPES
+#équipes
 @login_required
 def team_list(request):
     teams = Team.objects.filter(Q(leader=request.user) | Q(members=request.user)).distinct()

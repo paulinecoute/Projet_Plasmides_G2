@@ -1,124 +1,225 @@
 {% extends "biolib/base.html" %}
 
-{% block title %}Templates{% endblock %}
-
 {% block content %}
-
-<div class="mb-5">
-    <h2>Templates</h2>
-</div>
-
-<div class="row g-4 mb-5">
-
-    <div class="col-md-6">
-        <div class="card shadow-sm h-100">
+<div class="container mt-5">
+    <h2>Créer un nouveau template</h2>
+    
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Informations générales</h5>
+            </div>
             <div class="card-body">
-                <h5 class="card-title">Créer un template</h5>
-                <p class="text-muted mb-3">
-                    Créer un template de campagne directement dans l’application.
-                </p>
-                <a href="{% url 'template_create_view' %}" class="btn btn-primary">
-                    Créer maintenant
-                </a>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Nom du template</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div class="text-danger small">{{ form.name.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Enzyme de restriction</label>
+                        {{ form.enzyme }}
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Séparateur (Output separator)</label>
+                        {{ form.output_separator }}
+                        <div class="form-text small">Ex: - ou _ (Sépare les parties dans le nom final)</div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Description</label>
+                    {{ form.description }}
+                </div>
+                
+                {% if user.is_authenticated %}
+                    <div class="mb-3">
+                        <label class="form-label">Qui peut voir ce template ?</label>
+                        {{ form.visibility }}
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning d-flex align-items-center" role="alert">
+                        <div><strong>Mode invité :</strong> Template privé (éphémère).</div>
+                    </div>
+                    <input type="hidden" name="visibility" value="private">
+                {% endif %}
             </div>
         </div>
-    </div>
 
-    <div class="col-md-6">
-        <div class="card shadow-sm h-100">
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0">Structure de l'assemblage (Input Parts)</h5>
+                    <small class="text-muted">Définissez vos "Input Plasmids" dans l'ordre d'assemblage.</small>
+                </div>
+            </div>
+            
             <div class="card-body">
-                <h5 class="card-title">Télécharger un template vierge</h5>
-                <p class="text-muted mb-3">
-                    Télécharger un fichier Excel vierge pour le remplir manuellement.
-                </p>
-                <a href="#"
-                   class="btn btn-success">
-                    Télécharger
-                </a>
+                {{ formset.management_form }}
+                
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle" id="parts-table">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th style="width: 25%">Part name<br><small class="fw-normal text-muted">(ex: Input Plasmid 1)</small></th>
+                                <th style="width: 15%">Part types<br><small class="fw-normal text-muted">(Overhangs)</small></th>
+                                <th style="width: 8%">Order</th>
+                                <th style="width: 12%" class="text-center">Is Mandatory ?<br><small class="fw-normal text-muted">(Obligatoire)</small></th>
+                                <th style="width: 15%" class="text-center">In output name ?<br><small class="fw-normal text-muted">(Nom final)</small></th>
+                                <th style="width: 10%" class="text-center">Part separator ?<br><small class="fw-normal text-muted">(Couper ici)</small></th>
+                                <th style="width: 5%" class="text-center"><i class="bi bi-trash"></i></th>
+                            </tr>
+                        </thead>
+                        <tbody id="form-set-body">
+                            {% for part_form in formset %}
+                                <tr class="part-form-row">
+                                    <td>
+                                        {{ part_form.name }}
+                                        {% if part_form.name.errors %}
+                                            <div class="text-danger small">{{ part_form.name.errors }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ part_form.type_id }}</td>
+                                    <td>{{ part_form.order }}</td>
+                                    
+                                    <td class="text-center">
+                                        <div class="form-check d-flex justify-content-center">
+                                            {{ part_form.is_mandatory }}
+                                        </div>
+                                    </td>
+                                    
+                                    <td class="text-center">
+                                        <div class="form-check d-flex justify-content-center">
+                                            {{ part_form.include_in_output }}
+                                        </div>
+                                    </td>
+
+                                    <td class="text-center">
+                                        <div class="form-check d-flex justify-content-center">
+                                            {{ part_form.is_separable }}
+                                        </div>
+                                    </td>
+
+                                    <td class="text-center align-middle">
+                                        {% if formset.can_delete %}
+                                            <div style="display:none;">{{ part_form.DELETE }}</div>
+                                            
+                                            {% if forloop.first %}
+                                                <span class="text-muted" title="Impossible de supprimer la première ligne">🚫</span>
+                                            {% else %}
+                                                <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn" title="Supprimer cette ligne">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% for hidden in part_form.hidden_fields %}
+                                    {{ hidden }}
+                                {% endfor %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <button type="button" id="add-form" class="btn btn-success btn-sm mt-2">
+                    <i class="bi bi-plus-circle"></i> Ajout d'un nouvel Input Plasmid
+                </button>
             </div>
         </div>
-    </div>
 
+        <div class="d-flex gap-2 mb-5">
+            <button type="submit" class="btn btn-primary btn-lg">Enregistrer le template</button>
+            <a href="{% url 'template' %}" class="btn btn-outline-secondary btn-lg">Annuler</a>
+        </div>
+    </form>
 </div>
 
-<hr class="my-5">
-
-<h4 class="mb-4">Templates publics</h4>
-
-<div class="list-group">
-
-    <div class="list-group-item py-3">
-        <div class="d-flex justify-content-between align-items-start">
-            <div>
-                <h6 class="mb-1">YTK_L1</h6>
-                <small class="text-muted">
-                    Enzyme : BsaI · Séparateur : - · Niveau : L1
-                </small>
-                <div class="mt-2 small text-muted">
-                    Composition : ConL, Promoter, Gene, Terminator, ConR, Backbone
-                </div>
-            </div>
-            <div class="ms-3 text-nowrap">
-                <a href="#"
-                   class="btn btn-sm btn-outline-secondary">
-                    Télécharger
-                </a>
-                <a href="{% url 'simulation' %}"
-                   class="btn btn-sm btn-outline-primary ms-2">
-                    Utiliser
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="list-group-item py-3">
-        <div class="d-flex justify-content-between align-items-start">
-            <div>
-                <h6 class="mb-1">Vnat_L2</h6>
-                <small class="text-muted">
-                    Enzyme : BsmBI · Séparateur : ~ · Niveau : L2
-                </small>
-                <div class="mt-2 small text-muted">
-                    Composition : 5con, TU1–TU5, 3con, Replication origin, Backbone
-                </div>
-            </div>
-            <div class="ms-3 text-nowrap">
-                <a href="#"
-                   class="btn btn-sm btn-outline-secondary">
-                    Télécharger
-                </a>
-                <a href="{% url 'simulation' %}"
-                   class="btn btn-sm btn-outline-primary ms-2">
-                    Utiliser
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="list-group-item py-3">
-        <div class="d-flex justify-content-between align-items-start">
-            <div>
-                <h6 class="mb-1">Raw_BsaI</h6>
-                <small class="text-muted">
-                    Enzyme : BsaI · Séparateur : - · Niveau : libre
-                </small>
-                <div class="mt-2 small text-muted">
-                    Composition : input plasmid 1 → input plasmid n
-                </div>
-            </div>
-            <div class="ms-3 text-nowrap">
-                <a href="#"
-                   class="btn btn-sm btn-outline-secondary">
-                    Télécharger
-                </a>
-                <a href="{% url 'simulation' %}"
-                   class="btn btn-sm btn-outline-primary ms-2">
-                    Utiliser
-                </a>
-            </div>
-        </div>
-    </div>
-
+<div id="empty-form" style="display:none;">
+    <table style="display: none">
+        <tr class="part-form-row">
+            <td>{{ formset.empty_form.name }}</td>
+            <td>{{ formset.empty_form.type_id }}</td>
+            <td>{{ formset.empty_form.order }}</td>
+            <td class="text-center"><div class="form-check d-flex justify-content-center">{{ formset.empty_form.is_mandatory }}</div></td>
+            <td class="text-center"><div class="form-check d-flex justify-content-center">{{ formset.empty_form.include_in_output }}</div></td>
+            <td class="text-center"><div class="form-check d-flex justify-content-center">{{ formset.empty_form.is_separable }}</div></td>
+            <td class="text-center align-middle">
+                <div style="display:none;">{{ formset.empty_form.DELETE }}</div>
+                <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        </tr>
+    </table>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const addBtn = document.getElementById('add-form');
+        const totalForms = document.getElementById('id_parts-TOTAL_FORMS');
+        const tbody = document.getElementById('form-set-body');
+        
+        let firstRowName = document.querySelector('input[name$="-0-name"]');
+        let firstRowOrder = document.querySelector('input[name$="-0-order"]');
+        
+        if (firstRowName && !firstRowName.value) {
+            firstRowName.value = "Input Plasmid 1";
+        }
+        if (firstRowOrder && !firstRowOrder.value) {
+            firstRowOrder.value = "1";
+        }
+        
+        tbody.addEventListener('click', function(e) {
+            const btn = e.target.closest('.delete-row-btn');
+            
+            if (btn) {
+                if (confirm("Souhaitez-vous supprimer cette ligne ?")) {
+                    const row = btn.closest('tr');
+                    const deleteCheckbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+                    
+                    if (deleteCheckbox) {
+                        deleteCheckbox.checked = true;
+                        row.style.display = 'none';
+                    } else {
+                        row.remove();
+                    }
+                }
+            }
+        });
+
+        const emptyFormHtml = document.getElementById('empty-form').getElementsByTagName('tr')[0].innerHTML;
+
+        addBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            let formIdx = parseInt(totalForms.value);
+            
+            let newRow = document.createElement('tr');
+            newRow.className = 'part-form-row';
+            newRow.innerHTML = emptyFormHtml.replace(/__prefix__/g, formIdx);
+            
+            tbody.appendChild(newRow);
+            
+            totalForms.value = formIdx + 1;
+
+            let nameInput = newRow.querySelector('input[name$="-name"]');
+            let orderInput = newRow.querySelector('input[name$="-order"]');
+            
+            if (nameInput) {
+                nameInput.value = "Input Plasmid " + (formIdx + 1);
+            }
+            if (orderInput) {
+                orderInput.value = formIdx + 1;
+            }
+        });
+    });
+</script>
 
 {% endblock %}

@@ -1,8 +1,8 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
-
 from .models import CampaignTemplate, TemplatePart, Simulation
+from django.forms import inlineformset_factory
 
 
 # FORMULAIRE D'INSCRIPTION
@@ -26,32 +26,52 @@ class CustomUserCreationForm(UserCreationForm):
             'password2',
         )
 
-
 class CampaignTemplateForm(forms.ModelForm):
+    visibility = forms.ChoiceField(
+        choices=[
+            ('private', 'Privé (Moi uniquement)'),
+            ('team', 'Visible par mon équipe'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Visibilité"
+    )
+
     class Meta:
         model = CampaignTemplate
-        fields = [
-            'name',
-            'description',
-            'enzyme',
-            'output_separator',
-            'file',
-            'is_public'  # On remplace 'visibility' par 'is_public'
-        ]
+        fields = ['name', 'description', 'enzyme', 'output_separator', 'visibility']
+        
         widgets = {
-            'description': forms.Textarea(attrs={'rows': 3}),
-            'is_public': forms.CheckboxInput(attrs={'class': 'form-check-input'})
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: YTK_Assembly'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'enzyme': forms.Select(attrs={'class': 'form-select'}), 
+            'output_separator': forms.Select(attrs={'class': 'form-select'}), 
         }
 
+class TemplatePartForm(forms.ModelForm):
+    class Meta:
+        model = TemplatePart
+        fields = ['name', 'type_id', 'order', 'is_mandatory', 'include_in_output', 'is_separable']
+        
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nom'}),
+            'type_id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Type'}),
+            'order': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'style': 'width: 80px'}),
+            
+            # Les checkbox stylisées
+            'is_mandatory': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'include_in_output': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_separable': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
 
-# Cela permet d'ajouter/supprimer des parties dynamiquement
-TemplatePartFormSet = forms.inlineformset_factory(
+TemplatePartFormSet = inlineformset_factory(
     CampaignTemplate,
     TemplatePart,
-    fields=['name', 'type_id', 'order', 'is_mandatory', 'include_in_output', 'is_separable'],
-    extra=1,  # Affiche une ligne vide par défaut
+    form=TemplatePartForm, 
+    extra=1,
     can_delete=True
 )
+
+
 
 class SimulationForm(forms.ModelForm):
     class Meta:
