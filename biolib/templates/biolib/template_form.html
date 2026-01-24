@@ -153,6 +153,17 @@
         const totalForms = document.getElementById('id_parts-TOTAL_FORMS');
         const tbody = document.getElementById('form-set-body');
         
+        let firstRowName = document.querySelector('input[name$="-0-name"]');
+        let firstRowOrder = document.querySelector('input[name$="-0-order"]');
+        
+        if (firstRowName && !firstRowName.value) {
+            firstRowName.value = "Input Plasmid 1";
+        }
+        
+        if (firstRowOrder && !firstRowOrder.value) {
+            firstRowOrder.value = "1";
+        }
+        
         const emptyFormHtml = document.getElementById('empty-form').getElementsByTagName('tr')[0].innerHTML;
 
         addBtn.addEventListener('click', function(e) {
