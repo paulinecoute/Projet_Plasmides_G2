@@ -67,12 +67,13 @@
                     <table class="table table-bordered table-hover align-middle" id="parts-table">
                         <thead class="table-secondary">
                             <tr>
-                                <th style="width: 30%">Rôle / Nom du Slot<br><small class="fw-normal text-muted">(ex: Input Plasmid 1, Promoteur...)</small></th>
-                                <th style="width: 15%">Type ID<br><small class="fw-normal text-muted">(Overhangs)</small></th>
-                                <th style="width: 10%">Ordre</th>
-                                <th style="width: 10%" class="text-center">Obligatoire</th>
-                                <th style="width: 10%" class="text-center">Dans le nom</th>
-                                <th style="width: 5%" class="text-center">Suppr.</th>
+                                <th style="width: 25%">Part name -><br><small class="fw-normal text-muted">(ex: Input Plasmid 1)</small></th>
+                                <th style="width: 15%">Part types -><br><small class="fw-normal text-muted">(Overhangs)</small></th>
+                                <th style="width: 8%">Order</th>
+                                <th style="width: 12%" class="text-center">Is Mandatory ?<br><small class="fw-normal text-muted">(Obligatoire)</small></th>
+                                <th style="width: 15%" class="text-center">In output name ?<br><small class="fw-normal text-muted">(Nom final)</small></th>
+                                <th style="width: 10%" class="text-center">Part separator ?<br><small class="fw-normal text-muted">(Couper ici)</small></th>
+                                <th style="width: 5%" class="text-center"><i class="bi bi-trash"></i></th>
                             </tr>
                         </thead>
                         <tbody id="form-set-body">
@@ -86,12 +87,25 @@
                                     </td>
                                     <td>{{ part_form.type_id }}</td>
                                     <td>{{ part_form.order }}</td>
+                                    
                                     <td class="text-center">
-                                        <div class="form-check d-flex justify-content-center">{{ part_form.is_mandatory }}</div>
+                                        <div class="form-check d-flex justify-content-center">
+                                            {{ part_form.is_mandatory }}
+                                        </div>
                                     </td>
+                                    
                                     <td class="text-center">
-                                        <div class="form-check d-flex justify-content-center">{{ part_form.include_in_output }}</div>
+                                        <div class="form-check d-flex justify-content-center">
+                                            {{ part_form.include_in_output }}
+                                        </div>
                                     </td>
+
+                                    <td class="text-center">
+                                        <div class="form-check d-flex justify-content-center">
+                                            {{ part_form.is_separable }}
+                                        </div>
+                                    </td>
+
                                     <td class="text-center">
                                         {% if formset.can_delete %}
                                             {{ part_form.DELETE }}
@@ -127,6 +141,7 @@
             <td>{{ formset.empty_form.order }}</td>
             <td class="text-center"><div class="form-check d-flex justify-content-center">{{ formset.empty_form.is_mandatory }}</div></td>
             <td class="text-center"><div class="form-check d-flex justify-content-center">{{ formset.empty_form.include_in_output }}</div></td>
+            <td class="text-center"><div class="form-check d-flex justify-content-center">{{ formset.empty_form.is_separable }}</div></td>
             <td class="text-center">{{ formset.empty_form.DELETE }}</td>
         </tr>
     </table>
@@ -148,9 +163,9 @@
             let newRow = document.createElement('tr');
             newRow.className = 'part-form-row';
             newRow.innerHTML = emptyFormHtml.replace(/__prefix__/g, formIdx);
-
+            
             tbody.appendChild(newRow);
-
+            
             totalForms.value = formIdx + 1;
 
             let nameInput = newRow.querySelector('input[name$="-name"]');
