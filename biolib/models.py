@@ -128,7 +128,6 @@ class CorrespondenceEntry(models.Model):
 class CampaignTemplate(models.Model):
     """ Fusion : Fichiers (branche Agash) + Paramètres Bio ( branche Main) """
 
-    # -- Partie MAIN (Logique Bio) --
     ALL_ENZYMES_LIST = sorted([str(e) for e in AllEnzymes])
     ENZYME_CHOICES = [(e, e) for e in ALL_ENZYMES_LIST]
     SEPARATOR_CHOICES = [('-', 'Tiret (-)'), ('_', 'Underscore (_)'), ('', 'Aucun')]
@@ -138,6 +137,19 @@ class CampaignTemplate(models.Model):
 
     enzyme = models.CharField(max_length=50, choices=ENZYME_CHOICES, default='BsaI')
     output_separator = models.CharField(max_length=5, choices=SEPARATOR_CHOICES, default='-')
+
+    VISIBILITY_CHOICES = [
+        ('private', 'Privé (Moi uniquement)'),
+        ('team', 'Visible par mon équipe'),
+        ('public', 'Public (Tout le monde)'),
+    ]
+    visibility = models.CharField(
+        max_length=20, 
+        choices=VISIBILITY_CHOICES, 
+        default='private', 
+        verbose_name="Visibilité"
+    )
+    # ----------------------------------------------------
 
     # -- Partie AGASH (Fichiers & Droits) --
     file = models.FileField(upload_to="templates/", blank=True, null=True, help_text="Fichier modèle Excel")
@@ -153,7 +165,6 @@ class TemplatePart(models.Model):
     template = models.ForeignKey(CampaignTemplate, on_delete=models.CASCADE, related_name="parts")
     name = models.CharField(max_length=100, verbose_name="Nom de la partie")
 
-    # CHAMPS MANQUANTS QUE J'AI RAJOUTÉS ICI :
     type_id = models.CharField(max_length=50, verbose_name="Type (ex: 1, 3a)", default="1")
     description = models.CharField(max_length=255, blank=True)
 
