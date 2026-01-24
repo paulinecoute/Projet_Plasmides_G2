@@ -106,9 +106,17 @@
                                         </div>
                                     </td>
 
-                                    <td class="text-center">
+                                    <td class="text-center align-middle">
                                         {% if formset.can_delete %}
-                                            {{ part_form.DELETE }}
+                                            <div style="display:none;">{{ part_form.DELETE }}</div>
+                                            
+                                            {% if forloop.first %}
+                                                <span class="text-muted" title="Impossible de supprimer la première ligne">🚫</span>
+                                            {% else %}
+                                                <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn" title="Supprimer cette ligne">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            {% endif %}
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -142,7 +150,12 @@
             <td class="text-center"><div class="form-check d-flex justify-content-center">{{ formset.empty_form.is_mandatory }}</div></td>
             <td class="text-center"><div class="form-check d-flex justify-content-center">{{ formset.empty_form.include_in_output }}</div></td>
             <td class="text-center"><div class="form-check d-flex justify-content-center">{{ formset.empty_form.is_separable }}</div></td>
-            <td class="text-center">{{ formset.empty_form.DELETE }}</td>
+            <td class="text-center align-middle">
+                <div style="display:none;">{{ formset.empty_form.DELETE }}</div>
+                <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
         </tr>
     </table>
 </div>
@@ -159,11 +172,28 @@
         if (firstRowName && !firstRowName.value) {
             firstRowName.value = "Input Plasmid 1";
         }
-        
         if (firstRowOrder && !firstRowOrder.value) {
             firstRowOrder.value = "1";
         }
         
+        tbody.addEventListener('click', function(e) {
+            const btn = e.target.closest('.delete-row-btn');
+            
+            if (btn) {
+                if (confirm("Souhaitez-vous supprimer cette ligne ?")) {
+                    const row = btn.closest('tr');
+                    const deleteCheckbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+                    
+                    if (deleteCheckbox) {
+                        deleteCheckbox.checked = true;
+                        row.style.display = 'none';
+                    } else {
+                        row.remove();
+                    }
+                }
+            }
+        });
+
         const emptyFormHtml = document.getElementById('empty-form').getElementsByTagName('tr')[0].innerHTML;
 
         addBtn.addEventListener('click', function(e) {
