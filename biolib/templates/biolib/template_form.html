@@ -27,7 +27,7 @@
                     </div>
 
                     <div class="col-md-4 mb-3">
-                        <label class="form-label">Séparateur (Output separator)</label>
+                        <label class="form-label">Séparateur </label>
                         {{ form.output_separator }}
                         <div class="form-text small">Ex: - ou _ (Sépare les parties dans le nom final)</div>
                     </div>
@@ -42,10 +42,7 @@
                     <div class="mb-3">
                         <label class="form-label">Qui peut voir ce template ?</label>
                         {{ form.visibility }}
-                        <small class="text-muted">
-                            Privé = Visible uniquement par vous. Équipe = Visible par vos collaborateurs.
-                        </small>
-                    </div>
+                    </div>                
                 {% else %}
                     <div class="alert alert-warning d-flex align-items-center" role="alert">
                         <div>
