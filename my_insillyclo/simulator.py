@@ -5,7 +5,10 @@ import logging
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
-
+import zipfile
+import os
+import glob
+from django.conf import settings
 # Imports InSillyClo
 try:
     import pandas as pd
@@ -177,7 +180,7 @@ def _dynamic_compatibility_layer(template_path, input_parts_files, gb_files, wor
         except Exception as e:
             print(f"Erreur lors du patch de {stem}: {e}")
 
-    # Copie des fichiers restants (ceux non utilisés dans la recette)
+    # Copie des fichiers restants
     for stem, path in available_files.items():
         if stem not in processed_stems:
             dst = work_dir / path.name
@@ -186,9 +189,54 @@ def _dynamic_compatibility_layer(template_path, input_parts_files, gb_files, wor
 
     return ready_files
 
+def creer_archive_zip(simulation_id, noms_fichiers_gb=None):
+    """
+    Crée une archive ZIP contenant :
+    1. Les fichiers CSV (dilutions, instructions)
+    2. UNIQUEMENT les fichiers .gb listés dans 'noms_fichiers_gb' (les plasmides finaux)
+    """
+    dossier_simu = os.path.join(settings.BASE_DIR, 'simulation', f"simulation_{simulation_id}")
+    nom_zip = f"simulation_{simulation_id}_archive.zip"
+    chemin_zip_final = os.path.join(dossier_simu, nom_zip)
+
+    if not os.path.exists(dossier_simu):
+        return None
+
+    # 1. On prend toujours tous les CSV générés
+    fichiers_a_zipper = glob.glob(os.path.join(dossier_simu, "*.csv"))
+
+    # 2. On ajoute sélectivement les fichiers .gb générés
+    if noms_fichiers_gb:
+        for nom in noms_fichiers_gb:
+            # On s'assure que le nom finit bien par .gb
+            if not nom.endswith('.gb'):
+                nom += '.gb'
+
+            chemin_complet = os.path.join(dossier_simu, nom)
+            if os.path.exists(chemin_complet):
+                fichiers_a_zipper.append(chemin_complet)
+            else:
+                print(f"ATTENTION: Le fichier généré {nom} est introuvable pour le zip.")
+    else:
+        print("Aucune liste de fichiers fournie, seuls les CSV seront zippés.")
+
+    if not fichiers_a_zipper:
+        print("Rien à zipper.")
+        return None
+
+    # 3. Création du ZIP
+    try:
+        with zipfile.ZipFile(chemin_zip_final, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for fichier in fichiers_a_zipper:
+                zipf.write(fichier, arcname=os.path.basename(fichier))
+
+        return chemin_zip_final
+    except Exception as e:
+        print(f"Erreur ZIP : {e}")
+        return None
 
 # =============================================================================
-# MAIN WRAPPER
+# MAIN FONCTION DE SIMULATION
 # =============================================================================
 
 def compute_all(

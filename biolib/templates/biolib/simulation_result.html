@@ -55,15 +55,14 @@
                         <div class="accordion-body">
                             <div class="row align-items-center">
                                 <div class="col-md-8">
-                                    <p class="mb-0">Ce dossier compressé contient l'ensemble des résultats :</p>
+                                    <p class="mb-0">Ce dossier compressé contient uniquement les résultats (inputs exclus) :</p>
                                     <ul class="mb-0 text-muted small">
-                                        <li>🧬 Tous les fichiers GenBank (.gb)</li>
+                                        <li>🧬 Les plasmides assemblés (.gb)</li>
                                         <li>📊 Les fichiers de dilutions (.csv)</li>
-                                        <li>📄 Le rapport HTML</li>
                                     </ul>
                                 </div>
                                 <div class="col-md-4 text-end">
-                                    <a href="{% url 'download_simulation_zip' pk=simulation.id %}" class="btn btn-primary">
+                                    <a href="{% url 'download_simulation_zip' pk=simulation.id %}" class="btn btn-primary btn-lg">
                                         <i class="fas fa-download"></i> Télécharger le ZIP
                                     </a>
                                 </div>
@@ -75,19 +74,43 @@
                 <div class="accordion-item">
                     <h2 class="accordion-header" id="headingDilution">
                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#dilutionFiles" aria-expanded="false" aria-controls="dilutionFiles">
-                            <i class="fas fa-file-csv me-2"></i> Fichier de Dilutions (CSV)
+                            <i class="fas fa-file-csv me-2"></i> Fichiers de Dilutions (CSV)
                         </button>
                     </h2>
                     <div id="dilutionFiles" class="accordion-collapse collapse" aria-labelledby="headingDilution" data-bs-parent="#resultFilesAccordion">
                         <div class="accordion-body">
-                            <p>Tableau contenant les volumes à prélever pour chaque partie.</p>
-                            <ul>
-                                <li>dilutions_calculated.csv</li>
-                            </ul>
+                            <p class="text-muted mb-3">Choisissez votre protocole de pipetage :</p>
 
-                            <a href="{% url 'download_simulation_csv' pk=simulation.id %}" class="btn btn-sm btn-success">
-                                <i class="fas fa-download"></i> Télécharger le CSV seul
-                            </a>
+                            <div class="row">
+                                <div class="col-md-6 border-end">
+                                    <h5 class="text-primary"><i class="fas fa-flask"></i> Méthode Directe</h5>
+                                    <p class="small text-muted">Pipetage sans dilution intermédiaire.</p>
+
+                                    <div class="d-grid gap-2">
+                                        <a href="{% url 'download_specific_file' pk=simulation.id filename='dilution-direct.csv' %}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-download"></i> dilution-direct.csv
+                                        </a>
+                                        <a href="{% url 'download_specific_file' pk=simulation.id filename='dilution-direct_mastermix.csv' %}" class="btn btn-outline-secondary btn-sm">
+                                            <i class="fas fa-download"></i> Mastermix Direct
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <h5 class="text-success"><i class="fas fa-vial"></i> Méthode 10x</h5>
+                                    <p class="small text-muted">Avec dilution au 1/10ème.</p>
+
+                                    <div class="d-grid gap-2">
+                                        <a href="{% url 'download_specific_file' pk=simulation.id filename='dilution-10x.csv' %}" class="btn btn-outline-success btn-sm">
+                                            <i class="fas fa-download"></i> dilution-10x.csv
+                                        </a>
+                                        <a href="{% url 'download_specific_file' pk=simulation.id filename='dilution-10x_mastermix.csv' %}" class="btn btn-outline-secondary btn-sm">
+                                            <i class="fas fa-download"></i> Mastermix 10x
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -104,23 +127,27 @@
 
                             <div class="text-center mb-3">
                                 {% if simulation.result_file %}
-                                    <img src="{{ MEDIA_URL }}{{ simulation.result_file }}"
-                                         alt="Résultat Simulation"
-                                         class="img-fluid border rounded"
-                                         style="max-height: 500px; background-color: white;">
+                                    {% if ".csv" not in simulation.result_file %}
+                                        <img src="{{ MEDIA_URL }}{{ simulation.result_file }}"
+                                             alt="Résultat Simulation"
+                                             class="img-fluid border rounded"
+                                             style="max-height: 500px; background-color: white;">
+                                        <br><br>
+                                        <a href="{{ MEDIA_URL }}{{ simulation.result_file }}" target="_blank" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i> Voir en grand
+                                        </a>
+                                        <a href="{{ MEDIA_URL }}{{ simulation.result_file }}" download class="btn btn-sm btn-secondary">
+                                            <i class="fas fa-download"></i> Télécharger l'image
+                                        </a>
+                                    {% else %}
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle"></i> Pas d'image de gel générée pour cette simulation.
+                                        </div>
+                                    {% endif %}
                                 {% else %}
                                     <div class="alert alert-warning">Image non disponible.</div>
                                 {% endif %}
                             </div>
-
-                            {% if simulation.result_file %}
-                                <a href="{{ MEDIA_URL }}{{ simulation.result_file }}" target="_blank" class="btn btn-sm btn-primary">
-                                    <i class="fas fa-eye"></i> Voir en grand
-                                </a>
-                                <a href="{{ MEDIA_URL }}{{ simulation.result_file }}" download class="btn btn-sm btn-secondary">
-                                    <i class="fas fa-download"></i> Télécharger l'image
-                                </a>
-                            {% endif %}
                         </div>
                     </div>
                 </div>

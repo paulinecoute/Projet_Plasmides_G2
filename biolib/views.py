@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import FileResponse, HttpResponse, Http404
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
-from django.db.models import Q 
+from django.db.models import Q
 from .forms import SimulationForm
 from .models import Simulation
 from types import SimpleNamespace
@@ -15,10 +15,12 @@ import traceback
 import glob
 import os
 import pathlib
+import zipfile
 import openpyxl
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 from .forms import CampaignTemplateForm, TemplatePartFormSet
 from .models import CampaignTemplate, Plasmid, Team, User
+import pandas as pd
 
 import insillyclo.data_source
 try:
@@ -36,8 +38,8 @@ def template(request):
     if request.user.is_authenticated:
         # Si connecté : nos templates + ceux de l'équipe + publics
         templates = CampaignTemplate.objects.filter(
-            Q(owner=request.user) | 
-            Q(visibility='team') | 
+            Q(owner=request.user) |
+            Q(visibility='team') |
             Q(visibility='public')
         ).distinct().order_by('-id')
     else:
@@ -161,13 +163,13 @@ def export_template_excel(request, template_id):
         col_num = 2 + index
         c1 = ws.cell(row=base_row, column=col_num, value=part.name); c1.fill = green_fill; c1.alignment = center_align
         c2 = ws.cell(row=base_row + 1, column=col_num, value=part.type_id); c2.fill = green_fill; c2.alignment = center_align
-        
+
         is_optional_str = "False" if part.is_mandatory else "True"
         c3 = ws.cell(row=base_row + 2, column=col_num, value=is_optional_str); c3.fill = green_fill; c3.alignment = center_align
-        
+
         in_output_str = "True" if part.include_in_output else "False"
         c4 = ws.cell(row=base_row + 3, column=col_num, value=in_output_str); c4.fill = green_fill; c4.alignment = center_align
-        
+
         c5 = ws.cell(row=base_row + 4, column=col_num, value="↓"); c5.fill = blue_fill; c5.alignment = center_align
 
     ws.column_dimensions['A'].width = 35
@@ -183,7 +185,6 @@ def export_template_excel(request, template_id):
 try:
     from my_insillyclo.simulator import compute_all
 except ImportError:
-    print("ATTENTION : my_insillyclo.simulator non trouvé.")
     def compute_all(*args, **kwargs): pass
 
 class ConsoleObserver:
@@ -199,12 +200,83 @@ class DjangoConsoleObserver(insillyclo.observer.InSillyCloCliObserver):
     def notify_message(self, message):
         print(f"[INSILLYCLO] {message}")
 
-@login_required
 def simulation_list(request):
     simulations = Simulation.objects.filter(user=request.user).order_by('-date_run')
     return render(request, 'biolib/simulation_list.html', {'simulations': simulations})
 
-@login_required
+def creer_archive_resultats_seulement(dossier_source, simulation_id, fichiers_a_exclure=None):
+    """
+    Crée un ZIP contenant les résultats, en excluant les fichiers d'entrée.
+
+    Args:
+        dossier_source: Le dossier où sont les fichiers.
+        simulation_id: L'ID de la simulation pour nommer le zip.
+        fichiers_a_exclure: Liste de noms de fichiers (ex: ['pTDH3.gb', 'Venus.gb']) à NE PAS zipper.
+    """
+    if fichiers_a_exclure is None:
+        fichiers_a_exclure = []
+
+    nom_zip = f"simulation_{simulation_id}_archive.zip"
+    chemin_zip = os.path.join(dossier_source, nom_zip)
+
+    # 1. On liste tous les candidats (.gb et .csv)
+    candidats_gb = glob.glob(os.path.join(dossier_source, "*.gb"))
+    candidats_csv = glob.glob(os.path.join(dossier_source, "*.csv"))
+
+    tous_candidats = candidats_gb + candidats_csv
+
+    if not tous_candidats:
+        return None
+
+    # Normalisation des exclusions
+    noms_exclus = set(os.path.basename(f) for f in fichiers_a_exclure)
+
+    fichiers_finaux = []
+    for chemin in tous_candidats:
+        nom_fichier = os.path.basename(chemin)
+
+        # LOGIQUE DE FILTRAGE
+        # 1. Si c'est un fichier d'entrée connu -> ON PASSE
+        if nom_fichier in noms_exclus:
+            continue
+        # 2. Sinon, on l'ajoute au zip
+        fichiers_finaux.append(chemin)
+
+    if not fichiers_finaux:
+        print("Attention : Après filtrage, aucun fichier résultat à zipper.")
+        return None
+
+    try:
+        with zipfile.ZipFile(chemin_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for fichier in fichiers_finaux:
+                zipf.write(fichier, arcname=os.path.basename(fichier))
+        return chemin_zip
+    except Exception as e:
+        print(f"Erreur ZIP : {e}")
+        return None
+
+
+
+def download_specific_file(request, pk, filename):
+    """
+    Télécharge un fichier spécifique situé dans biolib/simulations/{pk}/{filename}
+    """
+    # Sécurité basique : on empêche de remonter dans les dossiers avec ".."
+    if ".." in filename or "/" in filename:
+        raise Http404("Nom de fichier invalide.")
+
+    # Construction du chemin (identique à ton dossier de sortie corrigé)
+    file_path = os.path.join(settings.BASE_DIR, 'biolib', 'simulations', str(pk), filename)
+
+    if os.path.exists(file_path):
+        # On ouvre le fichier
+        response = FileResponse(open(file_path, 'rb'), content_type='text/csv')
+        # On force le téléchargement
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+    else:
+        raise Http404(f"Le fichier {filename} est introuvable pour la simulation {pk}.")
+
 def create_simulation(request):
     if request.method == 'POST':
         form = SimulationForm(request.POST, request.FILES)
@@ -214,20 +286,29 @@ def create_simulation(request):
             simulation.status = 'RUNNING'
             simulation.save()
 
-            output_folder = os.path.join(settings.MEDIA_ROOT, 'simulations', str(simulation.id))
+            output_folder = os.path.join(settings.BASE_DIR, 'biolib', 'simulations', str(simulation.id))
+            os.makedirs(output_folder, exist_ok=True)
+
             path_xlsx = simulation.template_file.path
             path_csv_list = [simulation.campaign_file.path] if simulation.campaign_file else []
-            
+
+            # --- PRÉPARATION DES INPUTS ET DE LA LISTE D'EXCLUSION ---
             gb_plasmids_paths = []
+            input_filenames_to_exclude = [] # Liste pour le filtre
+
             all_parts = Plasmid.objects.all()
             for p in all_parts:
-                if p.genbank_file: 
+                if p.genbank_file:
                     file_path = p.genbank_file.path
                     if os.path.exists(file_path):
                         gb_plasmids_paths.append(file_path)
+                        # On stocke juste le nom (ex: "pTDH3.gb") pour l'exclure plus tard
+                        input_filenames_to_exclude.append(os.path.basename(file_path))
 
             try:
                 observer = DjangoConsoleObserver()
+
+                # 1. Exécution (génère inputs copiés + outputs dans output_folder)
                 compute_all(
                     observer=observer,
                     settings=None,
@@ -239,16 +320,38 @@ def create_simulation(request):
                     enzyme_names=simulation.enzyme,
                     default_mass_concentration=200
                 )
+
+
+                tous_les_csv = glob.glob(os.path.join(output_folder, "*.csv"))
+
+
+                for csv_path in tous_les_csv:
+                    try:
+                        # Lecture (on laisse python deviner le format d'entrée)
+                        df_temp = pd.read_csv(csv_path, sep=None, engine='python')
+
+                        df_temp.to_csv(csv_path, sep=';', decimal=',', index=False) # <--- C'est ici
+                    except Exception as e:
+                        print(f"  -> ERREUR : {e}")
+
+                # On lui donne la liste des inputs pour qu'il ne les mette pas dans le zip
+                creer_archive_resultats_seulement(
+                    dossier_source=output_folder,
+                    simulation_id=simulation.id,
+                    fichiers_a_exclure=input_filenames_to_exclude
+                )
+
+                # 3. Finalisation
                 simulation.status = 'COMPLETED'
+
+                # Détection du fichier de résultat pour l'affichage web
                 if os.path.exists(os.path.join(output_folder, 'digestion.svg')):
-                      simulation.result_file = f"simulations/{simulation.id}/digestion.svg"
-                elif os.path.exists(os.path.join(output_folder, 'dilutions_calculated.csv')):
-                      simulation.result_file = f"simulations/{simulation.id}/dilutions_calculated.csv"
+                     simulation.result_file = f"simulations/{simulation.id}/digestion.svg"
+
                 simulation.save()
                 return redirect('simulation_result', pk=simulation.id)
 
             except Exception as e:
-                print("\n!!! ERREUR INSILLYCLO !!!")
                 traceback.print_exc()
                 simulation.status = 'FAILED'
                 simulation.save()
@@ -275,15 +378,25 @@ def download_simulation_csv(request, pk):
         return response
 
 def download_simulation_zip(request, pk):
-    nom_dossier = f"simulation_{pk}"
-    nom_fichier_zip = f"{nom_dossier}_archive.zip"
-    chemin_complet = os.path.join(settings.BASE_DIR, 'simulation', nom_dossier, nom_fichier_zip)
-    if os.path.exists(chemin_complet):
-        response = FileResponse(open(chemin_complet, 'rb'), content_type='application/zip')
-        response['Content-Disposition'] = f'attachment; filename="{nom_fichier_zip}"'
+    """
+    Télécharge le ZIP situé physiquement dans :
+    PROJET/biolib/simulations/{id}
+    """
+    # 1. Nom du fichier
+    zip_filename = f"simulation_{pk}_archive.zip"
+
+    # 2. Construction du chemin EXACT basé sur votre indication
+    # settings.BASE_DIR est la racine de votre projet (là où il y a manage.py généralement)
+    path_to_zip = os.path.join(settings.BASE_DIR, 'biolib', 'simulations', str(pk), zip_filename)
+
+
+    # 3. Vérification et envoi
+    if os.path.exists(path_to_zip):
+        response = FileResponse(open(path_to_zip, 'rb'), content_type='application/zip')
+        response['Content-Disposition'] = f'attachment; filename="{zip_filename}"'
         return response
     else:
-        raise Http404(f"Fichier ZIP introuvable.")
+        raise Http404(f"Le fichier ZIP est introuvable au chemin : {path_to_zip}")
 
 #équipes
 @login_required

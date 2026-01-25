@@ -9,10 +9,10 @@ urlpatterns = [
 
     # pages principales
     path('', views.home, name='home'),
-    
+
     # menu templates
     path('template/', views.template, name='template'),
-    
+
     path('simulation/', views.simulation, name='simulation'),
 
     # télécharger doc excel
@@ -40,7 +40,7 @@ urlpatterns = [
 
     # espace personnel
     path('dashboard/', views.dashboard, name='dashboard'),
-    
+
     # simulations
     path('simulation/new/', views.create_simulation, name='create_simulation'),
     path('simulation/<int:pk>/', views.simulation_result, name='simulation_result'),
@@ -48,6 +48,7 @@ urlpatterns = [
     path('simulation/demo/', views.simulation_result, name='simulation_demo'),
     path('simulation/<int:pk>/csv/', views.download_simulation_csv, name='download_simulation_csv'),
     path('simulation/<int:pk>/download_zip/', views.download_simulation_zip, name='download_simulation_zip'),
+    path('simulation/<int:pk>/download_file/<str:filename>/', views.download_specific_file, name='download_specific_file'),
 
     #équipes
     path('teams/', views.team_list, name='teams'),
