@@ -23,7 +23,9 @@ urlpatterns = [
 
     # page résultats détaillé
     path('simulation_result/', views.simulation_result, name='simulation_result'),
-    path('template_detail/', views.template_detail, name='template_detail'),
+
+    # template details
+    path('template/<int:pk>/details/', views.template_detail, name='template_detail'),
 
     # authentification
     path('signup/', views.signup, name='signup'),
