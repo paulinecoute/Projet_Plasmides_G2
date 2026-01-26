@@ -118,6 +118,14 @@
             </div>
             
             <div class="d-flex gap-2">
+                {% if template.visibility != 'public' %}
+                    <button type="button" 
+                            class="btn btn-outline-primary" 
+                            onclick="alert('Pour rendre un template public, veuillez contacter un Administrateur en précisant votre nom ainsi que celui de votre template.')">
+                        <i class="bi bi-globe"></i> Rendre public
+                    </button>
+                {% endif %}
+
                 <a href="{% url 'export_template_excel' template.id %}" class="btn btn-success text-white">
                     <i class="bi bi-file-earmark-excel"></i> Exporter Excel
                 </a>
