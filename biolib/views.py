@@ -85,7 +85,6 @@ def create_template(request):
         form = CampaignTemplateForm()
         formset = TemplatePartFormSet()
 
-    # On envoie les formulaires au bon fichier HTML
     return render(request, 'biolib/create_template.html', {
         'form': form,
         'formset': formset
@@ -97,8 +96,9 @@ def simulation(request):
 def simulation_result(request):
     return render(request, 'biolib/simulation_result.html')
 
-def template_detail(request):
-    return render(request, 'biolib/template_detail.html')
+def template_detail(request, pk):
+    template = get_object_or_404(CampaignTemplate, pk=pk)
+    return render(request, 'biolib/template_detail.html', {'template': template})
 
 def signup(request):
     if request.method == 'POST':
