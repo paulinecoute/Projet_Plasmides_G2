@@ -32,7 +32,7 @@ class CampaignTemplateForm(forms.ModelForm):
         fields = ['name', 'description', 'enzyme', 'output_separator', 'visibility', 'team']
         
         labels = {
-            'team': 'Choisir l\'équipe (si visibilité Équipe)'
+            'team': 'Choisir l\'équipe'
         }
 
         widgets = {
