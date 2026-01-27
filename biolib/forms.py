@@ -32,7 +32,7 @@ class CampaignTemplateForm(forms.ModelForm):
         fields = ['name', 'description', 'enzyme', 'output_separator', 'visibility', 'team']
         
         labels = {
-            'team': 'Choisir l\'équipe'
+            'team': 'Choisir l\'équipe (si visibilité Équipe)'
         }
 
         widgets = {
@@ -40,20 +40,29 @@ class CampaignTemplateForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'enzyme': forms.Select(attrs={'class': 'form-select'}), 
             'output_separator': forms.Select(attrs={'class': 'form-select'}),
+            # IDs importants pour le JavaScript
             'visibility': forms.Select(attrs={'class': 'form-select', 'id': 'id_visibility'}),
             'team': forms.Select(attrs={'class': 'form-select', 'id': 'id_team'}),
         }
 
     def __init__(self, *args, **kwargs):
-        # On récupère l'utilisateur passé par la vue
+
         user = kwargs.pop('user', None)
         super(CampaignTemplateForm, self).__init__(*args, **kwargs)
         
-        # Si on a un utilisateur, on filtre les équipes
+        # si utilisateur connecté
         if user:
+            # que les equipes dans lesquelles on est 
             self.fields['team'].queryset = Team.objects.filter(members=user)
+            
+            # si l'utilisateur n'est PAS Admin (Staff), on retire l'option 'Public'
+            if not user.is_staff:
+                self.fields['visibility'].choices = [
+                    ('private', 'Privé (Moi uniquement)'),
+                    ('team', 'Visible par mon équipe'),
+                ]
         
-        # Le champ équipe est optionnel (car inutile si Privé ou Public)
+        # Le champ équipe est optionnel
         self.fields['team'].required = False
         self.fields['team'].empty_label = "--- Sélectionner une équipe ---"
 
