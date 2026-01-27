@@ -27,6 +27,10 @@ urlpatterns = [
     # template details
     path('template/<int:pk>/details/', views.template_detail, name='template_detail'),
 
+    # --- NOUVELLE LIGNE AJOUTÉE ICI (Suppression) ---
+    path('template/<int:pk>/delete/', views.delete_template, name='delete_template'),
+    # -----------------------------------------------
+
     # authentification
     path('signup/', views.signup, name='signup'),
     path(
@@ -51,7 +55,7 @@ urlpatterns = [
     path('simulation/<int:pk>/csv/', views.download_simulation_csv, name='download_simulation_csv'),
     path('simulation/<int:pk>/download_zip/', views.download_simulation_zip, name='download_simulation_zip'),
 
-    #équipes
+    # équipes
     path('teams/', views.team_list, name='teams'),
     path('teams/create/', views.team_create, name='team_create'),
     path('teams/<int:team_id>/', views.team_detail, name='team_detail'),
