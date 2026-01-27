@@ -64,8 +64,8 @@ def template(request):
                 Q(owner=request.user) | 
                 Q(visibility='team') | 
                 Q(visibility='public')
-            ).distinct().order_by('-id')[:5] # <-- On limite à 5 ici
-            title = "Templates récents (5 derniers)"
+            ).distinct().order_by('-id')[:5] 
+            title = "Templates récents"
             
     else:
         anon_ids = request.session.get('anon_templates', [])
@@ -80,7 +80,7 @@ def template(request):
 
     context = {
         'templates': templates,
-        'current_view': view_type, # Pour colorier le bouton actif
+        'current_view': view_type, 
         'page_title': title
     }
     return render(request, 'biolib/template.html', context)
