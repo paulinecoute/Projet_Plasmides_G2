@@ -2,135 +2,134 @@
 
 {% block content %}
 <div class="container mt-5">
-    <h2>Gestion des templates d’assemblage</h2>
+    
+    <div class="row g-4">
+        
+        <div class="col-md-4 col-lg-3">
+            
+            <div class="d-grid mb-4">
+                <a href="{% url 'create_template' %}" class="btn btn-primary btn-lg shadow-sm">
+                    <i class="bi bi-plus-lg me-2"></i> Créer un template
+                </a>
+            </div>
 
-    <div class="row">
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-header">
-                    <h5>Filtres</h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label">Date de publication</label>
-                        <input type="text" class="form-control" placeholder="[Encadrement de date]" disabled>
+            <div class="list-group shadow-sm mb-4">
+                
+                <a href="{% url 'template' %}?view=recent" 
+                   class="list-group-item list-group-item-action py-3 d-flex align-items-center {% if current_view == 'recent' %}active fw-bold{% endif %}">
+                    <i class="bi bi-clock-history fs-5 me-3"></i>
+                    <div>
+                        <div class="mb-0">Récents</div>
+                        <small class="{% if current_view == 'recent' %}text-light{% else %}text-muted{% endif %}">Derniers utilisés</small>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Recherche par mot-clé</label>
-                        <input type="text" class="form-control" placeholder="[Nom/Auteur/Description]" disabled>
+                </a>
+
+                <a href="{% url 'template' %}?view=private" 
+                   class="list-group-item list-group-item-action py-3 d-flex align-items-center {% if current_view == 'private' %}active fw-bold{% endif %}">
+                    <i class="bi bi-lock fs-5 me-3"></i>
+                    <div>
+                        <div class="mb-0">Templates privés</div>
+                        <small class="{% if current_view == 'private' %}text-light{% else %}text-muted{% endif %}">Vos créations</small>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Visibilité</label>
-                        <select class="form-select" disabled>
-                            <option>Tous</option>
-                            <option>Publics</option>
-                            <option>Privés</option>
-                        </select>
+                </a>
+
+                <a href="{% url 'template' %}?view=team" 
+                   class="list-group-item list-group-item-action py-3 d-flex align-items-center {% if current_view == 'team' %}active fw-bold{% endif %}">
+                    <i class="bi bi-people fs-5 me-3"></i>
+                    <div>
+                        <div class="mb-0">Templates d'équipe</div>
+                        <small class="{% if current_view == 'team' %}text-light{% else %}text-muted{% endif %}">Partagés</small>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Équipe</label>
-                        <select class="form-select" disabled>
-                            <option>Toutes les équipes</option>
-                            <option>Équipe 1</option>
-                            <option>Équipe 2</option>
-                        </select>
+                </a>
+
+                <a href="{% url 'template' %}?view=public" 
+                   class="list-group-item list-group-item-action py-3 d-flex align-items-center {% if current_view == 'public' %}active fw-bold{% endif %}">
+                    <i class="bi bi-globe fs-5 me-3"></i>
+                    <div>
+                        <div class="mb-0">Templates publics</div>
+                        <small class="{% if current_view == 'public' %}text-light{% else %}text-muted{% endif %}">La communauté</small>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Enzyme de restriction</label>
-                        <select class="form-select" disabled>
-                            <option>Toutes</option>
-                            <option>BsaI</option>
-                            <option>BbsI</option>
-                        </select>
-                    </div>
-                </div>
+                </a>
             </div>
         </div>
 
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5>Templates d’assemblage disponibles</h5>
-                </div>
-                <div class="card-body">
-                    
-                    {% for t in templates %}
-                        <div class="card mb-3 shadow-sm border">
+        <div class="col-md-8 col-lg-9">
+            
+            <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
+                <h2 class="fw-bold m-0">{{ page_title }}</h2>
+                <span class="badge bg-secondary rounded-pill">{{ templates.count }}</span>
+            </div>
+
+            <div class="row">
+                {% for t in templates %}
+                    <div class="col-12 mb-3">
+                        <div class="card shadow-sm border h-100 hover-shadow transition-all">
                             <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h5 class="mb-0 fw-bold text-primary">{{ t.name }}</h5>
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="fw-bold text-primary mb-1">
+                                            <a href="{% url 'template_detail' t.id %}" class="text-decoration-none text-primary stretched-link">
+                                                {{ t.name }}
+                                            </a>
+                                        </h5>
+                                        <div class="text-muted small mb-2">
+                                            <i class="bi bi-scissors me-1"></i> {{ t.enzyme }} 
+                                            <span class="mx-2">•</span>
+                                            <i class="bi bi-calendar3 me-1"></i> {{ t.created_at|date:"d M Y" }}
+                                            
+                                            <span class="ms-2 badge {% if t.visibility == 'private' %}bg-warning text-dark{% elif t.visibility == 'public' %}bg-success{% else %}bg-info text-dark{% endif %}">
+                                                {{ t.get_visibility_display|default:t.visibility|title }}
+                                            </span>
+                                        </div>
+                                        <p class="text-secondary small mb-0">
+                                            {{ t.description|default:"Pas de description"|truncatewords:20 }}
+                                        </p>
+                                    </div>
                                     
-                                    {% if t.visibility == 'private' %}
-                                        <span class="badge bg-warning text-dark">Privé</span>
-                                    {% else %}
-                                        <span class="badge bg-info text-dark">Équipe</span>
-                                    {% endif %}
+                                    <div class="d-flex flex-column gap-2" style="z-index: 2; position: relative;">
+                                        <a href="{% url 'export_template_excel' t.id %}" class="btn btn-outline-success btn-sm" title="Exporter Excel">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                    </div>
                                 </div>
                                 
-                                <p class="small mb-2 text-muted">
-                                    <strong>Enzyme :</strong> {{ t.enzyme }}<br>
-                                    <strong>Description :</strong> {{ t.description|default:"Aucune description"|truncatewords:20 }}<br>
-                                    <strong>Créé par :</strong> 
-                                    {% if t.owner %}
-                                        {{ t.owner.username }}
-                                    {% else %}
-                                        <span class="fst-italic">Invité</span>
-                                    {% endif %}
-                                </p>
-
                                 {% if t.parts.all %}
-                                    <div class="mb-3 p-2 bg-light rounded border-start border-4 border-secondary">
-                                        <small class="text-muted d-block mb-1">Structure :</small>
-                                        {% for part in t.parts.all %}
-                                            <span class="badge bg-white text-dark border">{{ part.name }}</span>
-                                            {% if not forloop.last %} + {% endif %}
+                                    <div class="mt-3 pt-2 border-top">
+                                        {% for part in t.parts.all|slice:":5" %}
+                                            <span class="badge bg-light text-dark border me-1 mb-1 fw-normal">{{ part.name }}</span>
                                         {% endfor %}
+                                        {% if t.parts.count > 5 %}
+                                            <span class="text-muted small">+ {{ t.parts.count|add:"-5" }} autres...</span>
+                                        {% endif %}
                                     </div>
                                 {% endif %}
-
-                                <div class="d-flex justify-content-between mt-3 pt-2 border-top">
-                                    <a href="{% url 'template_detail' t.id %}" class="btn btn-outline-secondary btn-sm">
-                                        Voir détails
-                                    </a>
-                                    
-                                    <a href="{% url 'export_template_excel' t.id %}" class="btn btn-success btn-sm text-white">
-                                        Exporter Excel
-                                    </a>
-                                </div>
                             </div>
                         </div>
-                    
-                    {% empty %}
-                        <div class="alert alert-info text-center">
-                            Aucun template pour le moment.<br>
-                            Soyez le premier à en créer un !
+                    </div>
+                {% empty %}
+                    <div class="col-12">
+                        <div class="text-center py-5 bg-light rounded border border-dashed">
+                            <i class="bi bi-inbox fs-1 text-muted mb-3"></i>
+                            <h4>Aucun template trouvé</h4>
+                            <p class="text-muted">Il n'y a rien à afficher dans cette catégorie pour le moment.</p>
+                            {% if current_view == 'private' %}
+                                <a href="{% url 'create_template' %}" class="btn btn-primary mt-2">Créer mon premier template</a>
+                            {% endif %}
                         </div>
-                    {% endfor %}
-
-                </div>
+                    </div>
+                {% endfor %}
             </div>
 
-            <nav aria-label="Page navigation">
-                <ul class="pagination justify-content-center">
-                    <li class="page-item disabled"><a class="page-link" href="#">Précédent</a></li>
-                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                    <li class="page-item"><a class="page-link" href="#">2</a></li>
-                    <li class="page-item"><a class="page-link" href="#">Suivant</a></li>
-                </ul>
-            </nav>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card shadow-sm border-primary">
-                <div class="card-body text-center">
-                    <h5 class="card-title text-primary">Créer un nouveau template</h5>
-                    <p class="card-text small text-muted">Utilisez ce lien pour construire votre propre template d’assemblage.</p>
-                    <a href="{% url 'create_template' %}" class="btn btn-primary w-100">
-                        Créer un template
-                    </a>
-                </div>
-            </div>
         </div>
     </div>
 </div>
+
+<style>
+    /* Petit effet de survol sympa */
+    .hover-shadow:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+        transition: all 0.2s ease-in-out;
+    }
+</style>
 {% endblock %}
