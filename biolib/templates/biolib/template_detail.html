@@ -7,10 +7,17 @@
         
         {% if template.visibility == 'private' %}
             <span class="badge bg-warning text-dark fs-6">Privé</span>
+        
         {% elif template.visibility == 'public' %}
             <span class="badge bg-success fs-6">Public</span>
+        
         {% else %}
-            <span class="badge bg-info text-dark fs-6">Équipe</span>
+            <span class="badge bg-info text-dark fs-6">
+                Équipe
+                {% if template.team %}
+                    : {{ template.team.name }}
+                {% endif %}
+            </span>
         {% endif %}
     </div>
 
