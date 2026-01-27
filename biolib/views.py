@@ -33,23 +33,57 @@ def home(request):
     return render(request, 'biolib/home.html')
 
 def template(request):
+ 
+    view_type = request.GET.get('view', 'recent')
+    
+    templates = CampaignTemplate.objects.none()
+    title = "Templates récents"
+
     if request.user.is_authenticated:
-        # Si connecté : nos templates + ceux de l'équipe + publics
-        templates = CampaignTemplate.objects.filter(
-            Q(owner=request.user) | 
-            Q(visibility='team') | 
-            Q(visibility='public')
-        ).distinct().order_by('-id')
+        # templates pv
+        if view_type == 'private':
+            templates = CampaignTemplate.objects.filter(owner=request.user, visibility='private').order_by('-created_at')
+            title = "Mes templates privés"
+            
+        # templates d'équipes
+        elif view_type == 'team':
+            templates = CampaignTemplate.objects.filter(
+                Q(visibility='team') & 
+                (Q(owner=request.user) | Q(owner__teams__members=request.user))
+            ).distinct().order_by('-created_at')
+            title = "Templates d'équipe"
+
+        # templates publics
+        elif view_type == 'public':
+            templates = CampaignTemplate.objects.filter(visibility='public').order_by('-created_at')
+            title = "Templates publics"
+
+        # les 5 récents
+        else:
+            templates = CampaignTemplate.objects.filter(
+                Q(owner=request.user) | 
+                Q(visibility='team') | 
+                Q(visibility='public')
+            ).distinct().order_by('-id')[:5] # <-- On limite à 5 ici
+            title = "Templates récents (5 derniers)"
+            
     else:
-        # Si invité : ceux de la session + publics
         anon_ids = request.session.get('anon_templates', [])
-        templates = CampaignTemplate.objects.filter(
-            Q(id__in=anon_ids) |
-            Q(visibility='public')
-        ).distinct().order_by('-id')
+        if view_type == 'public':
+            templates = CampaignTemplate.objects.filter(visibility='public').order_by('-id')
+            title = "Templates publics"
+        else:
+            templates = CampaignTemplate.objects.filter(
+                Q(id__in=anon_ids) | Q(visibility='public')
+            ).distinct().order_by('-id')[:5]
+            title = "Templates récents"
 
-    return render(request, 'biolib/template.html', {'templates': templates})
-
+    context = {
+        'templates': templates,
+        'current_view': view_type, # Pour colorier le bouton actif
+        'page_title': title
+    }
+    return render(request, 'biolib/template.html', context)
 
 def create_template(request):
 
