@@ -130,14 +130,36 @@
                     <i class="bi bi-file-earmark-excel"></i> Exporter Excel
                 </a>
 
-                {% if user == template.owner %}
-                    <button class="btn btn-primary" disabled title="Bientôt disponible">
-                        <i class="bi bi-pencil"></i> Modifier
-                    </button>
-                    <button class="btn btn-danger" disabled title="Bientôt disponible">
-                        <i class="bi bi-trash"></i> Supprimer
-                    </button>
-                {% endif %}
+                <a href="{% url 'create_template' %}?clone_from={{ template.id }}" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> Modifier (Copier)
+                </a>
+
+                {% with is_admin=user.is_staff %}
+                {% with is_owner=user|yesno:"yes,no" == template.owner|yesno:"yes,no" %} 
+                
+                    {% if template.visibility == 'public' %}
+                        {% if is_admin %}
+                            <a href="{% url 'delete_template' template.id %}" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Supprimer
+                            </a>
+                        {% endif %}
+
+                    {% elif template.visibility == 'team' %}
+                        <a href="{% url 'delete_template' template.id %}" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> Supprimer
+                        </a>
+
+                    {% else %}
+                        {% if user == template.owner %}
+                            <a href="{% url 'delete_template' template.id %}" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Supprimer
+                            </a>
+                        {% endif %}
+                    {% endif %}
+
+                {% endwith %}
+                {% endwith %}
+
             </div>
         </div>
     </div>
