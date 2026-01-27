@@ -39,9 +39,17 @@
                 </div>
                 
                 {% if user.is_authenticated %}
-                    <div class="mb-3">
-                        <label class="form-label">Qui peut voir ce template ?</label>
-                        {{ form.visibility }}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Qui peut voir ce template ?</label>
+                            {{ form.visibility }}
+                        </div>
+
+                        <div class="col-md-6 mb-3" id="team-selector-div" style="display:none;">
+                            <label class="form-label fw-bold text-primary">{{ form.team.label }}</label>
+                            {{ form.team }}
+                            <div class="form-text">Sélectionnez l'équipe avec laquelle partager ce template.</div>
+                        </div>
                     </div>
                 {% else %}
                     <div class="alert alert-warning d-flex align-items-center" role="alert">
@@ -80,7 +88,7 @@
                             {% for part_form in formset %}
                                 <tr class="part-form-row">
                                     <td>
-                                        {{ part_form.name }}
+                                        {{ part_form.id }} {{ part_form.name }}
                                         {% if part_form.name.errors %}
                                             <div class="text-danger small">{{ part_form.name.errors }}</div>
                                         {% endif %}
@@ -219,6 +227,28 @@
                 orderInput.value = formIdx + 1;
             }
         });
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const visibilitySelect = document.getElementById('id_visibility');
+        const teamDiv = document.getElementById('team-selector-div');
+
+        function toggleTeamField() {
+            if (visibilitySelect && visibilitySelect.value === 'team') {
+                teamDiv.style.display = 'block';
+            } else if (teamDiv) {
+                teamDiv.style.display = 'none';
+            }
+        }
+
+        if (visibilitySelect) {
+            // Vérifier au chargement
+            toggleTeamField();
+            // Vérifier au changement
+            visibilitySelect.addEventListener('change', toggleTeamField);
+        }
     });
 </script>
 
