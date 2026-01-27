@@ -3,44 +3,146 @@
 {% block title %}Créer une équipe{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-lg-5">
+<div class="container-fluid px-lg-5 py-4">
 
-    <div class="mb-4">
-        <a href="{% url 'teams' %}" class="btn btn-sm btn-outline-secondary">
-            ← Retour aux équipes
-        </a>
-    </div>
+  <!-- Retour -->
+  <div class="mb-4">
+    <a href="{% url 'teams' %}" class="btn btn-sm btn-outline-secondary">
+      ← Retour aux équipes
+    </a>
+  </div>
 
-    <div class="card shadow-sm mx-auto" style="max-width: 500px;">
-        <div class="card-body">
+  <div class="mx-auto" style="max-width: 700px;">
 
-            <h4 class="fw-bold mb-3 text-center">
-                Créer une nouvelle équipe
-            </h4>
+    <div class="border rounded-4 bg-white shadow-sm p-4 p-lg-5">
 
-            <form method="post">
-                {% csrf_token %}
-
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">
-                        Nom de l’équipe
-                    </label>
-                    <input
-                        type="text"
-                        name="name"
-                        class="form-control"
-                        placeholder="Ex : Équipe CRISPR"
-                        required
-                    >
-                </div>
-
-                <button type="submit" class="btn btn-primary w-100">
-                    Créer l’équipe
-                </button>
-            </form>
-
+      <!-- Titre -->
+      <div class="mb-4">
+        <h3 class="fw-bold mb-1">Créer une nouvelle équipe</h3>
+        <div class="text-muted">
+          Une équipe permet de partager des ressources, des campagnes et des résultats
+          avec d’autres membres.
         </div>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+
+        <!-- Nom -->
+        <div class="mb-4">
+          <label class="form-label fw-semibold">
+            Nom de l’équipe
+          </label>
+          <input
+            type="text"
+            name="name"
+            class="form-control"
+            placeholder="Ex : Équipe CRISPR, Projet Plasmides 2026"
+            required
+          >
+          <div class="form-text">
+            Choisissez un nom clair et reconnaissable par les membres.
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="mb-4">
+          <label class="form-label fw-semibold">
+            Description <span class="text-muted">(optionnel)</span>
+          </label>
+          <textarea
+            name="description"
+            class="form-control"
+            rows="3"
+            placeholder="Décrivez brièvement l’objectif ou le contexte scientifique de l’équipe."
+          ></textarea>
+          <div class="form-text">
+            Cette description aide les membres à comprendre le rôle de l’équipe.
+          </div>
+        </div>
+
+        <!-- Objectif -->
+        <div class="mb-4">
+          <label class="form-label fw-semibold">
+            Objectif principal <span class="text-muted">(optionnel)</span>
+          </label>
+
+          <select name="purpose" class="form-select">
+            <option value="">— Sélectionner un objectif —</option>
+            <option value="research">Recherche scientifique</option>
+            <option value="campaigns">Gestion de campagnes expérimentales</option>
+            <option value="analysis">Analyse et exploration de données</option>
+            <option value="teaching">Enseignement / travaux pratiques</option>
+            <option value="methods">Développement de méthodes / protocoles</option>
+            <option value="collaboration">Projet collaboratif inter-équipes</option>
+            <option value="testing">Tests / validation technique</option>
+            <option value="archival">Archivage et partage de résultats</option>
+          </select>
+
+          <div class="form-text">
+            Cet élément est indicatif et peut évoluer par la suite.
+          </div>
+        </div>
+
+        <!-- Visibilité -->
+        <div class="mb-5">
+          <label class="form-label fw-semibold">
+            Visibilité de l’équipe
+          </label>
+
+          <div class="border rounded-3 p-3">
+
+            <div class="form-check mb-2">
+              <input
+                class="form-check-input"
+                type="radio"
+                name="visibility"
+                id="private"
+                value="private"
+                checked
+              >
+              <label class="form-check-label" for="private">
+                <strong>Privée</strong>
+                <div class="text-muted small">
+                  L’équipe n’est visible que par ses membres.
+                </div>
+              </label>
+            </div>
+
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                type="radio"
+                name="visibility"
+                id="public"
+                value="public"
+              >
+              <label class="form-check-label" for="public">
+                <strong>Publique</strong>
+                <div class="text-muted small">
+                  L’équipe est visible par tous les utilisateurs.
+                </div>
+              </label>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% url 'teams' %}" class="btn btn-outline-secondary">
+            Annuler
+          </a>
+          <button type="submit" class="btn btn-primary">
+            Créer l’équipe
+          </button>
+        </div>
+
+      </form>
+
     </div>
+
+  </div>
 
 </div>
 {% endblock %}

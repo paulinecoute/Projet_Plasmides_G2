@@ -227,9 +227,9 @@ def create_simulation(request):
                         gb_plasmids_paths.append(file_path)
 
             try:
-                observer = DjangoConsoleObserver()
+                # observer = DjangoConsoleObserver()
                 compute_all(
-                    observer=observer,
+                    # observer=observer,
                     settings=None,
                     input_template_filled=path_xlsx,
                     input_parts_files=path_csv_list,
@@ -295,10 +295,21 @@ def team_list(request):
 def team_create(request):
     if request.method == 'POST':
         name = request.POST.get('name')
+        description = request.POST.get('description', '')
+        purpose = request.POST.get('purpose') or None
+        visibility = request.POST.get('visibility', 'private')
+
         if name:
-            team = Team.objects.create(name=name, leader=request.user)
+            team = Team.objects.create(
+                name=name,
+                description=description,
+                purpose=purpose,
+                visibility=visibility,
+                leader=request.user
+            )
             team.members.add(request.user)
             return redirect('teams')
+
     return render(request, 'biolib/team_create.html')
 
 @login_required
@@ -308,7 +319,7 @@ def team_detail(request, team_id):
 
 @login_required
 def team_manage_members(request, team_id):
-    team = get_object_or_404(Team, id=team_id)
+    team = get_object_or_404(Team, id=team_id, members=request.user)
     if team.leader != request.user: return HttpResponse("Accès refusé", status=403)
     if request.method == 'POST':
         email = request.POST.get('email')
@@ -320,13 +331,34 @@ def team_manage_members(request, team_id):
     return render(request, 'biolib/team_manage_members.html', {'team': team})
 
 @login_required
+def team_change_leader(request, team_id, user_id):
+    team = get_object_or_404(Team, id=team_id, members=request.user)
+    if team.leader != request.user: return HttpResponse("Accès refusé", status=403)
+    new_leader = get_object_or_404(User, id=user_id)
+    if new_leader not in team.members.all(): return HttpResponse("Accès refusé", status=400)
+    if request.method == 'POST':
+        team.leader = new_leader
+        team.save()
+    return redirect('team_manage_members', team_id=team.id)
+
+@login_required
 def team_remove_member(request, team_id, user_id):
-    team = get_object_or_404(Team, id=team_id)
+    team = get_object_or_404(Team, id=team_id, members=request.user)
     if team.leader != request.user: return HttpResponse("Accès refusé", status=403)
     user = get_object_or_404(User, id=user_id)
     if user == team.leader: return HttpResponse("Impossible de retirer la cheffe", status=400)
     if request.method == 'POST': team.members.remove(user)
     return redirect('team_manage_members', team_id=team.id)
+
+@login_required
+def team_leave(request, team_id):
+    team = get_object_or_404(Team, id=team_id, members=request.user)
+    if request.user == team.leader:
+        return HttpResponse("Vous devez nommer une autre cheffe avant de quitter", status=400)
+    if request.method == 'POST':
+        team.members.remove(request.user)
+        return redirect('teams')
+    return redirect('team_detail', team_id=team.id)
 
 @login_required
 def team_delete(request, team_id):

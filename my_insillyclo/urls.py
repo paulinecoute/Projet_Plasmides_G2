@@ -66,4 +66,14 @@ urlpatterns = [
         views.team_delete,
         name='team_delete'
     ),
+    path(
+        'teams/<int:team_id>/leave/',
+        views.team_leave,
+        name='team_leave'
+    ),
+    path(
+        'teams/<int:team_id>/change_leader/<int:user_id>/',
+        views.team_change_leader,
+        name='team_change_leader'
+    ),
 ]

@@ -3,67 +3,110 @@
 {% block title %}Mes équipes{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-lg-5">
+<div class="container-fluid px-lg-5 py-4" style="max-width:1200px;">
 
-    <!-- Header -->
-    <div class="mb-5">
-        <h2 class="fw-bold">
-            <i class="bi bi-people me-2"></i>
-            Mes équipes
-        </h2>
-        <p class="text-muted">
-            Gérez vos équipes de travail et leurs membres.
-        </p>
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">Mes équipes</h2>
+      <div class="text-muted">
+        Espaces de travail collaboratifs.
+      </div>
     </div>
 
-    <!-- Action -->
-    <div class="mb-4">
-        <a href="{% url 'team_create' %}" class="btn btn-primary">
-            <i class="bi bi-plus-circle me-1"></i>
-            Nouvelle équipe
-        </a>
-    </div>
+    <a href="{% url 'team_create' %}" class="btn btn-primary rounded-pill px-4">
+      Nouvelle équipe
+    </a>
+  </div>
 
-    <!-- Teams grid -->
-    <div class="row g-4">
-        {% for team in teams %}
-        <div class="col-md-6 col-xl-4">
-            <div class="card shadow-sm h-100 border-0">
-                <div class="card-body d-flex flex-column">
+  <!-- Liste -->
+  <div class="d-flex flex-column gap-3">
 
-                    <div class="mb-3">
-                        <h5 class="fw-semibold mb-1">{{ team.name }}</h5>
-                        {% if team.leader == request.user %}
-                            <span class="badge bg-primary">Cheffe</span>
-                        {% else %}
-                            <span class="badge bg-secondary">Membre</span>
-                        {% endif %}
-                    </div>
+    {% for team in teams %}
+    <a href="{% url 'team_detail' team.id %}"
+       class="text-decoration-none text-dark">
 
-                    <p class="text-muted small flex-grow-1">
-                        Équipe collaborative pour la gestion de projets biologiques.
-                    </p>
+      <!-- CARTE -->
+      <div class="card border-0 rounded-4 shadow-sm">
 
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="text-muted small">
-                            <i class="bi bi-person"></i>
-                            {{ team.members.count }} membres
-                        </span>
-                        <a href="{% url 'team_detail' team.id %}"
-                           class="btn btn-sm btn-outline-primary">
-                            Ouvrir
-                        </a>
-                    </div>
+        <div class="card-body px-4 py-4">
 
-                </div>
+          <!-- Ligne 1 : nom + badges -->
+          <div class="d-flex justify-content-between align-items-start mb-3">
+
+            <div>
+              <h5 class="fw-bold mb-1">
+                {{ team.name }}
+              </h5>
+
+              <div class="text-muted small">
+                {{ team.description|default:"Aucune description"|truncatechars:140 }}
+              </div>
             </div>
+
+            <div class="d-flex flex-column align-items-end gap-1">
+
+              {% if team.leader == request.user %}
+                <span class="badge bg-primary-subtle text-primary rounded-pill px-3">
+                  Responsable
+                </span>
+              {% else %}
+                <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3">
+                  Membre
+                </span>
+              {% endif %}
+
+              <span class="badge bg-light border text-dark rounded-pill px-3">
+                {{ team.visibility|capfirst }}
+              </span>
+
+            </div>
+          </div>
+
+          <!-- Ligne 2 : stats -->
+          <div class="d-flex flex-wrap gap-4 small text-muted">
+
+            <span>
+              <strong class="text-dark">{{ team.members.count }}</strong>
+              membres
+            </span>
+
+            <span>
+              <strong class="text-dark">
+                {{ team.templates.count|default:"0" }}
+              </strong>
+              templates
+            </span>
+
+            <span>
+              <strong class="text-dark">—</strong>
+              tables
+            </span>
+
+            <span>
+              <strong class="text-dark">—</strong>
+              campagnes
+            </span>
+
+            <span>
+              <strong class="text-dark">—</strong>
+              plasmides
+            </span>
+
+          </div>
+
         </div>
-        {% empty %}
-        <p class="text-muted">
-            Vous n’avez encore créé ou rejoint aucune équipe.
-        </p>
-        {% endfor %}
+      </div>
+
+    </a>
+
+    {% empty %}
+    <div class="card border-0 bg-light rounded-4 p-5 text-center text-muted">
+      Vous n’avez encore créé ou rejoint aucune équipe.
     </div>
+    {% endfor %}
+
+  </div>
 
 </div>
 {% endblock %}

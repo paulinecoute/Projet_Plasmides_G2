@@ -1,106 +1,137 @@
 {% extends "biolib/base.html" %}
 
-{% block title %}Gestion des membres{% endblock %}
+{% block title %}Gestion de l’équipe{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-lg-5">
+<div class="container-fluid px-lg-5 py-5" style="max-width:1000px;">
 
-    <!-- Retour -->
-    <div class="mb-4">
-        <a href="{% url 'team_detail' team.id %}" class="btn btn-sm btn-outline-secondary">
-            ← Retour à l’équipe
-        </a>
+  <!-- HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-5">
+    <div>
+      <h2 class="fw-semibold mb-1">Gestion de l’équipe</h2>
+      <p class="text-muted mb-0">{{ team.name }}</p>
     </div>
 
-    <!-- Header -->
-    <div class="mb-4">
-        <h2 class="fw-bold mb-1">
-            Gestion des membres
-        </h2>
-        <p class="text-muted">
-            Équipe : <strong>{{ team.name }}</strong>
+    <a href="{% url 'team_detail' team.id %}"
+       class="btn btn-sm btn-outline-secondary">
+      ← Retour
+    </a>
+  </div>
+
+  <!-- INFO UTILISATEUR -->
+  <div class="card border-0 shadow-sm mb-5">
+    <div class="card-body">
+
+      {% if request.user == team.leader %}
+        <p class="mb-0 text-muted">
+          Vous êtes responsable de cette équipe.
         </p>
-    </div>
-
-    <div class="row g-4">
-
-        <!-- Ajouter un membre -->
-        <div class="col-lg-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-
-                    <h5 class="fw-semibold mb-3">
-                        Ajouter un membre
-                    </h5>
-
-                    <p class="text-muted small mb-3">
-                        Entrez l’email d’un utilisateur existant.
-                    </p>
-
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <input
-                                type="email"
-                                name="email"
-                                class="form-control"
-                                placeholder="email@exemple.com"
-                                required
-                            >
-                        </div>
-                        <button class="btn btn-primary w-100">
-                            Ajouter
-                        </button>
-                    </form>
-
-                </div>
-            </div>
-        </div>
-
-        <!-- Liste des membres -->
-        <div class="col-lg-8">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-
-                    <h5 class="fw-semibold mb-3">
-                        Membres de l’équipe
-                        <span class="badge bg-secondary ms-2">
-                            {{ team.members.count }}
-                        </span>
-                    </h5>
-
-                    <div class="list-group list-group-flush">
-
-                        {% for member in team.members.all %}
-                        <div class="list-group-item d-flex justify-content-between align-items-center py-3">
-
-                            <div>
-                                <strong>{{ member.email }}</strong>
-                                {% if member == team.leader %}
-                                    <span class="badge bg-primary ms-2">Cheffe</span>
-                                {% endif %}
-                            </div>
-
-                            {% if member != team.leader %}
-                            <form method="post"
-                                  action="{% url 'team_remove_member' team.id member.id %}">
-                                {% csrf_token %}
-                                <button class="btn btn-sm btn-outline-danger">
-                                    Retirer
-                                </button>
-                            </form>
-                            {% endif %}
-
-                        </div>
-                        {% endfor %}
-
-                    </div>
-
-                </div>
-            </div>
-        </div>
+      {% else %}
+        <form method="post" action="{% url 'team_leave' team.id %}">
+          {% csrf_token %}
+          <button class="btn btn-sm btn-outline-danger">
+            Quitter l’équipe
+          </button>
+        </form>
+      {% endif %}
 
     </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- AJOUT MEMBRE -->
+    <div class="col-md-4">
+
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+
+          <h6 class="fw-semibold mb-3">Ajouter un membre</h6>
+
+          <form method="post">
+            {% csrf_token %}
+
+            <input type="email"
+                   name="email"
+                   class="form-control form-control-sm mb-3"
+                   placeholder="email@exemple.com"
+                   required>
+
+            <button class="btn btn-sm btn-primary w-100">
+              Ajouter
+            </button>
+          </form>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- LISTE MEMBRES -->
+    <div class="col-md-8">
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-semibold mb-0">Membres</h6>
+            <span class="text-muted small">{{ team.members.count }} membre(s)</span>
+          </div>
+
+          <ul class="list-group list-group-flush">
+
+            {% for member in team.members.all %}
+            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+
+              <div>
+                {% if member == team.leader %}
+                  <span class="me-2 text-warning">★</span>
+                {% endif %}
+                {{ member.email }}
+              </div>
+
+              {% if request.user == team.leader and member != team.leader %}
+              <div class="btn-group btn-group-sm">
+
+                <form method="post"
+                      action="{% url 'team_change_leader' team.id member.id %}">
+                  {% csrf_token %}
+                  <button class="btn btn-outline-secondary">
+                    Nommer chef
+                  </button>
+                </form>
+
+                <form method="post"
+                      action="{% url 'team_remove_member' team.id member.id %}">
+                  {% csrf_token %}
+                  <button class="btn btn-outline-danger">
+                    Retirer
+                  </button>
+                </form>
+
+              </div>
+              {% endif %}
+
+            </li>
+            {% endfor %}
+
+          </ul>
+
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  {% if request.user == team.leader %}
+  <div class="mt-5 text-end">
+    <a href="{% url 'team_delete' team.id %}"
+       class="btn btn-sm btn-outline-danger">
+      Supprimer l’équipe
+    </a>
+  </div>
+  {% endif %}
 
 </div>
 {% endblock %}

@@ -61,15 +61,43 @@ class User(AbstractUser):
 
 class Team(models.Model):
     """ Branche AGASH : Hiérarchie Équipes """
+
+    TEAM_PURPOSE_CHOICES = [
+        ('research', 'Recherche scientifique'),
+        ('campaigns', 'Gestion de campagnes expérimentales'),
+        ('analysis', 'Analyse et exploration de données'),
+        ('teaching', 'Enseignement / travaux pratiques'),
+        ('methods', 'Développement de méthodes / protocoles'),
+        ('collaboration', 'Projet collaboratif inter-équipes'),
+        ('testing', 'Tests / validation technique'),
+        ('archival', 'Archivage et partage de résultats'),
+    ]
+
     name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+
+    purpose = models.CharField(
+        max_length=30,
+        choices=TEAM_PURPOSE_CHOICES,
+        blank=True
+    )
+
+    visibility = models.CharField(
+        max_length=10,
+        choices=[('private', 'Privée'), ('public', 'Publique')],
+        default='private'
+    )
+
     leader = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='led_teams'
     )
     members = models.ManyToManyField(
         settings.AUTH_USER_MODEL, related_name='teams', blank=True
     )
+
     def __str__(self):
         return self.name
+
 
 # ==============================================================================
 # 2. DONNÉES BIOLOGIQUES (Fusion AGASH + MAIN)

@@ -1,57 +1,155 @@
 {% extends "biolib/base.html" %}
 
-{% block title %}{{ team.name }}{% endblock %}
+{% block title %}Équipe · {{ team.name }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-lg-5">
+<div class="container-fluid px-lg-5 py-4" style="max-width:1100px;">
 
-    <div class="mb-4">
-        <a href="{% url 'teams' %}" class="btn btn-sm btn-outline-secondary">
-            ← Retour aux équipes
-        </a>
+  <!-- HEADER COLORÉ -->
+  <div class="rounded-4 p-5 mb-5 text-white shadow"
+       style="background: linear-gradient(135deg, #4f46e5, #2563eb);">
+
+    <h1 class="fw-bold mb-3">
+      {{ team.name }}
+    </h1>
+
+    <p class="fs-5 opacity-90 mb-4" style="max-width:900px;">
+      {{ team.description|default:"Aucune description n’a été renseignée pour cette équipe." }}
+    </p>
+
+    <div class="d-flex flex-wrap gap-2">
+
+      <span class="badge bg-light text-dark rounded-pill px-3 py-2">
+        ⭐ Chef : {{ team.leader.email }}
+      </span>
+
+      <span class="badge bg-dark rounded-pill px-3 py-2">
+        🌍 {{ team.visibility|capfirst }}
+      </span>
+
+      <span class="badge bg-light text-dark rounded-pill px-3 py-2">
+        👥 {{ team.members.count }} membres
+      </span>
+
     </div>
 
-    <!-- Team header -->
-    <div class="mb-5">
-        <h2 class="fw-bold">{{ team.name }}</h2>
-        <p class="text-muted">
-            Cheffe d’équipe : {{ team.leader.email }}
-        </p>
+  </div>
+
+  <!-- SECTION : STATISTIQUES -->
+  <div class="mb-5">
+
+    <h5 class="fw-bold mb-3">
+      Statistiques de l’équipe
+    </h5>
+
+    <div class="d-flex flex-wrap gap-3">
+
+      <span class="badge bg-primary-subtle text-primary rounded-pill px-4 py-2">
+        {{ team.members.count }} membres
+      </span>
+
+      <span class="badge bg-success-subtle text-success rounded-pill px-4 py-2">
+        {{ team.templates.count|default:"0" }} templates
+      </span>
+
+      <span class="badge bg-secondary-subtle text-secondary rounded-pill px-4 py-2">
+        — collections
+      </span>
+
+      <span class="badge bg-warning-subtle text-warning rounded-pill px-4 py-2">
+        — tables
+      </span>
+
+      <span class="badge bg-info-subtle text-info rounded-pill px-4 py-2">
+        — campagnes
+      </span>
+
+      <span class="badge bg-dark-subtle text-dark rounded-pill px-4 py-2">
+        — plasmides
+      </span>
+
     </div>
 
-    <!-- Members -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-body">
-            <h5 class="fw-semibold mb-3">Membres</h5>
+  </div>
 
-            <ul class="list-group list-group-flush">
-                {% for member in team.members.all %}
-                <li class="list-group-item d-flex justify-content-between">
-                    {{ member.email }}
-                    {% if member == team.leader %}
-                        <span class="badge bg-primary">Cheffe</span>
-                    {% else %}
-                        <span class="badge bg-secondary">Membre</span>
-                    {% endif %}
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
+  <!-- SECTION : RESSOURCES -->
+  <div class="mb-5">
+
+    <h5 class="fw-bold mb-3">
+      Ressources de l’équipe
+    </h5>
+
+    <div class="list-group rounded-4 shadow-sm overflow-hidden">
+      <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+        <span class="fw-semibold">📄 Templates</span>
+        <span class="badge bg-primary rounded-pill">Voir</span>
+      </a>
+      <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+        <span class="fw-semibold">🧬 Collections</span>
+        <span class="badge bg-success rounded-pill">Voir</span>
+      </a>
+      <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+        <span class="fw-semibold">📊 Tables de correspondance</span>
+        <span class="badge bg-warning rounded-pill">Voir</span>
+      </a>
+      <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+        <span class="fw-semibold">🧪 Campagnes</span>
+        <span class="badge bg-info rounded-pill">Voir</span>
+      </a>
+      <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+        <span class="fw-semibold">🧫 Plasmides produits</span>
+        <span class="badge bg-dark rounded-pill">Voir</span>
+      </a>
     </div>
+
+  </div>
+
+  <!-- SECTION : MEMBRES -->
+  <div class="mb-5">
+
+    <h5 class="fw-bold mb-3">
+      Membres de l’équipe
+    </h5>
+
+    <div class="d-flex flex-wrap gap-2">
+      {% for member in team.members.all %}
+        {% if member == team.leader %}
+          <span class="badge bg-warning text-dark rounded-pill px-3 py-2">
+            ⭐ {{ member.email }}
+          </span>
+        {% else %}
+          <span class="badge bg-light border text-dark rounded-pill px-3 py-2">
+            {{ member.email }}
+          </span>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+  </div>
+
+  <!-- ACTIONS -->
+  <div class="border-top pt-4 mt-4 d-flex gap-3">
 
     {% if is_leader %}
-    <div class="d-flex gap-2">
-        <a href="{% url 'team_manage_members' team.id %}"
-           class="btn btn-outline-primary">
-            Gérer les membres
-        </a>
+      <a href="{% url 'team_manage_members' team.id %}"
+         class="btn btn-outline-secondary rounded-pill">
+        Gérer les membres
+      </a>
 
-        <a href="{% url 'team_delete' team.id %}"
-           class="btn btn-outline-danger">
-            Supprimer l’équipe
-        </a>
-    </div>
+      <a href="{% url 'team_delete' team.id %}"
+         class="btn btn-outline-danger rounded-pill">
+        Supprimer l’équipe
+      </a>
+    {% else %}
+      <form method="post" action="{% url 'team_leave' team.id %}">
+        {% csrf_token %}
+        <button class="btn btn-outline-danger rounded-pill">
+          Quitter l’équipe
+        </button>
+      </form>
     {% endif %}
+
+  </div>
 
 </div>
 {% endblock %}
