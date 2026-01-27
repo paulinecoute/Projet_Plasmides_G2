@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
-from .models import CampaignTemplate, TemplatePart, Simulation
+from .models import CampaignTemplate, TemplatePart, Simulation, Team
 from django.forms import inlineformset_factory
 
 
@@ -27,25 +27,35 @@ class CustomUserCreationForm(UserCreationForm):
         )
 
 class CampaignTemplateForm(forms.ModelForm):
-    visibility = forms.ChoiceField(
-        choices=[
-            ('private', 'Privé (Moi uniquement)'),
-            ('team', 'Visible par mon équipe'),
-        ],
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        label="Visibilité"
-    )
-
     class Meta:
         model = CampaignTemplate
-        fields = ['name', 'description', 'enzyme', 'output_separator', 'visibility']
+        fields = ['name', 'description', 'enzyme', 'output_separator', 'visibility', 'team']
         
+        labels = {
+            'team': 'Choisir l\'équipe (si visibilité Équipe)'
+        }
+
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: YTK_Assembly'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'enzyme': forms.Select(attrs={'class': 'form-select'}), 
-            'output_separator': forms.Select(attrs={'class': 'form-select'}), 
+            'output_separator': forms.Select(attrs={'class': 'form-select'}),
+            'visibility': forms.Select(attrs={'class': 'form-select', 'id': 'id_visibility'}),
+            'team': forms.Select(attrs={'class': 'form-select', 'id': 'id_team'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        # On récupère l'utilisateur passé par la vue
+        user = kwargs.pop('user', None)
+        super(CampaignTemplateForm, self).__init__(*args, **kwargs)
+        
+        # Si on a un utilisateur, on filtre les équipes
+        if user:
+            self.fields['team'].queryset = Team.objects.filter(members=user)
+        
+        # Le champ équipe est optionnel (car inutile si Privé ou Public)
+        self.fields['team'].required = False
+        self.fields['team'].empty_label = "--- Sélectionner une équipe ---"
 
 class TemplatePartForm(forms.ModelForm):
     class Meta:
