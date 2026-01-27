@@ -18,37 +18,25 @@
                 <a href="{% url 'template' %}?view=recent" 
                    class="list-group-item list-group-item-action py-3 d-flex align-items-center {% if current_view == 'recent' %}active fw-bold{% endif %}">
                     <i class="bi bi-clock-history fs-5 me-3"></i>
-                    <div>
-                        <div class="mb-0">Récents</div>
-                        <small class="{% if current_view == 'recent' %}text-light{% else %}text-muted{% endif %}">Derniers utilisés</small>
-                    </div>
+                    <div>Récents</div>
                 </a>
 
                 <a href="{% url 'template' %}?view=private" 
                    class="list-group-item list-group-item-action py-3 d-flex align-items-center {% if current_view == 'private' %}active fw-bold{% endif %}">
                     <i class="bi bi-lock fs-5 me-3"></i>
-                    <div>
-                        <div class="mb-0">Templates privés</div>
-                        <small class="{% if current_view == 'private' %}text-light{% else %}text-muted{% endif %}">Vos créations</small>
-                    </div>
+                    <div>Templates privés</div>
                 </a>
 
                 <a href="{% url 'template' %}?view=team" 
                    class="list-group-item list-group-item-action py-3 d-flex align-items-center {% if current_view == 'team' %}active fw-bold{% endif %}">
                     <i class="bi bi-people fs-5 me-3"></i>
-                    <div>
-                        <div class="mb-0">Templates d'équipe</div>
-                        <small class="{% if current_view == 'team' %}text-light{% else %}text-muted{% endif %}">Partagés</small>
-                    </div>
+                    <div>Templates d'équipe</div>
                 </a>
 
                 <a href="{% url 'template' %}?view=public" 
                    class="list-group-item list-group-item-action py-3 d-flex align-items-center {% if current_view == 'public' %}active fw-bold{% endif %}">
                     <i class="bi bi-globe fs-5 me-3"></i>
-                    <div>
-                        <div class="mb-0">Templates publics</div>
-                        <small class="{% if current_view == 'public' %}text-light{% else %}text-muted{% endif %}">La communauté</small>
-                    </div>
+                    <div>Templates publics</div>
                 </a>
             </div>
         </div>
