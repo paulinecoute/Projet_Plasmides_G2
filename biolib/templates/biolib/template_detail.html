@@ -134,31 +134,25 @@
                     <i class="bi bi-pencil"></i> Modifier (Copier)
                 </a>
 
-                {% with is_admin=user.is_staff %}
-                {% with is_owner=user|yesno:"yes,no" == template.owner|yesno:"yes,no" %} 
-                
-                    {% if template.visibility == 'public' %}
-                        {% if is_admin %}
-                            <a href="{% url 'delete_template' template.id %}" class="btn btn-danger">
-                                <i class="bi bi-trash"></i> Supprimer
-                            </a>
-                        {% endif %}
-
-                    {% elif template.visibility == 'team' %}
+                {% if template.visibility == 'public' %}
+                    {% if user.is_staff %}
                         <a href="{% url 'delete_template' template.id %}" class="btn btn-danger">
                             <i class="bi bi-trash"></i> Supprimer
                         </a>
-
-                    {% else %}
-                        {% if user == template.owner %}
-                            <a href="{% url 'delete_template' template.id %}" class="btn btn-danger">
-                                <i class="bi bi-trash"></i> Supprimer
-                            </a>
-                        {% endif %}
                     {% endif %}
 
-                {% endwith %}
-                {% endwith %}
+                {% elif template.visibility == 'team' %}
+                    <a href="{% url 'delete_template' template.id %}" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Supprimer
+                    </a>
+
+                {% else %}
+                    {% if user == template.owner %}
+                        <a href="{% url 'delete_template' template.id %}" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> Supprimer
+                        </a>
+                    {% endif %}
+                {% endif %}
 
             </div>
         </div>
