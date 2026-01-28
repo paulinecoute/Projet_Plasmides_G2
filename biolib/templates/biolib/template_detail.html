@@ -7,10 +7,17 @@
         
         {% if template.visibility == 'private' %}
             <span class="badge bg-warning text-dark fs-6">Privé</span>
+        
         {% elif template.visibility == 'public' %}
             <span class="badge bg-success fs-6">Public</span>
+        
         {% else %}
-            <span class="badge bg-info text-dark fs-6">Équipe</span>
+            <span class="badge bg-info text-dark fs-6">
+                Équipe
+                {% if template.team %}
+                    : {{ template.team.name }}
+                {% endif %}
+            </span>
         {% endif %}
     </div>
 
@@ -130,14 +137,30 @@
                     <i class="bi bi-file-earmark-excel"></i> Exporter Excel
                 </a>
 
-                {% if user == template.owner %}
-                    <button class="btn btn-primary" disabled title="Bientôt disponible">
-                        <i class="bi bi-pencil"></i> Modifier
-                    </button>
-                    <button class="btn btn-danger" disabled title="Bientôt disponible">
+                <a href="{% url 'create_template' %}?clone_from={{ template.id }}" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> Modifier (Copier)
+                </a>
+
+                {% if template.visibility == 'public' %}
+                    {% if user.is_staff %}
+                        <a href="{% url 'delete_template' template.id %}" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> Supprimer
+                        </a>
+                    {% endif %}
+
+                {% elif template.visibility == 'team' %}
+                    <a href="{% url 'delete_template' template.id %}" class="btn btn-danger">
                         <i class="bi bi-trash"></i> Supprimer
-                    </button>
+                    </a>
+
+                {% else %}
+                    {% if user == template.owner %}
+                        <a href="{% url 'delete_template' template.id %}" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> Supprimer
+                        </a>
+                    {% endif %}
                 {% endif %}
+
             </div>
         </div>
     </div>

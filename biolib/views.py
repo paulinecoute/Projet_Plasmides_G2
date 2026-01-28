@@ -33,28 +33,65 @@ def home(request):
     return render(request, 'biolib/home.html')
 
 def template(request):
-    if request.user.is_authenticated:
-        # Si connecté : nos templates + ceux de l'équipe + publics
-        templates = CampaignTemplate.objects.filter(
-            Q(owner=request.user) | 
-            Q(visibility='team') | 
-            Q(visibility='public')
-        ).distinct().order_by('-id')
-    else:
-        # Si invité : ceux de la session + publics
-        anon_ids = request.session.get('anon_templates', [])
-        templates = CampaignTemplate.objects.filter(
-            Q(id__in=anon_ids) |
-            Q(visibility='public')
-        ).distinct().order_by('-id')
+    view_type = request.GET.get('view', 'recent')
+    
+    templates = CampaignTemplate.objects.none()
+    title = "Templates récents"
 
-    return render(request, 'biolib/template.html', {'templates': templates})
+    if request.user.is_authenticated:
+        # 1. TEMPLATES PRIVÉS
+        if view_type == 'private':
+            templates = CampaignTemplate.objects.filter(owner=request.user, visibility='private').order_by('-created_at')
+            title = "Mes templates privés"
+            
+        # 2. TEMPLATES D'EQUPE (LOGIQUE CORRIGÉE)
+        elif view_type == 'team':
+            # On affiche les templates marqués 'team' QUI APPARTIENNENT à une équipe dont je suis membre
+            templates = CampaignTemplate.objects.filter(
+                visibility='team',
+                team__members=request.user
+            ).distinct().order_by('-created_at')
+            title = "Templates d'équipe"
+
+        # 3. TEMPLATES PUBLICS
+        elif view_type == 'public':
+            templates = CampaignTemplate.objects.filter(visibility='public').order_by('-created_at')
+            title = "Templates publics"
+
+        # 4. RÉCENTS (Défaut) - (LOGIQUE CORRIGÉE)
+        else:
+            templates = CampaignTemplate.objects.filter(
+                Q(owner=request.user) | 
+                Q(visibility='team', team__members=request.user) | 
+                Q(visibility='public')
+            ).distinct().order_by('-id')[:5]
+            title = "Templates récents"
+            
+    else:
+        # GESTION INVITÉ
+        anon_ids = request.session.get('anon_templates', [])
+        if view_type == 'public':
+            templates = CampaignTemplate.objects.filter(visibility='public').order_by('-id')
+            title = "Templates publics"
+        else:
+            templates = CampaignTemplate.objects.filter(
+                Q(id__in=anon_ids) | Q(visibility='public')
+            ).distinct().order_by('-id')[:5]
+            title = "Templates récents"
+
+    context = {
+        'templates': templates,
+        'current_view': view_type,
+        'page_title': title
+    }
+    return render(request, 'biolib/template.html', context)
 
 
 def create_template(request):
-
+    # 1. Sauvegarde du formulaire (POST)
     if request.method == 'POST':
-        form = CampaignTemplateForm(request.POST, request.FILES)
+        # IMPORTANT : On passe user=request.user pour filtrer les équipes
+        form = CampaignTemplateForm(request.POST, request.FILES, user=request.user)
         formset = TemplatePartFormSet(request.POST)
 
         if form.is_valid() and formset.is_valid():
@@ -64,6 +101,10 @@ def create_template(request):
                 template.owner = request.user
             else:
                 template.owner = None
+                template.visibility = 'private'
+            
+            # Sécurité : Si Team choisi mais pas d'équipe sélectionnée -> Force Privé
+            if template.visibility == 'team' and not template.team:
                 template.visibility = 'private'
 
             template.save()
@@ -80,15 +121,83 @@ def create_template(request):
                 request.session.modified = True
 
             return redirect('template')
+            
+    # 2. Affichage du formulaire (GET)
     else:
-        # Affichage du formulaire vide
-        form = CampaignTemplateForm()
-        formset = TemplatePartFormSet()
+        clone_id = request.GET.get('clone_from')
+        
+        if clone_id:
+            original = get_object_or_404(CampaignTemplate, pk=clone_id)
+            
+            # Pré-remplissage (avec user=request.user)
+            form = CampaignTemplateForm(user=request.user, initial={
+                'name': f"{original.name} (Copie)",
+                'enzyme': original.enzyme,
+                'output_separator': original.output_separator,
+                'description': original.description,
+                'visibility': 'private', # Reset visibilité par sécurité
+                'team': None             # Reset équipe
+            })
+            
+            original_parts = original.parts.all().order_by('order')
+            parts_data = []
+            for part in original_parts:
+                parts_data.append({
+                    'name': part.name,
+                    'type_id': part.type_id,
+                    'order': part.order,
+                    'is_mandatory': part.is_mandatory,
+                    'include_in_output': part.include_in_output,
+                    'is_separable': part.is_separable
+                })
+            
+            formset = TemplatePartFormSet(initial=parts_data)
+            formset.extra = len(parts_data)
+            
+        else:
+            # Formulaire vide (avec user=request.user)
+            form = CampaignTemplateForm(user=request.user)
+            formset = TemplatePartFormSet()
 
     return render(request, 'biolib/create_template.html', {
         'form': form,
         'formset': formset
     })
+
+
+# --- SUPPRESSION SÉCURISÉE ---
+@login_required
+def delete_template(request, pk):
+    template = get_object_or_404(CampaignTemplate, pk=pk)
+    
+    # 1. CAS PUBLIC : Seul un Admin (Staff) peut supprimer
+    if template.visibility == 'public':
+        if not request.user.is_staff:
+            return HttpResponse("Accès refusé : Seuls les administrateurs peuvent supprimer un template public.", status=403)
+            
+    # 2. CAS EQUIPE : Le propriétaire OU le chef de CETTE équipe spécifique
+    elif template.visibility == 'team':
+        # On vérifie si l'utilisateur est le chef de l'équipe associée au template
+        is_team_leader = False
+        if template.team:
+            is_team_leader = (template.team.leader == request.user)
+        
+        if request.user != template.owner and not is_team_leader:
+             return HttpResponse("Accès refusé : Seul le propriétaire ou le chef d'équipe peut supprimer.", status=403)
+
+    # 3. CAS PRIVÉ : Seul le propriétaire
+    else:
+        if request.user != template.owner:
+            return HttpResponse("Accès refusé : Vous n'êtes pas le propriétaire.", status=403)
+
+    # Si on arrive ici, c'est qu'on a le droit
+    if request.method == 'POST':
+        template.delete()
+        return redirect('template')
+    
+    # Page de confirmation simple
+    return render(request, 'biolib/template_confirm_delete.html', {'template': template})
+
 
 def simulation(request):
     return render(request, 'biolib/simulation.html')

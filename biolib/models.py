@@ -177,7 +177,17 @@ class CampaignTemplate(models.Model):
         default='private', 
         verbose_name="Visibilité"
     )
-    # ----------------------------------------------------
+    
+    # --- AJOUT DU LIEN VERS L'ÉQUIPE ---
+    team = models.ForeignKey(
+        Team, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='templates',
+        verbose_name="Équipe associée"
+    )
+    # -----------------------------------
 
     # -- Partie AGASH (Fichiers & Droits) --
     file = models.FileField(upload_to="templates/", blank=True, null=True, help_text="Fichier modèle Excel")
