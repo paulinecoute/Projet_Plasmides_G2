@@ -3,10 +3,18 @@
 {% block title %}Mes équipes{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-lg-5 py-4" style="max-width:1200px;">
+<div class="container-fluid px-lg-5 py-5" style="max-width:1200px;">
+
+  <!-- BOUTON RETOUR -->
+  <div class="mb-3">
+    <a href="{% url 'dashboard' %}"
+       class="btn btn-outline-secondary rounded-pill btn-sm">
+      ← Retour
+    </a>
+  </div>
 
   <!-- Header -->
-  <div class="d-flex justify-content-between align-items-start mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-5">
     <div>
       <h2 class="fw-bold mb-1">Mes équipes</h2>
       <div class="text-muted">
@@ -20,88 +28,85 @@
   </div>
 
   <!-- Liste -->
-  <div class="d-flex flex-column gap-3">
+  <div class="d-flex flex-column gap-4">
 
     {% for team in teams %}
     <a href="{% url 'team_detail' team.id %}"
-       class="text-decoration-none text-dark">
+       class="text-decoration-none text-reset">
 
-      <!-- CARTE -->
-      <div class="card border-0 rounded-4 shadow-sm">
+      <div class="team-card bg-white rounded-4 p-4">
 
-        <div class="card-body px-4 py-4">
+        <!-- Ligne haute : identité + rôle -->
+        <div class="d-flex justify-content-between align-items-start mb-4">
 
-          <!-- Ligne 1 : nom + badges -->
-          <div class="d-flex justify-content-between align-items-start mb-3">
-
-            <div>
-              <h5 class="fw-bold mb-1">
-                {{ team.name }}
-              </h5>
-
-              <div class="text-muted small">
-                {{ team.description|default:"Aucune description"|truncatechars:140 }}
-              </div>
-            </div>
-
-            <div class="d-flex flex-column align-items-end gap-1">
-
-              {% if team.leader == request.user %}
-                <span class="badge bg-primary-subtle text-primary rounded-pill px-3">
-                  Responsable
-                </span>
-              {% else %}
-                <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3">
-                  Membre
-                </span>
-              {% endif %}
-
-              <span class="badge bg-light border text-dark rounded-pill px-3">
-                {{ team.visibility|capfirst }}
-              </span>
-
+          <!-- Identité -->
+          <div class="pe-4">
+            <h5 class="fw-bold mb-1">
+              {{ team.name }}
+            </h5>
+            <div class="text-muted small">
+              {{ team.description|default:"Aucune description"|truncatechars:140 }}
             </div>
           </div>
 
-          <!-- Ligne 2 : stats -->
-          <div class="d-flex flex-wrap gap-4 small text-muted">
-
-            <span>
-              <strong class="text-dark">{{ team.members.count }}</strong>
-              membres
-            </span>
-
-            <span>
-              <strong class="text-dark">
-                {{ team.templates.count|default:"0" }}
-              </strong>
-              templates
-            </span>
-
-            <span>
-              <strong class="text-dark">—</strong>
-              tables
-            </span>
-
-            <span>
-              <strong class="text-dark">—</strong>
-              campagnes
-            </span>
-
-            <span>
-              <strong class="text-dark">—</strong>
-              plasmides
-            </span>
-
+          <!-- Rôle -->
+          <div>
+            {% if team.leader == request.user %}
+              <span class="badge role-badge role-leader">
+                Cheffe
+              </span>
+            {% else %}
+              <span class="badge role-badge role-member">
+                Utilisateur
+              </span>
+            {% endif %}
           </div>
 
         </div>
-      </div>
 
+        <!-- Ligne basse : statistiques -->
+        <div class="stats-row">
+
+          <div class="stat-item">
+            <div class="stat-value">{{ team.members.count }}</div>
+            <div class="stat-label">membres</div>
+          </div>
+
+          <div class="stat-item">
+            <div class="stat-value">
+              {{ team.templates.count|default:"0" }}
+            </div>
+            <div class="stat-label">templates</div>
+          </div>
+
+          <div class="stat-item">
+            <div class="stat-value">
+              {{ team.tables_count|default:"0" }}
+            </div>
+            <div class="stat-label">tables</div>
+          </div>
+
+          <div class="stat-item">
+            <div class="stat-value">
+              {{ team.campaigns_count|default:"0" }}
+            </div>
+            <div class="stat-label">campagnes</div>
+          </div>
+
+          <div class="stat-item">
+            <div class="stat-value">
+              {{ team.plasmids_count|default:"0" }}
+            </div>
+            <div class="stat-label">plasmides</div>
+          </div>
+
+        </div>
+
+      </div>
     </a>
 
     {% empty %}
-    <div class="card border-0 bg-light rounded-4 p-5 text-center text-muted">
+    <div class="bg-light rounded-4 p-5 text-center text-muted">
       Vous n’avez encore créé ou rejoint aucune équipe.
     </div>
     {% endfor %}
@@ -109,4 +114,61 @@
   </div>
 
 </div>
+
+<style>
+/* Carte */
+.team-card {
+  border: 1px solid #eef0f2;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.team-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,.06);
+}
+
+/* Rôles */
+.role-badge {
+  padding: .45rem .9rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: .75rem;
+}
+
+.role-leader {
+  background: rgba(13,110,253,.1);
+  color: #0d6efd;
+}
+
+.role-member {
+  background: rgba(108,117,125,.15);
+  color: #6c757d;
+}
+
+/* Stats */
+.stats-row {
+  display: flex;
+  gap: 2.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #f0f0f0;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  min-width: 90px;
+}
+
+.stat-value {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #212529;
+}
+
+.stat-label {
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #6c757d;
+}
+</style>
 {% endblock %}
