@@ -46,6 +46,26 @@ urlpatterns = [
 
     # espace personnel
     path('dashboard/', views.dashboard, name='dashboard'),
+
+    # COLLECTIONS
+    path("collections/", views.collections_view, name="collections"),
+    path("collections/new/", views.collection_create, name="collection_create"),
+    path("collections/<int:collection_id>/", views.collection_detail, name="collection_detail"),
+    path("collections/<int:collection_id>/upload/", views.plasmid_upload, name="plasmid_upload"),
+    path(
+    "plasmids/<int:plasmid_id>/delete/",
+    views.plasmid_delete,
+    name="plasmid_delete"
+    ),
+    path(
+    "collections/<int:collection_id>/delete/",
+    views.collection_delete,
+    name="collection_delete"
+    ),
+
+
+    # Tables de correspondances
+    path("correspondences/", views.correspondences_view, name="correspondences"),
     
     # simulations
     path('simulation/new/', views.create_simulation, name='create_simulation'),

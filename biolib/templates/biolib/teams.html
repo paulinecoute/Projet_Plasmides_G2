@@ -3,172 +3,164 @@
 {% block title %}Mes équipes{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-lg-5 py-5" style="max-width:1200px;">
-
-  <!-- BOUTON RETOUR -->
-  <div class="mb-3">
-    <a href="{% url 'dashboard' %}"
-       class="btn btn-outline-secondary rounded-pill btn-sm">
-      ← Retour
-    </a>
-  </div>
-
-  <!-- Header -->
-  <div class="d-flex justify-content-between align-items-center mb-5">
-    <div>
-      <h2 class="fw-bold mb-1">Mes équipes</h2>
-      <div class="text-muted">
-        Espaces de travail collaboratifs.
-      </div>
-    </div>
-
-    <a href="{% url 'team_create' %}" class="btn btn-primary rounded-pill px-4">
-      Nouvelle équipe
-    </a>
-  </div>
-
-  <!-- Liste -->
-  <div class="d-flex flex-column gap-4">
-
-    {% for team in teams %}
-    <a href="{% url 'team_detail' team.id %}"
-       class="text-decoration-none text-reset">
-
-      <div class="team-card bg-white rounded-4 p-4">
-
-        <!-- Ligne haute : identité + rôle -->
-        <div class="d-flex justify-content-between align-items-start mb-4">
-
-          <!-- Identité -->
-          <div class="pe-4">
-            <h5 class="fw-bold mb-1">
-              {{ team.name }}
-            </h5>
-            <div class="text-muted small">
-              {{ team.description|default:"Aucune description"|truncatechars:140 }}
-            </div>
-          </div>
-
-          <!-- Rôle -->
-          <div>
-            {% if team.leader == request.user %}
-              <span class="badge role-badge role-leader">
-                Cheffe
-              </span>
-            {% else %}
-              <span class="badge role-badge role-member">
-                Utilisateur
-              </span>
-            {% endif %}
-          </div>
-
-        </div>
-
-        <!-- Ligne basse : statistiques -->
-        <div class="stats-row">
-
-          <div class="stat-item">
-            <div class="stat-value">{{ team.members.count }}</div>
-            <div class="stat-label">membres</div>
-          </div>
-
-          <div class="stat-item">
-            <div class="stat-value">
-              {{ team.templates.count|default:"0" }}
-            </div>
-            <div class="stat-label">templates</div>
-          </div>
-
-          <div class="stat-item">
-            <div class="stat-value">
-              {{ team.tables_count|default:"0" }}
-            </div>
-            <div class="stat-label">tables</div>
-          </div>
-
-          <div class="stat-item">
-            <div class="stat-value">
-              {{ team.campaigns_count|default:"0" }}
-            </div>
-            <div class="stat-label">campagnes</div>
-          </div>
-
-          <div class="stat-item">
-            <div class="stat-value">
-              {{ team.plasmids_count|default:"0" }}
-            </div>
-            <div class="stat-label">plasmides</div>
-          </div>
-
-        </div>
-
-      </div>
-    </a>
-
-    {% empty %}
-    <div class="bg-light rounded-4 p-5 text-center text-muted">
-      Vous n’avez encore créé ou rejoint aucune équipe.
-    </div>
-    {% endfor %}
-
-  </div>
-
-</div>
-
 <style>
-/* Carte */
-.team-card {
-  border: 1px solid #eef0f2;
-  transition: transform .15s ease, box-shadow .15s ease;
-}
+  :root {
+    --bg-main: #fcfcfc;
+    --border-color: #eee;
+  }
 
-.team-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,.06);
-}
+  body { background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 
-/* Rôles */
-.role-badge {
-  padding: .45rem .9rem;
-  border-radius: 999px;
-  font-weight: 600;
-  font-size: .75rem;
-}
+  .content-wrapper {
+    max-width: 850px;
+    margin: 0 auto;
+    padding-bottom: 50px;
+  }
 
-.role-leader {
-  background: rgba(13,110,253,.1);
-  color: #0d6efd;
-}
+  .nav-header { padding: 20px 0; margin-bottom: 10px; }
+  
+  .btn-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    color: #666;
+    transition: 0.2s;
+    text-decoration: none;
+  }
+  .btn-back:hover { border-color: #000; color: #000; }
 
-.role-member {
-  background: rgba(108,117,125,.15);
-  color: #6c757d;
-}
+  .hero-section { margin-bottom: 30px; }
+  .page-title { font-weight: 850; font-size: 2.5rem; letter-spacing: -0.05em; margin-bottom: 5px; }
+  .page-subtitle { color: #888; font-size: 1rem; }
 
-/* Stats */
-.stats-row {
-  display: flex;
-  gap: 2.5rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid #f0f0f0;
-  flex-wrap: wrap;
-}
+  .team-card {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 20px 25px; 
+    margin-bottom: 12px;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    transition: all 0.2s;
+  }
+  .team-card:hover {
+    border-color: #000;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.03);
+  }
 
-.stat-item {
-  min-width: 90px;
-}
+  .team-name { font-weight: 800; font-size: 1.2rem; margin-bottom: 2px; color: #111; }
+  .team-desc { color: #888; font-size: 0.9rem; margin-bottom: 15px; }
 
-.stat-value {
-  font-weight: 700;
-  font-size: 1.1rem;
-  color: #212529;
-}
+  .role-badge {
+    font-size: 0.6rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+  .role-leader { background: #000; color: #fff; }
+  .role-member { background: #f0f0f0; color: #666; }
 
-.stat-label {
-  font-size: .7rem;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-  color: #6c757d;
-}
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 10px;
+    padding-top: 15px;
+    border-top: 1px solid #fcfcfc;
+  }
+  .stat-item { text-align: left; }
+  .stat-value { font-weight: 800; font-size: 1rem; color: #111; display: block; }
+  .stat-label { font-size: 0.6rem; font-weight: 800; color: #bbb; text-transform: uppercase; letter-spacing: 0.03em; }
+
+  .btn-create {
+    background: #000;
+    color: #fff;
+    padding: 8px 18px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: 0.2s;
+  }
+  .btn-create:hover { background: #333; color: #fff; }
 </style>
+
+<div class="container pb-5">
+  <div class="content-wrapper">
+    
+    <div class="nav-header">
+      <a href="{% url 'dashboard' %}" class="btn-back shadow-sm">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+    </div>
+
+    <div class="hero-section d-flex justify-content-between align-items-center">
+      <div>
+        <h1 class="page-title">Mes équipes</h1>
+        <p class="page-subtitle mb-0">Espaces de travail collaboratifs</p>
+      </div>
+      <a href="{% url 'team_create' %}" class="btn-create shadow-sm">
+        <i class="bi bi-plus-lg me-1"></i> Nouvelle
+      </a>
+    </div>
+
+    <div class="mt-3">
+      {% for team in teams %}
+      <a href="{% url 'team_detail' team.id %}" class="team-card shadow-sm">
+        
+        <div class="d-flex justify-content-between align-items-start mb-1">
+          <div>
+            <h3 class="team-name">{{ team.name }}</h3>
+            <p class="team-desc text-truncate" style="max-width: 500px;">
+                {{ team.description|default:"Aucune description" }}
+            </p>
+          </div>
+          
+          {% if team.leader == request.user %}
+            <span class="role-badge role-leader">Chef</span>
+          {% else %}
+            <span class="role-badge role-member">Membre</span>
+          {% endif %}
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-item">
+            <span class="stat-label">Membres</span>
+            <span class="stat-value">{{ team.members.count }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Templates</span>
+            <span class="stat-value">{{ team.templates.count|default:"0" }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Tables</span>
+            <span class="stat-value">{{ team.tables_count|default:"0" }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Campagnes</span>
+            <span class="stat-value">{{ team.campaigns_count|default:"0" }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Plasmides</span>
+            <span class="stat-value">{{ team.plasmids_count|default:"0" }}</span>
+          </div>
+        </div>
+      </a>
+      {% empty %}
+      <div class="p-5 text-center text-muted fw-light bg-white rounded-4 border">
+        Aucune équipe.
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+</div>
 {% endblock %}

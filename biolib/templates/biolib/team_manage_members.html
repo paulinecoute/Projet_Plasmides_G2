@@ -3,132 +3,191 @@
 {% block title %}Gérer l’équipe · {{ team.name }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-lg-5 py-5" style="max-width:900px;">
+<style>
+  :root {
+    --bg-main: #fcfcfc;
+    --border-color: #eee;
+  }
 
-  <!-- BOUTON RETOUR -->
-  <div class="mb-3">
-    <a href="{% url 'team_detail' team.id %}"
-       class="btn btn-outline-secondary rounded-pill btn-sm">
-      ← Retour
-    </a>
-  </div>
+  body { background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 
-  <!-- HEADER -->
-  <div class="mb-5">
-    <h2 class="fw-bold mb-1">Gestion de l’équipe</h2>
-    <div class="text-muted">{{ team.name }}</div>
-  </div>
+  .content-wrapper {
+    max-width: 850px;
+    margin: 0 auto;
+    padding-bottom: 50px;
+  }
 
-  <!-- INFO -->
-  <div class="alert alert-primary rounded-4 mb-5">
-    <strong>Vous êtes responsable de cette équipe.</strong>
-    <div class="small opacity-75">
-      Vous pouvez gérer les membres et nommer un nouveau responsable.
+  .nav-header { padding: 20px 0; margin-bottom: 10px; }
+  
+  .btn-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    color: #666;
+    transition: 0.2s;
+    text-decoration: none;
+  }
+  .btn-back:hover { border-color: #000; color: #000; }
+
+  .hero-section { margin-bottom: 40px; }
+  .page-title { font-weight: 850; font-size: 2.8rem; letter-spacing: -0.05em; margin-bottom: 5px; }
+  
+  .section-label {
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #444;
+    margin-bottom: 20px;
+    display: block;
+  }
+
+  /* Box Info Chef */
+  .info-banner {
+    background: #000;
+    color: #fff;
+    padding: 20px 25px;
+    border-radius: 20px;
+    margin-bottom: 40px;
+  }
+
+  /* Cartes de formulaires et listes */
+  .admin-card {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 30px;
+  }
+
+  .form-control {
+    border: 1px solid #f0f0f0;
+    background: #fbfbfb;
+    border-radius: 12px;
+    padding: 10px 15px;
+  }
+  .form-control:focus {
+    border-color: #000;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  /* Liste des membres */
+  .member-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #f8f8f8;
+  }
+  .member-row:last-child { border-bottom: none; }
+
+
+  .btn-add { background: #000; color: #fff; border-radius: 12px; padding: 10px 25px; font-weight: 600; border: none; transition: 0.2s; }
+  .btn-add:hover { background: #333; }
+
+  .btn-action-outline {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    background: #fff;
+    color: #666;
+    transition: 0.2s;
+  }
+  .btn-action-outline:hover { border-color: #000; color: #000; }
+  .btn-danger-outline { color: #dc3545; }
+  .btn-danger-outline:hover { border-color: #dc3545; background: #dc3545; color: #fff; }
+
+  .danger-zone {
+    margin-top: 50px;
+    padding: 30px;
+    border: 1px solid #fee2e2;
+    background: #fff5f5;
+    border-radius: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+</style>
+
+<div class="container pb-5">
+  <div class="content-wrapper">
+    
+    <div class="nav-header">
+      <a href="{% url 'team_detail' team.id %}" class="btn-back shadow-sm">
+        <i class="bi bi-arrow-left"></i>
+      </a>
     </div>
-  </div>
 
-  <!-- AJOUT MEMBRE -->
-  <div class="card border-0 shadow-sm rounded-4 mb-5">
-    <div class="card-body p-4">
+    <div class="hero-section">
+      <h1 class="page-title">Gestion d'équipe</h1>
+      <p class="text-muted fs-5">{{ team.name }}</p>
+    </div>
 
-      <h5 class="fw-semibold mb-3">Ajouter un membre</h5>
+    <div class="info-banner shadow-sm">
+      <div class="fw-bold"><i class="bi bi-shield-check me-2"></i>Responsable d'équipe</div>
+      <div class="small opacity-75">Vous pouvez gérer les accès et nommer un nouveau responsable.</div>
+    </div>
 
+    <span class="section-label">Inviter un nouveau membre</span>
+    <div class="admin-card shadow-sm">
       <form method="post" class="d-flex gap-3 align-items-end">
         {% csrf_token %}
-
         <div class="flex-grow-1">
-          <label class="form-label small text-muted">
-            Adresse email
-          </label>
-          <input type="email"
-                 name="email"
-                 class="form-control"
-                 placeholder="utilisateur@exemple.com"
-                 required>
+          <label class="form-label small fw-bold text-muted text-uppercase">Email du collaborateur</label>
+          <input type="email" name="email" class="form-control" placeholder="utilisateur@exemple.com" required>
         </div>
-
-        <button class="btn btn-primary rounded-pill px-4">
-          Ajouter
-        </button>
+        <button type="submit" class="btn-add">Ajouter</button>
       </form>
-
     </div>
-  </div>
 
-  <!-- LISTE MEMBRES -->
-  <div class="card border-0 shadow-sm rounded-4">
-    <div class="card-body p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 mt-5">
+      <span class="section-label mb-0">Liste des membres</span>
+      <span class="text-muted small fw-bold">{{ team.members.count }} TOTAL</span>
+    </div>
 
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h5 class="fw-semibold mb-0">Membres de l’équipe</h5>
-        <span class="text-muted small">
-          {{ team.members.count }} membre(s)
-        </span>
-      </div>
+    <div class="admin-card shadow-sm">
+      {% for member in team.members.all reversed %}
+      <div class="member-row">
+        <div class="fw-bold">{{ member.email }}</div>
+        
+        <div class="d-flex align-items-center gap-2">
+          {% if member == team.leader %}
+            <span class="text-warning fs-5">★</span>
+          {% else %}
+            <form method="post" action="{% url 'team_change_leader' team.id member.id %}">
+              {% csrf_token %}
+              <button type="submit" class="btn-action-outline">Nommer chef</button>
+            </form>
 
-      <div class="list-group list-group-flush">
-
-        {% for member in team.members.all reversed %}
-        <div class="list-group-item px-0 py-3 d-flex justify-content-between align-items-center">
-
-          <!-- EMAIL -->
-          <div class="fw-medium">
-            {{ member.email }}
-          </div>
-
-          <!-- ACTIONS / BADGES -->
-          <div class="d-flex align-items-center gap-3">
-
-            {% if member == team.leader %}
-              <span class="text-warning fs-5">★</span>
-            {% else %}
-              <form method="post"
-                    action="{% url 'team_change_leader' team.id member.id %}">
-                {% csrf_token %}
-                <button class="btn btn-sm btn-outline-primary rounded-pill">
-                  Nommer chef
-                </button>
-              </form>
-
-              <form method="post"
-                    action="{% url 'team_remove_member' team.id member.id %}">
-                {% csrf_token %}
-                <button class="btn btn-sm btn-outline-danger rounded-pill">
-                  Retirer
-                </button>
-              </form>
-            {% endif %}
-
-          </div>
-
+            <form method="post" action="{% url 'team_remove_member' team.id member.id %}">
+              {% csrf_token %}
+              <button type="submit" class="btn-action-outline btn-danger-outline">Retirer</button>
+            </form>
+          {% endif %}
         </div>
-        {% endfor %}
-
       </div>
-
+      {% endfor %}
     </div>
-  </div>
 
-  <!-- ZONE DANGEREUSE -->
-  <div class="mt-5 pt-4 border-top">
-
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="danger-zone">
       <div>
-        <h6 class="fw-semibold text-danger mb-1">
-          Zone dangereuse
-        </h6>
-        <div class="text-muted small">
-          Cette action supprimera définitivement l’équipe.
-        </div>
+        <h6 class="fw-bold text-danger mb-1">Zone critique</h6>
+        <p class="text-muted small mb-0">La suppression de l'équipe est irréversible.</p>
       </div>
-
-      <a href="{% url 'team_delete' team.id %}"
-         class="btn btn-danger rounded-pill">
+      <a href="{% url 'team_delete' team.id %}" class="btn btn-danger rounded-pill px-4 fw-bold">
         Supprimer l’équipe
       </a>
     </div>
 
   </div>
-
 </div>
 {% endblock %}

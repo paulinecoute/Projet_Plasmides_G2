@@ -3,159 +3,184 @@
 {% block title %}Équipe · {{ team.name }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-lg-5 py-4" style="max-width:1100px;">
-
-  <!-- BOUTON RETOUR -->
-  <div class="mb-3">
-    <a href="{% url 'teams' %}"
-       class="btn btn-outline-secondary rounded-pill btn-sm">
-      ← Retour
-    </a>
-  </div>
-
-  <!-- HEADER -->
-  <div class="mb-4">
-    <h1 class="fw-bold mb-1" style="letter-spacing: -0.02em;">
-      {{ team.name }}
-    </h1>
-    <p class="text-muted fs-6 mb-0">
-      {{ team.description|default:"Aucune description n’a été renseignée pour cette équipe." }}
-    </p>
-  </div>
-
-  <hr class="mb-5">
-
-  <!-- SECTION : STATISTIQUES -->
-  <div class="mb-5">
-    <h5 class="fw-bold mb-3">Statistiques de l’équipe</h5>
-
-    <div class="d-flex flex-wrap gap-3">
-      <span class="badge stat-unified rounded-pill px-4 py-2">
-        {{ team.members.count }} membres
-      </span>
-      <span class="badge stat-unified rounded-pill px-4 py-2">
-        {{ team.templates.count|default:"0" }} templates
-      </span>
-      <span class="badge stat-unified rounded-pill px-4 py-2">
-        {{ collections_count }} collections
-      </span>
-      <span class="badge stat-unified rounded-pill px-4 py-2">
-        {{ tables_count }} tables
-      </span>
-      <span class="badge stat-unified rounded-pill px-4 py-2">
-        {{ campaigns_count }} campagnes
-      </span>
-      <span class="badge stat-unified rounded-pill px-4 py-2">
-        {{ plasmids_count }} plasmides
-      </span>
-    </div>
-  </div>
-
-  <!-- SECTION : RESSOURCES -->
-  <div class="mb-5">
-    <h5 class="fw-bold mb-3">Ressources de l’équipe</h5>
-
-    <div class="list-group rounded-4 shadow-sm overflow-hidden">
-
-      <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
-        <span class="fw-semibold">
-          <i class="bi bi-file-earmark-text me-2"></i>
-          Templates
-        </span>
-        <span class="badge stat-unified rounded-pill">Voir</span>
-      </a>
-
-      <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
-        <span class="fw-semibold">
-          <i class="bi bi-collection me-2"></i>
-          Collections
-        </span>
-        <span class="badge stat-unified rounded-pill">Voir</span>
-      </a>
-
-      <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
-        <span class="fw-semibold">
-          <i class="bi bi-table me-2"></i>
-          Tables de correspondance
-        </span>
-        <span class="badge stat-unified rounded-pill">Voir</span>
-      </a>
-
-      <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
-        <span class="fw-semibold">
-          <i class="bi bi-bar-chart me-2"></i>
-          Campagnes
-        </span>
-        <span class="badge stat-unified rounded-pill">Voir</span>
-      </a>
-
-      <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
-        <span class="fw-semibold">
-          <i class="bi bi-diagram-3 me-2"></i>
-          Plasmides produits
-        </span>
-        <span class="badge stat-unified rounded-pill">Voir</span>
-      </a>
-
-    </div>
-  </div>
-
-  <!-- SECTION : MEMBRES -->
-  <div class="mb-5">
-    <h5 class="fw-bold mb-3">Membres de l’équipe</h5>
-
-    <div class="list-group rounded-4 overflow-hidden">
-
-      <!-- CHEF EN PREMIER -->
-      <div class="list-group-item d-flex justify-content-between align-items-center">
-        <span class="fw-semibold">
-          {{ team.leader.email }}
-        </span>
-        <span class="text-warning fs-5">★</span>
-      </div>
-
-      <!-- AUTRES MEMBRES -->
-      {% for member in team.members.all %}
-        {% if member != team.leader %}
-          <div class="list-group-item">
-            {{ member.email }}
-          </div>
-        {% endif %}
-      {% endfor %}
-
-    </div>
-  </div>
-
-  <!-- ACTIONS -->
-  <div class="border-top pt-4 mt-4 d-flex justify-content-between">
-
-    {% if is_leader %}
-      <a href="{% url 'team_manage_members' team.id %}"
-         class="btn btn-primary rounded-pill">
-        Gérer l’équipe
-      </a>
-
-      <a href="{% url 'team_delete' team.id %}"
-         class="btn btn-danger rounded-pill">
-        Supprimer l’équipe
-      </a>
-    {% else %}
-      <form method="post" action="{% url 'team_leave' team.id %}">
-        {% csrf_token %}
-        <button class="btn btn-danger rounded-pill ms-auto">
-          Quitter l’équipe
-        </button>
-      </form>
-    {% endif %}
-
-  </div>
-
-</div>
-
 <style>
-.stat-unified {
-  background: rgba(13,110,253,.12);
-  color: #0d6efd;
-}
+  :root {
+    --bg-main: #fcfcfc;
+    --border-color: #eee;
+  }
+
+  body { background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+  .content-wrapper {
+    max-width: 850px;
+    margin: 0 auto;
+    padding-bottom: 50px;
+  }
+
+  .nav-header { padding: 20px 0; margin-bottom: 10px; }
+  
+  .btn-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    color: #666;
+    transition: 0.2s;
+    text-decoration: none;
+  }
+  .btn-back:hover { border-color: #000; color: #000; }
+
+  .hero-section { margin-bottom: 40px; }
+  .page-title { font-weight: 850; font-size: 2.8rem; letter-spacing: -0.05em; margin-bottom: 5px; }
+  .page-subtitle { color: #888; font-size: 1.1rem; }
+
+  .section-label {
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #444;
+    margin-bottom: 15px;
+    display: block;
+  }
+
+  /* Tags de stats */
+  .stat-pill {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    color: #111;
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 8px 18px;
+    border-radius: 50px;
+    display: inline-block;
+  }
+
+  /* Liste des ressources */
+  .resource-link {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 18px 24px;
+    margin-bottom: 10px;
+    text-decoration: none !important;
+    color: inherit !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: 0.2s;
+  }
+  .resource-link:hover { border-color: #000; transform: translateX(5px); }
+  .resource-link i { color: #ccc; margin-right: 12px; transition: 0.2s; }
+  .resource-link:hover i { color: #000; }
+
+  .view-badge { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #aaa; }
+
+  /* Liste membres */
+  .members-container { background: #fff; border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden; }
+  .member-item { padding: 15px 24px; border-bottom: 1px solid #f8f8f8; display: flex; justify-content: space-between; align-items: center; }
+  .member-item:last-child { border-bottom: none; }
+
+  /* Boutons noirs et blancs */
+  .btn-dark-biolib { background: #000; color: #fff; border-radius: 50px; padding: 10px 24px; font-weight: 600; text-decoration: none; display: inline-block; transition: 0.2s; border: none; }
+  .btn-dark-biolib:hover { background: #333; color: #fff; }
+  .btn-danger-outline { background: transparent; color: #dc3545; border: 1px solid #dc3545; border-radius: 50px; padding: 10px 24px; font-weight: 600; text-decoration: none; display: inline-block; transition: 0.2s; }
+  .btn-danger-outline:hover { background: #dc3545; color: #fff; }
 </style>
+
+<div class="container pb-5">
+  <div class="content-wrapper">
+    
+    <div class="nav-header">
+      <a href="{% url 'teams' %}" class="btn-back shadow-sm">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+    </div>
+
+    <div class="hero-section">
+      <h1 class="page-title">{{ team.name }}</h1>
+      <p class="page-subtitle">{{ team.description|default:"Aucune description n’a été renseignée pour cette équipe." }}</p>
+    </div>
+
+    <div class="mb-5">
+      <span class="section-label">Statistiques</span>
+      <div class="d-flex flex-wrap gap-2">
+        <span class="stat-pill shadow-sm">{{ team.members.count }} membres</span>
+        <span class="stat-pill shadow-sm">{{ team.templates.count|default:"0" }} templates</span>
+        <span class="stat-pill shadow-sm">{{ collections_count }} collections</span>
+        <span class="stat-pill shadow-sm">{{ tables_count }} tables</span>
+        <span class="stat-pill shadow-sm">{{ campaigns_count }} campagnes</span>
+        <span class="stat-pill shadow-sm">{{ plasmids_count }} plasmides</span>
+      </div>
+    </div>
+
+    <div class="mb-5">
+      <span class="section-label">Ressources de l’équipe</span>
+      <div class="resources-list">
+        <a href="#" class="resource-link shadow-sm">
+          <span class="fw-bold"><i class="bi bi-file-earmark-text"></i> Templates</span>
+          <span class="view-badge">Voir</span>
+        </a>
+        <a href="#" class="resource-link shadow-sm">
+          <span class="fw-bold"><i class="bi bi-collection"></i> Collections</span>
+          <span class="view-badge">Voir</span>
+        </a>
+        <a href="#" class="resource-link shadow-sm">
+          <span class="fw-bold"><i class="bi bi-table"></i> Tables de correspondance</span>
+          <span class="view-badge">Voir</span>
+        </a>
+        <a href="#" class="resource-link shadow-sm">
+          <span class="fw-bold"><i class="bi bi-bar-chart"></i> Campagnes</span>
+          <span class="view-badge">Voir</span>
+        </a>
+        <a href="#" class="resource-link shadow-sm">
+          <span class="fw-bold"><i class="bi bi-diagram-3"></i> Plasmides produits</span>
+          <span class="view-badge">Voir</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="mb-5">
+      <span class="section-label">Membres de l’équipe</span>
+      <div class="members-container shadow-sm">
+        <div class="member-item">
+          <span class="fw-bold">{{ team.leader.email }}</span>
+          <span class="text-warning fs-5">★</span>
+        </div>
+        {% for member in team.members.all %}
+          {% if member != team.leader %}
+            <div class="member-item text-muted">
+              {{ member.email }}
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="border-top pt-5 mt-4 d-flex justify-content-between">
+      {% if is_leader %}
+        <div class="d-flex gap-2">
+          <a href="{% url 'team_manage_members' team.id %}" class="btn-dark-biolib">
+            Gérer l’équipe
+          </a>
+          <a href="{% url 'team_delete' team.id %}" class="btn-danger-outline">
+            Supprimer l’équipe
+          </a>
+        </div>
+      {% else %}
+        <form method="post" action="{% url 'team_leave' team.id %}" class="ms-auto">
+          {% csrf_token %}
+          <button type="submit" class="btn-danger-outline">
+            Quitter l’équipe
+          </button>
+        </form>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
 {% endblock %}

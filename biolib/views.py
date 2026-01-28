@@ -18,15 +18,15 @@ import pathlib
 import openpyxl
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 from .forms import CampaignTemplateForm, TemplatePartFormSet
-from .models import CampaignTemplate, Plasmid, Team, User, Correspondence
+from .models import CampaignTemplate, Plasmid, Team, User, Correspondence, PlasmidCollection
 
-#import insillyclo.data_source
-#try:
-#    import insillyclo.observer
-#    BaseObserver = insillyclo.observer.InSillyCloObserver
-#except ImportError:
-#    class BaseObserver: pass
-#import insillyclo.simulator
+import insillyclo.data_source
+try:
+    import insillyclo.observer
+    BaseObserver = insillyclo.observer.InSillyCloObserver
+except ImportError:
+    class BaseObserver: pass
+import insillyclo.simulator
 
 
 def home(request):
@@ -234,6 +234,101 @@ def dashboard(request):
         'teams_count': teams_count
     })
 
+########################################################
+# COLLECTIONS
+########################################################
+
+@login_required
+def collections_view(request):
+    collections = PlasmidCollection.objects.filter(owner=request.user)
+    return render(request, "biolib/collections.html", {
+        "collections": collections
+    })
+
+@login_required
+def correspondences_view(request):
+    correspondences = Correspondence.objects.filter(owner=request.user)
+    return render(request, "biolib/correspondences.html", {
+        "correspondences": correspondences
+    })
+
+@login_required
+def collection_create(request):
+    if request.method == "POST":
+        collection = PlasmidCollection.objects.create(
+            name=request.POST["name"],
+            description=request.POST.get("description", ""),
+            owner=request.user
+        )
+        return redirect("collection_detail", collection.id)
+
+    return render(request, "biolib/collection_create.html")
+
+
+@login_required
+def collection_detail(request, collection_id):
+    collection = get_object_or_404(PlasmidCollection, id=collection_id)
+    is_owner = collection.owner == request.user
+
+    return render(request, "biolib/collection_detail.html", {
+        "collection": collection,
+        "is_owner": is_owner
+    })
+
+@login_required
+def plasmid_upload(request, collection_id):
+    collection = get_object_or_404(
+        PlasmidCollection,
+        id=collection_id,
+        owner=request.user
+    )
+
+    if request.method == "POST":
+        files = request.FILES.getlist("files")
+
+        for f in files:
+            Plasmid.objects.create(
+                collection=collection,
+                identifier=f.name,
+                name="",
+                genbank_file=f,
+                sequence=""
+            )
+
+        return redirect("collection_detail", collection.id)
+
+    return render(request, "biolib/plasmid_upload.html", {
+        "collection": collection
+    })
+
+@login_required
+def plasmid_delete(request, plasmid_id):
+    plasmid = get_object_or_404(
+        Plasmid,
+        id=plasmid_id,
+        collection__owner=request.user
+    )
+
+    if request.method == "POST":
+        collection_id = plasmid.collection.id
+        plasmid.delete()
+        return redirect("collection_detail", collection_id)
+
+@login_required
+def collection_delete(request, collection_id):
+    collection = get_object_or_404(
+        PlasmidCollection,  
+        id=collection_id,
+        owner=request.user
+    )
+
+    if request.method == "POST":
+        collection.delete()
+        return redirect("collections")
+
+    
+
+##################
 
 def export_template_excel(request, template_id):
     template = get_object_or_404(CampaignTemplate, id=template_id)
@@ -301,12 +396,12 @@ class ConsoleObserver:
     def notify_progress(self, value):
         pass
 
-#class DjangoConsoleObserver(insillyclo.observer.InSillyCloCliObserver):
-#    def __init__(self):
-#        super().__init__(debug=False, fail_on_error=True)
+class DjangoConsoleObserver(insillyclo.observer.InSillyCloCliObserver):
+    def __init__(self):
+        super().__init__(debug=False, fail_on_error=True)
 
-#    def notify_message(self, message):
-#        print(f"[INSILLYCLO] {message}")
+    def notify_message(self, message):
+        print(f"[INSILLYCLO] {message}")
 
 @login_required
 def simulation_list(request):

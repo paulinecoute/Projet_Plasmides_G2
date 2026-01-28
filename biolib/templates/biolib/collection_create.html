@@ -1,6 +1,5 @@
 {% extends "biolib/base.html" %}
-
-{% block title %}Créer une équipe{% endblock %}
+{% block title %}Nouvelle collection{% endblock %}
 
 {% block content %}
 <style>
@@ -14,10 +13,9 @@
   .content-wrapper {
     max-width: 800px;
     margin: 0 auto;
-    padding-bottom: 50px;
   }
 
-  .nav-header { padding: 20px 0; margin-bottom: 10px; }
+  .nav-header { padding: 20px 0; margin-bottom: 20px; }
   
   .btn-back {
     display: inline-flex;
@@ -37,6 +35,7 @@
   .hero-section { margin-bottom: 40px; }
   .page-title { font-weight: 850; font-size: 2.8rem; letter-spacing: -0.05em; margin-bottom: 10px; }
   
+  /* Formulaire */
   .form-container {
     background: #fff;
     border: 1px solid var(--border-color);
@@ -53,7 +52,7 @@
     margin-bottom: 8px;
   }
 
-  .form-control, .form-select {
+  .form-control {
     border: 1px solid #f0f0f0;
     background: #fbfbfb;
     border-radius: 12px;
@@ -62,11 +61,20 @@
     transition: all 0.2s;
   }
 
-  .form-control:focus, .form-select:focus {
+  .form-control:focus {
     background: #fff;
     border-color: #000;
     box-shadow: 0 0 0 4px rgba(0,0,0,0.02);
     outline: none;
+  }
+
+  .info-box {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 24px;
   }
 
   .btn-submit {
@@ -88,22 +96,19 @@
     transition: 0.2s;
   }
   .btn-cancel:hover { color: #000; }
-
-  .form-text { font-size: 0.8rem; color: #bbb; margin-top: 6px; }
 </style>
 
 <div class="container pb-5">
   <div class="content-wrapper">
     
     <div class="nav-header">
-      <a href="{% url 'teams' %}" class="btn-back shadow-sm">
+      <a href="{% url 'collections' %}" class="btn-back shadow-sm">
         <i class="bi bi-arrow-left"></i>
       </a>
     </div>
 
     <div class="hero-section">
-      <h1 class="page-title">Nouvelle équipe</h1>
-      <p class="text-muted">Partagez vos ressources et collaborez sur vos projets.</p>
+      <h1 class="page-title">Nouvelle collection</h1>
     </div>
 
     <div class="form-container shadow-sm">
@@ -111,28 +116,22 @@
         {% csrf_token %}
 
         <div class="mb-4">
-          <label class="form-label">Nom de l’équipe</label>
-          <input type="text" name="name" class="form-control" placeholder="Ex: Projet Plasmides 2026" required>
-          <div class="form-text">Choisissez un nom clair pour vos collaborateurs.</div>
+          <label class="form-label">Nom de la collection</label>
+          <input type="text" name="name" class="form-control" placeholder="ex: Plasmides CRISPR 2026" required>
         </div>
 
         <div class="mb-4">
-          <label class="form-label">Description <span style="font-weight: normal; text-transform: none;">(optionnel)</span></label>
-          <textarea name="description" class="form-control" rows="3" placeholder="Objectif ou contexte scientifique..."></textarea>
+          <label class="form-label">Description</label>
+          <textarea name="description" class="form-control" rows="4" placeholder="Optionnel..."></textarea>
         </div>
 
-        <div class="mb-5">
-          <label class="form-label">Objectif principal</label>
-          <select name="purpose" class="form-select">
-            <option value="">— Sélectionner un objectif —</option>
-            <option value="research">Recherche & développement</option>
-            <option value="experiments">Expérimentations & campagnes</option>
-            <option value="collaboration">Projet collaboratif / enseignement</option>
-          </select>
+        <div class="info-box border">
+          <i class="bi bi-shield-lock-fill me-2"></i>
+          La collection sera <strong>privée</strong> par défaut. Vous pourrez modifier sa visibilité plus tard.
         </div>
 
-        <div class="d-flex align-items-center justify-content-end gap-4 mt-2">
-          <a href="{% url 'teams' %}" class="btn-cancel">
+        <div class="d-flex align-items-center justify-content-end gap-4 mt-5">
+          <a href="{% url 'collections' %}" class="btn-cancel">
             Annuler
           </a>
           <button type="submit" class="btn-submit">

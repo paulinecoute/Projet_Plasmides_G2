@@ -1,0 +1,81 @@
+{% extends "biolib/base.html" %}
+{% block title %}Tables de correspondance{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-5">
+
+  <!-- Retour -->
+  <div class="mb-3">
+    <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary rounded-pill">
+      <i class="bi bi-arrow-left me-1"></i> Retour
+    </a>
+  </div>
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">Tables de correspondance</h2>
+      <p class="text-muted mb-0">
+        Correspondances identifiant / nom / type
+      </p>
+    </div>
+    <a href="#" class="btn btn-primary rounded-pill">
+      <i class="bi bi-upload me-1"></i> Importer une table
+    </a>
+  </div>
+
+  <!-- Table -->
+  <div class="card shadow-sm rounded-4 border-0">
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Nom</th>
+            <th>Date</th>
+            <th>Équipe</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+
+        {% for table in correspondences %}
+          <tr>
+            <td class="fw-semibold">{{ table.name }}</td>
+            <td class="text-muted small">
+              {{ table.uploaded_at|date:"d/m/Y" }}
+            </td>
+            <td>
+              {% if table.team %}
+                <span class="badge bg-primary-subtle text-primary rounded-pill">
+                  {{ table.team.name }}
+                </span>
+              {% else %}
+                <span class="badge bg-secondary-subtle text-secondary rounded-pill">
+                  Privée
+                </span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <a href="#" class="btn btn-sm btn-outline-primary">
+                Voir
+              </a>
+              <a href="#" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-trash"></i>
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="4" class="text-center text-muted py-4">
+              Aucune table de correspondance importée.
+            </td>
+          </tr>
+        {% endfor %}
+
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

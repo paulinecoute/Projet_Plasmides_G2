@@ -1,0 +1,155 @@
+{% extends "biolib/base.html" %}
+{% block title %}{{ collection.name }}{% endblock %}
+
+{% block content %}
+<style>
+  :root {
+    --bg-main: #fcfcfc;
+    --border-color: #eee;
+    --accent-color: #000;
+  }
+
+  body { background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+  .content-wrapper {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .nav-header {
+    padding: 20px 0;
+    margin-bottom: 20px;
+  }
+  .btn-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    color: #666;
+    transition: all 0.2s;
+  }
+  .btn-back:hover { border-color: #000; color: #000; }
+
+  .hero-section { margin-bottom: 40px; }
+  .collection-title { font-weight: 800; font-size: 2.2rem; letter-spacing: -0.03em; margin-bottom: 8px; }
+  
+  .status-dot {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .dot-public { background-color: #10b981; }
+  .dot-private { background-color: #6b7280; }
+
+  .list-container {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+
+  .plasmid-row {
+    display: flex;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.1s;
+  }
+  .plasmid-row:last-child { border-bottom: none; }
+  .plasmid-row:hover { background-color: #fafafa; }
+
+  .id-prefix {
+    font-family: 'SF Mono', 'Monaco', monospace;
+    font-size: 0.7rem;
+    background: #f1f1f1;
+    padding: 4px 8px;
+    border-radius: 6px;
+    margin-right: 16px;
+    color: #444;
+    border: 1px solid #e5e5e5;
+  }
+
+  .file-name { font-weight: 600; font-size: 0.95rem; color: #111; }
+
+  .btn-delete-min {
+    background: none;
+    border: none;
+    color: #ccc;
+    padding: 8px;
+    transition: color 0.2s;
+  }
+  .btn-delete-min:hover { color: #ff4d4d; }
+</style>
+
+<div class="container pb-5">
+  <div class="content-wrapper">
+    
+    <div class="nav-header">
+      <a href="{% url 'collections' %}" class="btn-back shadow-sm">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+    </div>
+
+    <div class="hero-section">
+      <div class="row align-items-center">
+        <div class="col">
+          <div class="status-dot">
+            <span class="dot {% if collection.is_public %}dot-public{% else %}dot-private{% endif %}"></span>
+            {% if collection.is_public %}Public{% else %}Privé{% endif %}
+          </div>
+          <h1 class="collection-title">{{ collection.name }}</h1>
+          {% if collection.description %}
+            <p class="text-muted fs-6 mb-0">{{ collection.description }}</p>
+          {% endif %}
+        </div>
+        <div class="col-auto">
+          {% if is_owner %}
+            <a href="{% url 'plasmid_upload' collection.id %}" class="btn btn-dark rounded-pill px-4 fw-bold shadow-sm">
+              Ajouter
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="list-container shadow-sm">
+      {% if collection.plasmids.exists %}
+        {% for plasmid in collection.plasmids.all %}
+        <div class="plasmid-row">
+          <div class="id-prefix">GB</div>
+          
+          <div class="flex-grow-1">
+            <span class="file-name">{{ plasmid.identifier }}</span>
+          </div>
+
+          {% if is_owner %}
+          <div class="ms-3">
+            <form method="post" action="{% url 'plasmid_delete' plasmid.id %}">
+              {% csrf_token %}
+              <button type="submit" class="btn-delete-min" onclick="return confirm('Supprimer ?');">
+                <i class="bi bi-trash3"></i>
+              </button>
+            </form>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="p-5 text-center text-muted fw-light">
+          Aucun élément dans cette collection.
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}
