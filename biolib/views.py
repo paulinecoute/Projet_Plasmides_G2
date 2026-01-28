@@ -18,15 +18,15 @@ import pathlib
 import openpyxl
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 from .forms import CampaignTemplateForm, TemplatePartFormSet
-from .models import CampaignTemplate, Plasmid, Team, User
+from .models import CampaignTemplate, Plasmid, Team, User, Correspondence
 
-import insillyclo.data_source
-try:
-    import insillyclo.observer
-    BaseObserver = insillyclo.observer.InSillyCloObserver
-except ImportError:
-    class BaseObserver: pass
-import insillyclo.simulator
+#import insillyclo.data_source
+#try:
+#    import insillyclo.observer
+#    BaseObserver = insillyclo.observer.InSillyCloObserver
+#except ImportError:
+#    class BaseObserver: pass
+#import insillyclo.simulator
 
 
 def home(request):
@@ -301,12 +301,12 @@ class ConsoleObserver:
     def notify_progress(self, value):
         pass
 
-class DjangoConsoleObserver(insillyclo.observer.InSillyCloCliObserver):
-    def __init__(self):
-        super().__init__(debug=False, fail_on_error=True)
+#class DjangoConsoleObserver(insillyclo.observer.InSillyCloCliObserver):
+#    def __init__(self):
+#        super().__init__(debug=False, fail_on_error=True)
 
-    def notify_message(self, message):
-        print(f"[INSILLYCLO] {message}")
+#    def notify_message(self, message):
+#        print(f"[INSILLYCLO] {message}")
 
 @login_required
 def simulation_list(request):
@@ -397,8 +397,20 @@ def download_simulation_zip(request, pk):
 #équipes
 @login_required
 def team_list(request):
-    teams = Team.objects.filter(Q(leader=request.user) | Q(members=request.user)).distinct()
+    teams = Team.objects.filter(
+        Q(leader=request.user) | Q(members=request.user)
+    ).distinct()
+
+    # Ajout des compteurs par équipe
+    for team in teams:
+        team.tables_count = Correspondence.objects.filter(team=team).count()
+        team.campaigns_count = Simulation.objects.filter(team=team).count()
+        team.plasmids_count = Plasmid.objects.filter(
+            collection__team=team
+        ).count()
+
     return render(request, 'biolib/teams.html', {'teams': teams})
+
 
 @login_required
 def team_create(request):
@@ -406,14 +418,12 @@ def team_create(request):
         name = request.POST.get('name')
         description = request.POST.get('description', '')
         purpose = request.POST.get('purpose') or None
-        visibility = request.POST.get('visibility', 'private')
 
         if name:
             team = Team.objects.create(
                 name=name,
                 description=description,
                 purpose=purpose,
-                visibility=visibility,
                 leader=request.user
             )
             team.members.add(request.user)
@@ -424,7 +434,24 @@ def team_create(request):
 @login_required
 def team_detail(request, team_id):
     team = get_object_or_404(Team, id=team_id, members=request.user)
-    return render(request, 'biolib/team_detail.html', {'team': team, 'is_leader': team.leader == request.user})
+
+    collections_count = team.plasmidcollection_set.count()
+    tables_count = team.correspondence_set.count()
+    campaigns_count = team.simulation_set.count()
+    plasmids_count = Plasmid.objects.filter(collection__team=team).count()
+
+    return render(
+        request,
+        'biolib/team_detail.html',
+        {
+            'team': team,
+            'is_leader': team.leader == request.user,
+            'collections_count': collections_count,
+            'tables_count': tables_count,
+            'campaigns_count': campaigns_count,
+            'plasmids_count': plasmids_count,
+        }
+    )
 
 @login_required
 def team_manage_members(request, team_id):
@@ -442,13 +469,19 @@ def team_manage_members(request, team_id):
 @login_required
 def team_change_leader(request, team_id, user_id):
     team = get_object_or_404(Team, id=team_id, members=request.user)
-    if team.leader != request.user: return HttpResponse("Accès refusé", status=403)
+    if team.leader != request.user:
+        return HttpResponse("Accès refusé", status=403)
+
     new_leader = get_object_or_404(User, id=user_id)
-    if new_leader not in team.members.all(): return HttpResponse("Accès refusé", status=400)
+    if new_leader not in team.members.all():
+        return HttpResponse("Accès refusé", status=400)
+
     if request.method == 'POST':
         team.leader = new_leader
         team.save()
-    return redirect('team_manage_members', team_id=team.id)
+
+    return redirect('team_detail', team_id=team.id)
+
 
 @login_required
 def team_remove_member(request, team_id, user_id):

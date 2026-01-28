@@ -63,15 +63,11 @@ class Team(models.Model):
     """ Branche AGASH : Hiérarchie Équipes """
 
     TEAM_PURPOSE_CHOICES = [
-        ('research', 'Recherche scientifique'),
-        ('campaigns', 'Gestion de campagnes expérimentales'),
-        ('analysis', 'Analyse et exploration de données'),
-        ('teaching', 'Enseignement / travaux pratiques'),
-        ('methods', 'Développement de méthodes / protocoles'),
-        ('collaboration', 'Projet collaboratif inter-équipes'),
-        ('testing', 'Tests / validation technique'),
-        ('archival', 'Archivage et partage de résultats'),
+        ('research', 'Recherche & développement'),
+        ('experiments', 'Expérimentations & campagnes'),
+        ('collaboration', 'Projet collaboratif / enseignement'),
     ]
+
 
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
@@ -80,12 +76,6 @@ class Team(models.Model):
         max_length=30,
         choices=TEAM_PURPOSE_CHOICES,
         blank=True
-    )
-
-    visibility = models.CharField(
-        max_length=10,
-        choices=[('private', 'Privée'), ('public', 'Publique')],
-        default='private'
     )
 
     leader = models.ForeignKey(
@@ -138,6 +128,7 @@ class Correspondence(models.Model):
     file = models.FileField(upload_to="correspondences/")
     uploaded_at = models.DateTimeField(auto_now_add=True)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True)
+    team = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -192,6 +183,7 @@ class CampaignTemplate(models.Model):
     # -- Partie AGASH (Fichiers & Droits) --
     file = models.FileField(upload_to="templates/", blank=True, null=True, help_text="Fichier modèle Excel")
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
+    team = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, blank=True)
     is_public = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -225,6 +217,7 @@ class TemplatePart(models.Model):
 
 class Simulation(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    team = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, blank=True)
     status = models.CharField(max_length=20, default='PENDING')
     date_run = models.DateTimeField(auto_now_add=True)
     result_file = models.CharField(max_length=255, blank=True, null=True)
