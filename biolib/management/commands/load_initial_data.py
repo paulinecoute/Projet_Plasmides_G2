@@ -74,9 +74,12 @@ class Command(BaseCommand):
 
                         # Mode binaire pour le fichier
                         with open(file_path, 'rb') as f_byte:
-
-                            nom_sauvegarde = os.path.join('plasmids', folder_name, filename)
-                            # On sauvegarde
+                            if folder_name == 'data_web':
+                                # Cas des fichiers à la racine
+                                nom_sauvegarde = filename
+                            else:
+                                # Cas des fichiers dans des sous-dossiers (pYTK, etc.)
+                                nom_sauvegarde = os.path.join(folder_name, filename)
                             plasmid.genbank_file.save(nom_sauvegarde, File(f_byte), save=True)
                         count_success += 1
                         self.stdout.write(f"   + {filename} (dans {collection_name})")

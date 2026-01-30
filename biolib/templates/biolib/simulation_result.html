@@ -163,10 +163,10 @@
                                     {% if ".csv" not in simulation.result_file %}
 
                                         <div class="d-inline-block border rounded p-2 bg-white shadow-sm">
-                                            <img src="/media/{{ simulation.result_file }}"
-                                                 alt="Résultat Digestion"
-                                                 class="img-fluid"
-                                                 style="max-height: 500px;">
+                                            <img src="/media/{{ simulation.result_file }}?v={% now 'U' %}"
+                                            alt="Résultat Digestion"
+                                            class="img-fluid border rounded shadow-sm"
+                                            style="max-height: 500px;">
                                         </div>
 
                                         <br><br>
@@ -208,7 +208,52 @@
 
         </div>
     </div>
+    <div class="card mt-4 shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-edit"></i> Modifier le Gel</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'update_simulation_gel' simulation.id %}">
+                {% csrf_token %}
 
+                <p class="text-muted small">Sélectionnez de nouvelles enzymes pour redessiner le gel sans refaire l'assemblage.</p>
+
+               <div class="mb-3" style="max-height: 200px; overflow-y: auto;">
+
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="gel_enzymes" value="BsaI" id="gel_BsaI">
+                    <label class="form-check-label" for="gel_BsaI">BsaI</label>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="gel_enzymes" value="BsmBI" id="gel_BsmBI">
+                    <label class="form-check-label" for="gel_BsmBI">BsmBI</label>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="gel_enzymes" value="BbsI" id="gel_BbsI">
+                    <label class="form-check-label" for="gel_BbsI">BbsI</label>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="gel_enzymes" value="SapI" id="gel_SapI">
+                    <label class="form-check-label" for="gel_SapI">SapI</label>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="gel_enzymes" value="NotI" id="gel_NotI">
+                    <label class="form-check-label" for="gel_NotI">NotI</label>
+                </div>
+
+
+            </div>
+
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-sync-alt"></i> Mettre à jour l'image
+                </button>
+            </form>
+        </div>
+    </div>
     <div class="text-center mb-4">
         <a href="{% url 'simulation_list' %}" class="btn btn-link">← Retour à la liste des simulations</a>
     </div>

@@ -53,6 +53,7 @@ urlpatterns = [
     path('simulation/<int:pk>/csv/', views.download_simulation_csv, name='download_simulation_csv'),
     path('simulation/<int:pk>/download_zip/', views.download_simulation_zip, name='download_simulation_zip'),
     path('simulation/<int:pk>/download_file/<str:filename>/', views.download_specific_file, name='download_specific_file'),
+    path('simulation/<int:pk>/update_gel/', views.update_simulation_gel, name='update_simulation_gel'),
 
     #équipes
     path('teams/', views.team_list, name='teams'),

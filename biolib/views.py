@@ -8,18 +8,17 @@ from django.http import FileResponse, HttpResponse, Http404
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.db.models import Q
-from .forms import SimulationForm
-from .models import Simulation
+from .forms import SimulationForm, CampaignTemplateForm, TemplatePartFormSet
+from .models import Simulation,CampaignTemplate, Plasmid, Team, User
 from types import SimpleNamespace
 import traceback
+import pathlib
 import glob
 import os
 import csv
 import zipfile
 import openpyxl
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
-from .forms import CampaignTemplateForm, TemplatePartFormSet
-from .models import CampaignTemplate, Plasmid, Team, User
 import pandas as pd
 
 import insillyclo.data_source
@@ -54,7 +53,6 @@ def template(request):
 
 
 def create_template(request):
-
     if request.method == 'POST':
         form = CampaignTemplateForm(request.POST, request.FILES)
         formset = TemplatePartFormSet(request.POST)
@@ -96,8 +94,52 @@ def create_template(request):
 def simulation(request):
     return render(request, 'biolib/simulation.html')
 
-def simulation_result(request):
-    return render(request, 'biolib/simulation_result.html')
+def simulation_result(request, pk=None):
+    simulation = get_object_or_404(Simulation, pk=pk, user=request.user)
+
+    output_folder = os.path.join(settings.BASE_DIR, 'media', 'simulations', str(pk))
+
+    csv_path = os.path.join(output_folder, 'dilutions.csv')
+
+    if not os.path.exists(csv_path):
+        found_csvs = list(pathlib.Path(output_folder).glob("*.csv"))
+        # On évite de prendre 'concentrations.csv' s'il traîne par là
+        valid_csvs = [f for f in found_csvs if "concentration" not in f.name.lower()]
+        if valid_csvs:
+            csv_path = str(valid_csvs[0])
+
+    csv_data = []
+
+    # 3. Lecture et Découpage du CSV
+    if os.path.exists(csv_path):
+        try:
+            with open(csv_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+
+                if '\n' not in content and '\r' not in content:
+                    f.seek(0)
+                else:
+                    f.seek(0)
+
+                try:
+                    dialect = csv.Sniffer().sniff(content[:1024])
+                    f.seek(0)
+                    reader = csv.reader(f, dialect)
+                except:
+                    f.seek(0)
+                    reader = csv.reader(f, delimiter=',')
+
+                # On transforme le tout en une liste utilisable par le HTML
+                csv_data = list(reader)
+
+        except Exception as e:
+            print(f"Erreur lecture CSV : {e}")
+
+    # 4. Envoi au HTML
+    return render(request, 'biolib/simulation_result.html', {
+        'simulation': simulation,
+        'csv_data': csv_data
+    })
 
 def template_detail(request):
     return render(request, 'biolib/template_detail.html')
@@ -114,8 +156,6 @@ def signup(request):
 
     return render(request, 'biolib/signup.html', {'form': form})
 
-
-# DASHBOARD
 
 @login_required
 def dashboard(request):
@@ -219,7 +259,6 @@ def creer_archive_resultats_seulement(dossier_source, simulation_id, fichiers_a_
     nom_zip = f"simulation_{simulation_id}_archive.zip"
     chemin_zip = os.path.join(dossier_source, nom_zip)
 
-    # 1. On liste tous les candidats (.gb et .csv)
     candidats_gb = glob.glob(os.path.join(dossier_source, "*.gb"))
     candidats_csv = glob.glob(os.path.join(dossier_source, "*.csv"))
 
@@ -228,18 +267,14 @@ def creer_archive_resultats_seulement(dossier_source, simulation_id, fichiers_a_
     if not tous_candidats:
         return None
 
-    # Normalisation des exclusions
     noms_exclus = set(os.path.basename(f) for f in fichiers_a_exclure)
 
     fichiers_finaux = []
     for chemin in tous_candidats:
         nom_fichier = os.path.basename(chemin)
 
-        # LOGIQUE DE FILTRAGE
-        # 1. Si c'est un fichier d'entrée connu -> ON PASSE
         if nom_fichier in noms_exclus:
             continue
-        # 2. Sinon, on l'ajoute au zip
         fichiers_finaux.append(chemin)
 
     if not fichiers_finaux:
@@ -261,17 +296,13 @@ def download_specific_file(request, pk, filename):
     """
     Télécharge un fichier spécifique situé dans simulations/{pk}/{filename}
     """
-    # Sécurité basique : on empêche de remonter dans les dossiers avec ".."
     if ".." in filename or "/" in filename:
         raise Http404("Nom de fichier invalide.")
 
-    # Construction du chemin (identique à ton dossier de sortie corrigé)
     file_path = os.path.join(settings.BASE_DIR, 'media','simulations', str(pk), filename)
 
     if os.path.exists(file_path):
-        # On ouvre le fichier
         response = FileResponse(open(file_path, 'rb'), content_type='text/csv')
-        # On force le téléchargement
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
     else:
@@ -302,7 +333,6 @@ def create_simulation(request):
             path_xlsx = simulation.template_file.path
             path_csv_list = [simulation.campaign_file.path] if simulation.campaign_file else []
 
-            # --- PRÉPARATION DES INPUTS ---
             gb_plasmids_paths = []
             input_filenames_to_exclude = []
 
@@ -327,7 +357,6 @@ def create_simulation(request):
             try:
                 observer = DjangoConsoleObserver()
 
-                # --- CORRECTION ICI : APPEL DU SIMULATEUR AVEC LES BONS ARGUMENTS ---
                 compute_all(
                     observer=observer,
                     settings=None,
@@ -336,20 +365,12 @@ def create_simulation(request):
                     gb_plasmids=gb_plasmids_paths,
                     output_dir=output_folder,
                     data_source="Django",
-
-                    # 1. Enzyme pour construire le plasmide (Menu déroulant)
                     assembly_enzyme=simulation.enzyme,
-
-                    # 2. Enzymes pour voir le gel (Cases à cocher)
-                    # Si vide, on envoie [] (le simulateur gèrera le fallback)
                     gel_enzymes=selected_enzymes if selected_enzymes else [],
-
                     user_primers=primers_text,
                     default_mass_concentration=200
                 )
-                # --------------------------------------------------------------------
 
-                # Gestion des CSV (Conversion virgule/point-virgule)
                 tous_les_csv = glob.glob(os.path.join(output_folder, "*.csv"))
                 for csv_path in tous_les_csv:
                     try:
@@ -369,7 +390,6 @@ def create_simulation(request):
                 path_png = os.path.join(output_folder, 'digestion.png')
                 path_svg = os.path.join(output_folder, 'digestion.svg')
 
-                # Correction : On associe la bonne extension au bon fichier
                 if os.path.exists(path_png):
                     simulation.result_file = f"simulations/{simulation.id}/digestion.png"
                 elif os.path.exists(path_svg):
@@ -389,38 +409,6 @@ def create_simulation(request):
     else:
         form = SimulationForm()
     return render(request, 'biolib/create_simulation.html', {'form': form})
-def simulation_result(request, pk=None):
-    csv_data = []
-
-    if pk is not None:
-        # Cas Simulation Réelle
-        simulation = get_object_or_404(Simulation, pk=pk, user=request.user)
-
-        file_path = os.path.join(settings.MEDIA_ROOT, 'simulations', str(pk), 'dilution-direct.csv')
-
-        if os.path.exists(file_path):
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    reader = csv.reader(f, delimiter=';')
-                    csv_data = list(reader)
-            except Exception as e:
-                print(f"Erreur lors de la lecture du CSV : {e}")
-
-    else:
-        # Cas Mode DÉMO
-        simulation = SimpleNamespace(
-            id=0,
-            status='COMPLETED',
-            date_run=datetime.now(),
-            template=SimpleNamespace(name="DÉMO", enzyme="BsaI"),
-            user=request.user
-        )
-
-    # 3. Envoi au template
-    return render(request, 'biolib/simulation_result.html', {
-        'simulation': simulation,
-        'csv_data': csv_data  # C'est cette variable que le HTML va utiliser pour le tableau
-    })
 
 def download_simulation_csv(request, pk):
     simulation = get_object_or_404(Simulation, pk=pk)
@@ -440,8 +428,6 @@ def download_simulation_zip(request, pk):
     # 1. Nom du fichier
     zip_filename = f"simulation_{pk}_archive.zip"
 
-    # 2. Construction du chemin EXACT basé sur votre indication
-    # settings.BASE_DIR est la racine de votre projet (là où il y a manage.py généralement)
     path_to_zip = os.path.join(settings.BASE_DIR, 'media', 'simulations', str(pk), zip_filename)
 
 
@@ -452,6 +438,78 @@ def download_simulation_zip(request, pk):
         return response
     else:
         raise Http404(f"Le fichier ZIP est introuvable au chemin : {path_to_zip}")
+
+def update_simulation_gel(request, pk):
+    simulation = get_object_or_404(Simulation, pk=pk, user=request.user)
+
+    if request.method == 'POST':
+        # 1. Gestion des enzymes
+        new_enzymes = request.POST.getlist('gel_enzymes')
+        if new_enzymes:
+            simulation.custom_enzymes = ",".join(new_enzymes)
+        else:
+            new_enzymes = [simulation.enzyme]
+            simulation.custom_enzymes = ""
+        simulation.save()
+
+        # 2. Préparation des chemins
+        output_folder = os.path.join(settings.BASE_DIR, 'media', 'simulations', str(simulation.id))
+        path_xlsx = simulation.template_file.path
+        path_csv_list = [simulation.campaign_file.path] if simulation.campaign_file else []
+        path_concentration = None
+        def_conc = 200.0
+
+        # 3. Récupération des plasmides
+        gb_plasmids_paths = []
+        all_parts = Plasmid.objects.all()
+        for p in all_parts:
+            if p.genbank_file and os.path.exists(p.genbank_file.path):
+                gb_plasmids_paths.append(p.genbank_file.path)
+
+        # 4. Relance du calcul
+        try:
+            observer = DjangoConsoleObserver()
+
+            compute_all(
+                observer=observer,
+                settings=None,
+                input_template_filled=path_xlsx,
+                input_parts_files=path_csv_list,
+                gb_plasmids=gb_plasmids_paths,
+                output_dir=output_folder,
+                data_source="Django",
+                assembly_enzyme=simulation.enzyme,
+                gel_enzymes=new_enzymes,
+                user_primers=simulation.pcr_primers,
+                default_mass_concentration=def_conc,
+                concentration_file=path_concentration
+            )
+
+            # On convertit le fichier généré en format Point-Virgule
+            tous_les_csv = glob.glob(os.path.join(output_folder, "*.csv"))
+            for csv_path in tous_les_csv:
+                try:
+                    df_temp = pd.read_csv(csv_path, sep=None, engine='python')
+                    df_temp.to_csv(csv_path, sep=';', decimal=',', index=False)
+                except Exception as e:
+                    print(f"  -> ERREUR CSV UPDATE : {e}")
+
+            path_png = os.path.join(output_folder, 'digestion.png')
+            path_svg = os.path.join(output_folder, 'digestion.svg')
+
+            if os.path.exists(path_png):
+                simulation.result_file = f"simulations/{simulation.id}/digestion.png"
+            elif os.path.exists(path_svg):
+                simulation.result_file = f"simulations/{simulation.id}/digestion.svg"
+            simulation.save()
+
+        except Exception as e:
+            print(f"Erreur lors de la mise à jour : {e}")
+            import traceback
+            traceback.print_exc()
+            pass
+
+    return redirect('simulation_result', pk=simulation.id)
 
 #équipes
 @login_required

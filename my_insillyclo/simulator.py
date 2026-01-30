@@ -9,44 +9,31 @@ import zipfile
 import os
 import glob
 from django.conf import settings
+import traceback
 
-# Imports InSillyClo
 try:
     import pandas as pd
     HAS_PANDAS = True
 except ImportError:
     HAS_PANDAS = False
 
-try:
-    import insillyclo.data_source
-    import insillyclo.observer
-    import insillyclo.simulator
-    import insillyclo.conf
-    import insillyclo.digestion
-    import insillyclo.parser
-    import insillyclo.models
-except ImportError as e:
-    raise ImportError(f"Le package 'insillyclo' est introuvable. Erreur : {e}")
 
-# =============================================================================
-# DEFINITION DES ENZYMES (Séquences de reconnaissance)
-# =============================================================================
+import insillyclo.data_source
+import insillyclo.observer
+import insillyclo.simulator
+import insillyclo.conf
+import insillyclo.digestion
+import insillyclo.parser
+import insillyclo.models
 
-# Dictionnaire pour mapper le nom de l'enzyme à ses sites de coupure (Forward et Reverse)
-# Pour le Golden Gate (Type IIS), le site est asymétrique.
 ENZYME_SITES = {
     'BsaI':  {'fwd': 'GGTCTC', 'rev': 'GAGACC'},
     'BsmBI': {'fwd': 'CGTCTC', 'rev': 'GAGACG'},
     'BbsI':  {'fwd': 'GAAGAC', 'rev': 'GTCTTC'},
     'SapI':  {'fwd': 'GCTCTTC', 'rev': 'GAAGAGC'},
-    # NotI est Type IIP (Palindromique), souvent moins utilisé pour l'assemblage pur Golden Gate
-    # mais on le met au cas où pour la compatibilité.
     'NotI':  {'fwd': 'GCGGCCGC', 'rev': 'GCGGCCGC'},
 }
 
-# =============================================================================
-# LOGIQUE DYNAMIQUE : PATCH DES FICHIERS
-# =============================================================================
 
 def _patch_sequence_dynamically(record, target_left, target_right, enzyme_sites):
     """
@@ -58,12 +45,10 @@ def _patch_sequence_dynamically(record, target_left, target_right, enzyme_sites)
     site_fwd = enzyme_sites['fwd']
     site_rev = enzyme_sites['rev']
 
-    # 1. Nettoyage : On enlève les anciens sites (pour éviter les coupures internes)
-    # On remplace par une mutation silencieuse basique (ex: C->G à la fin) pour "casser" le site
+    # 1. Nettoyage : On enlève les anciens sites
     clean_seq = original_seq.replace(site_fwd, site_fwd[:-1] + "G").replace(site_rev, site_rev[:-1] + "G")
 
     # 2. Construction de la nouvelle séquence dynamique
-    # Structure : Site_Enzyme -> Spacer(A) -> Left -> ADN -> Right -> Spacer(T) -> Site_Enzyme_Rev
     new_seq = site_fwd + "A" + target_left + clean_seq + target_right + "T" + site_rev
 
     new_record = SeqRecord(
@@ -85,7 +70,7 @@ def _dynamic_compatibility_layer(template_path, input_parts_files, gb_files, wor
     enzyme_sites = ENZYME_SITES.get(assembly_enzyme_name, ENZYME_SITES['BsaI'])
     print(f"DEBUG: Assemblage configuré avec l'enzyme {assembly_enzyme_name} (Site: {enzyme_sites['fwd']})")
 
-    # A. Lire le Mapping (Nom -> ID Fichier)
+    #Lire le Mapping (Nom -> ID Fichier)
     name_to_filename = {}
     if HAS_PANDAS and input_parts_files:
         try:
@@ -106,7 +91,6 @@ def _dynamic_compatibility_layer(template_path, input_parts_files, gb_files, wor
         except Exception as e:
             print(f"DEBUG: Erreur lecture mapping: {e}")
 
-    # B. Lire la recette
     recipes = []
     try:
         assembly, plasmids = insillyclo.parser.parse_assembly_and_plasmid_from_template(
@@ -132,7 +116,6 @@ def _dynamic_compatibility_layer(template_path, input_parts_files, gb_files, wor
         print(f"DEBUG: Erreur Parser Officiel: {e}")
         return []
 
-    # C. Calculer les connecteurs (Overhangs)
     file_overhangs = {}
     LINKS = ["GGAG", "AATG", "GCTT", "CGCT", "TGCC", "GGAA", "TTCC", "ACGT"]
 
@@ -148,7 +131,6 @@ def _dynamic_compatibility_layer(template_path, input_parts_files, gb_files, wor
 
             file_overhangs[real_id] = (link_in, link_out)
 
-    # D. Appliquer les modifications aux fichiers
     ready_files = []
     available_files = {}
     for p in gb_files:
@@ -176,9 +158,7 @@ def _dynamic_compatibility_layer(template_path, input_parts_files, gb_files, wor
         try:
             record = SeqIO.read(src_path, "genbank")
 
-            # --- CORRECTION : On passe l'enzyme dynamique ici ---
             new_record = _patch_sequence_dynamically(record, target_left, target_right, enzyme_sites)
-            # ----------------------------------------------------
 
             dst_path = work_dir / f"{stem}.gb"
             with open(dst_path, "w") as f:
@@ -199,7 +179,6 @@ def _dynamic_compatibility_layer(template_path, input_parts_files, gb_files, wor
     return ready_files
 
 def creer_archive_zip(simulation_id, noms_fichiers_gb=None):
-    # (Pas de changement ici, c'est identique à ton code)
     dossier_simu = os.path.join(settings.BASE_DIR, 'simulation', f"simulation_{simulation_id}")
     nom_zip = f"simulation_{simulation_id}_archive.zip"
     chemin_zip_final = os.path.join(dossier_simu, nom_zip)
@@ -226,9 +205,7 @@ def creer_archive_zip(simulation_id, noms_fichiers_gb=None):
         print(f"Erreur ZIP : {e}")
         return None
 
-# =============================================================================
-# MAIN FONCTION DE SIMULATION
-# =============================================================================
+
 
 def compute_all(
     observer,
@@ -238,30 +215,27 @@ def compute_all(
     gb_plasmids,
     output_dir,
     data_source=None,
-    gel_enzymes=None,       # Liste des cases à cocher (ou None)
-    assembly_enzyme='BsaI', # Enzyme du menu déroulant
+    gel_enzymes=None,
+    assembly_enzyme='BsaI',
     **kwargs
 ):
     work_dir = pathlib.Path(output_dir)
     work_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. Gestion de l'enzyme d'assemblage (Prioritaire)
+    #Gestion de l'enzyme d'assemblage (Prioritaire)
     main_assembly_enzyme = assembly_enzyme if assembly_enzyme else 'BsaI'
 
-    # 2. Gestion des enzymes du Gel (Avec Fallback)
+    #Gestion des enzymes du Gel (Avec Fallback)
     if not gel_enzymes:
         print(f"DEBUG: Pas d'enzyme de gel choisie. Utilisation de l'enzyme d'assemblage ({main_assembly_enzyme}) par défaut.")
-        # C'est ici que la magie opère : on force l'affichage avec l'enzyme d'assemblage
         real_gel_enzymes = [main_assembly_enzyme]
     elif isinstance(gel_enzymes, str):
         real_gel_enzymes = [gel_enzymes]
     else:
         real_gel_enzymes = gel_enzymes
 
-    # Petite correction cosmétique ici pour le log
     print(f"DEBUG: Enzymes pour le gel -> {', '.join(real_gel_enzymes)}")
 
-    # 3. Préparation du Template (Excel) et INJECTION DE L'ENZYME D'ASSEMBLAGE
     template_path = pathlib.Path(input_template_filled)
 
     # On force la conversion/lecture via Pandas pour modifier l'enzyme
@@ -274,21 +248,18 @@ def compute_all(
                 # Si c'est déjà un Excel, on le lit pour le modifier
                 df = pd.read_excel(template_path, header=None)
 
-            # B. Vérification/Création de l'en-tête "Assembly settings"
             col0_str = df.iloc[:, 0].astype(str).values
 
             if "Assembly settings" not in col0_str:
-                # Si l'en-tête n'existe pas, on le crée avec l'enzyme d'assemblage
                 header = pd.DataFrame([
                     ["Assembly settings", ""],
                     ["assembly_type", "Golden Gate"],
-                    ["enzyme", main_assembly_enzyme], # <--- IMPORTANT : On force l'enzyme d'assemblage
+                    ["enzyme", main_assembly_enzyme],
                     ["", ""],
                     ["Constructs settings", ""]
                 ])
                 df = pd.concat([header, df], ignore_index=True)
             else:
-                # C. Si l'en-tête existe, on cherche la ligne "enzyme" pour la mettre à jour
                 enzyme_row_index = -1
                 for idx, val in enumerate(df.iloc[:, 0]):
                     if str(val).strip().lower() == "enzyme":
@@ -301,7 +272,6 @@ def compute_all(
                 else:
                     pass
 
-            # D. Sauvegarde du fichier modifié
             new_template = work_dir / "processed_template.xlsx"
             df.to_excel(new_template, index=False, header=False, engine='openpyxl')
             template_path = new_template
@@ -310,7 +280,6 @@ def compute_all(
             print(f"ATTENTION: Erreur lors de la modification du template Excel : {e}")
             pass
 
-    # 4. APPEL DE LA COUCHE DYNAMIQUE (Patch avec l'enzyme d'assemblage)
     print(f"--- DÉBUT ANALYSE DYNAMIQUE (Assemblage avec {main_assembly_enzyme}) ---")
 
     ready_files = _dynamic_compatibility_layer(
@@ -319,18 +288,16 @@ def compute_all(
         gb_plasmids,
         work_dir,
         observer,
-        main_assembly_enzyme # <--- On patche les bouts collants pour CETTE enzyme
+        main_assembly_enzyme
     )
 
     print(f"--- FIN ANALYSE DYNAMIQUE ({len(ready_files)} fichiers prêts) ---")
 
-    # 5. Data Source
     if data_source is None or isinstance(data_source, str):
         real_data_source = insillyclo.data_source.DataSourceHardCodedImplementation()
     else:
         real_data_source = data_source
 
-    # 6. Gestion des amorces
     user_primers_text = kwargs.get('user_primers', None)
     primers_file_path = kwargs.get('primers_file', None)
 
@@ -353,21 +320,20 @@ def compute_all(
         except Exception as e:
             print(f"Erreur amorces : {e}")
 
-    # 7. APPEL FINAL À INSILLYCLO
     return insillyclo.simulator.compute_all(
         observer=observer,
         settings=settings,
-        input_template_filled=template_path, # Fichier Excel modifié
+        input_template_filled=template_path,
         input_parts_files=[pathlib.Path(p) for p in input_parts_files] if input_parts_files else [],
         gb_plasmids=ready_files,
         output_dir=work_dir,
         data_source=real_data_source,
 
-        enzyme_names=real_gel_enzymes, # <--- Liste (soit cases cochées, soit [assemblage])
-
+        enzyme_names=real_gel_enzymes, #
         primers_file=primers_file_path,
         primer_id_pairs=kwargs.get('primer_id_pairs', []),
         default_mass_concentration=kwargs.get('default_mass_concentration', 200),
         sbol_export=kwargs.get('sbol_export', False),
         concentration_file=kwargs.get('concentration_file', None)
     )
+
