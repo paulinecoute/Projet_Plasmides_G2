@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.urls import path
 from biolib import views
 from django.contrib.auth import views as auth_views
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     # administration
@@ -64,8 +66,14 @@ urlpatterns = [
     ),
 
 
-    # Tables de correspondances
+    # TABLES DE CORRESPONDANCE
     path("correspondences/", views.correspondences_view, name="correspondences"),
+    path("correspondences/upload/", views.correspondence_upload, name="correspondence_upload"),
+    path("correspondences/<int:correspondence_id>/", views.correspondence_detail, name="correspondence_detail"),
+    path("correspondences/<int:correspondence_id>/delete/", views.correspondence_delete, name="correspondence_delete"),
+    path("correspondences/<int:correspondence_id>/view/", views.correspondence_view_file, name="correspondence_view_file"),
+
+
     
     # simulations
     path('simulation/new/', views.create_simulation, name='create_simulation'),
@@ -101,3 +109,6 @@ urlpatterns = [
         name='team_change_leader'
     ),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

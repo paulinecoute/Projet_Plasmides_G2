@@ -1,0 +1,146 @@
+{% extends "biolib/base.html" %}
+{% block title %}Importer une table{% endblock %}
+
+{% block content %}
+<style>
+  :root {
+    --bg-main: #fcfcfc;
+    --border-color: #eee;
+  }
+
+  body { background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+  .content-wrapper {
+    max-width: 600px;
+    margin: 0 auto;
+    padding-bottom: 50px;
+  }
+
+  .nav-header { padding: 20px 0; margin-bottom: 10px; }
+  
+  .btn-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    color: #666;
+    transition: 0.2s;
+    text-decoration: none;
+  }
+  .btn-back:hover { border-color: #000; color: #000; }
+
+  .hero-section { margin-bottom: 40px; }
+  .page-title { font-weight: 850; font-size: 2.2rem; letter-spacing: -0.05em; margin-bottom: 5px; }
+  
+  .form-card {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 35px;
+  }
+
+  .form-label {
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #aaa;
+    margin-bottom: 10px;
+  }
+
+  .form-control {
+    border: 1px solid #f0f0f0;
+    background: #fbfbfb;
+    border-radius: 12px;
+    padding: 12px 15px;
+    font-weight: 500;
+    transition: 0.2s;
+  }
+  .form-control:focus {
+    border-color: #000;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  /* File input styling */
+  input[type="file"]::file-selector-button {
+    background: #000;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 5px 15px;
+    margin-right: 15px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  input[type="file"]::file-selector-button:hover { background: #333; }
+
+  .btn-submit {
+    background: #000;
+    color: #fff;
+    padding: 12px 30px;
+    border-radius: 14px;
+    font-weight: 700;
+    border: none;
+    transition: 0.2s;
+    width: 100%;
+    margin-top: 20px;
+  }
+  .btn-submit:hover { background: #333; transform: translateY(-2px); }
+
+  .helper-text {
+    font-size: 0.8rem;
+    color: #888;
+    margin-top: 20px;
+    text-align: center;
+  }
+</style>
+
+<div class="container">
+  <div class="content-wrapper">
+    
+    <div class="nav-header">
+      <a href="{% url 'correspondences' %}" class="btn-back shadow-sm">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+    </div>
+
+    <div class="hero-section">
+      <h1 class="page-title">Nouvelle table</h1>
+      <p class="text-muted">Importez vos fichiers de mapping biologiques.</p>
+    </div>
+
+    <div class="form-card shadow-sm">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="mb-4">
+          <label class="form-label">Nom de la table</label>
+          <input type="text" name="name" class="form-control" placeholder="ex: Mapping BsaI 2026" required>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label">Fichier de données</label>
+          <input type="file" name="file" class="form-control" accept=".csv, .xlsx, .xls" required>
+        </div>
+
+        <button type="submit" class="btn-submit shadow-sm">
+          Lancer l'importation
+        </button>
+
+        <p class="helper-text">
+          <i class="bi bi-info-circle me-1"></i> 
+          Formats acceptés : CSV, Excel (.xlsx, .xls)
+        </p>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

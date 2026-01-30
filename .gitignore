@@ -8,3 +8,12 @@ data_web/pMYTK
 data_web/pYS
 data_web/pYTK
 data_web/requirements.txt
+
+# Données biologiques (local uniquement)
+plasmids/
+correspondences/
+simulations/
+
+# Médias uploadés
+/media/
+

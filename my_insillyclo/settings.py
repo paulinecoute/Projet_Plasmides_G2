@@ -123,3 +123,6 @@ LOGOUT_REDIRECT_URL = '/'  # Redirection après déconnexion
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'biolib.User'
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR

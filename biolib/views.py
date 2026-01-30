@@ -226,12 +226,20 @@ def signup(request):
 
 @login_required
 def dashboard(request):
-    teams_count = Team.objects.filter(
-        Q(leader=request.user) | Q(members=request.user)
-    ).distinct().count()
+    collections_count = PlasmidCollection.objects.filter(
+        owner=request.user
+    ).count()
 
-    return render(request, 'biolib/dashboard.html', {
-        'teams_count': teams_count
+    correspondences_count = Correspondence.objects.filter(
+        owner=request.user
+    ).count()
+
+    teams_count = request.user.teams.count()
+
+    return render(request, "biolib/dashboard.html", {
+        "collections_count": collections_count,
+        "correspondences_count": correspondences_count,
+        "teams_count": teams_count,
     })
 
 ########################################################
@@ -328,7 +336,74 @@ def collection_delete(request, collection_id):
 
     
 
-##################
+####################################
+# TABLES DE CORRESPONDANCES
+####################################
+
+@login_required
+def correspondence_upload(request):
+    if request.method == "POST":
+        Correspondence.objects.create(
+            name=request.POST["name"],
+            file=request.FILES["file"],
+            owner=request.user
+        )
+        return redirect("correspondences")
+
+    return render(request, "biolib/correspondence_upload.html")
+
+
+@login_required
+def correspondence_detail(request, correspondence_id):
+    table = get_object_or_404(
+        Correspondence,
+        id=correspondence_id,
+        owner=request.user
+    )
+
+    return render(request, "biolib/correspondence_detail.html", {
+        "table": table
+    })
+
+
+@login_required
+def correspondence_delete(request, correspondence_id):
+    table = get_object_or_404(
+        Correspondence,
+        id=correspondence_id,
+        owner=request.user
+    )
+
+    if request.method == "POST":
+        table.delete()
+        return redirect("correspondences")
+
+
+@login_required
+def correspondence_view_file(request, correspondence_id):
+    table = get_object_or_404(
+        Correspondence,
+        id=correspondence_id,
+        owner=request.user
+    )
+
+    file_path = table.file.path
+
+    try:
+        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
+    except Exception:
+        content = "Impossible d'afficher le fichier."
+
+    return render(request, "biolib/correspondence_view_file.html", {
+        "table": table,
+        "content": content
+    })
+
+
+
+####################################
+
 
 def export_template_excel(request, template_id):
     template = get_object_or_404(CampaignTemplate, id=template_id)
