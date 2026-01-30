@@ -61,15 +61,33 @@ class User(AbstractUser):
 
 class Team(models.Model):
     """ Branche AGASH : Hiérarchie Équipes """
+
+    TEAM_PURPOSE_CHOICES = [
+        ('research', 'Recherche & développement'),
+        ('experiments', 'Expérimentations & campagnes'),
+        ('collaboration', 'Projet collaboratif / enseignement'),
+    ]
+
+
     name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+
+    purpose = models.CharField(
+        max_length=30,
+        choices=TEAM_PURPOSE_CHOICES,
+        blank=True
+    )
+
     leader = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='led_teams'
     )
     members = models.ManyToManyField(
         settings.AUTH_USER_MODEL, related_name='teams', blank=True
     )
+
     def __str__(self):
         return self.name
+
 
 # ==============================================================================
 # 2. DONNÉES BIOLOGIQUES (Fusion AGASH + MAIN)
@@ -110,6 +128,7 @@ class Correspondence(models.Model):
     file = models.FileField(upload_to="correspondences/")
     uploaded_at = models.DateTimeField(auto_now_add=True)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True)
+    team = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -149,11 +168,22 @@ class CampaignTemplate(models.Model):
         default='private',
         verbose_name="Visibilité"
     )
-    # ----------------------------------------------------
+
+    # --- AJOUT DU LIEN VERS L'ÉQUIPE ---
+    team = models.ForeignKey(
+        Team,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='templates',
+        verbose_name="Équipe associée"
+    )
+    # -----------------------------------
 
     # -- Partie AGASH (Fichiers & Droits) --
     file = models.FileField(upload_to="templates/", blank=True, null=True, help_text="Fichier modèle Excel")
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
+    team = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, blank=True)
     is_public = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -188,6 +218,7 @@ class TemplatePart(models.Model):
 class Simulation(models.Model):
     name = models.CharField(max_length=200, verbose_name="Nom de la simulation", default="Ma Simulation")
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    team = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, blank=True)
     status = models.CharField(max_length=20, default='PENDING')
     date_run = models.DateTimeField(auto_now_add=True)
     result_file = models.CharField(max_length=255, blank=True, null=True)

@@ -1,0 +1,72 @@
+{% extends "biolib/base.html" %}
+{% block title %}{{ table.name }} — Aperçu{% endblock %}
+
+{% block content %}
+<style>
+  :root {
+    --bg-main: #fcfcfc;
+    --border-color: #eee;
+  }
+
+  body { background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+  .content-wrapper {
+    max-width: 850px;
+    margin: 0 auto;
+    padding-bottom: 50px;
+  }
+
+  .nav-header { padding: 20px 0; margin-bottom: 10px; }
+  
+  .btn-back {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px;
+    background: #fff; border: 1px solid var(--border-color);
+    border-radius: 12px; color: #666; transition: 0.2s; text-decoration: none;
+  }
+  .btn-back:hover { border-color: #000; color: #000; }
+
+  .hero-section { margin-bottom: 40px; }
+  .page-title { font-weight: 850; font-size: 2.8rem; letter-spacing: -0.05em; margin-bottom: 5px; }
+  .page-subtitle { color: #888; font-size: 1.1rem; }
+
+  .preview-card {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 30px;
+  }
+
+  .code-area {
+    font-family: "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #444;
+    white-space: pre-wrap;
+    max-height: 70vh;
+    overflow-y: auto;
+    margin: 0;
+  }
+</style>
+
+<div class="container pb-5">
+  <div class="content-wrapper">
+    
+    <div class="nav-header">
+      <a href="{% url 'correspondence_detail' table.id %}" class="btn-back shadow-sm">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+    </div>
+
+    <div class="hero-section">
+      <h1 class="page-title">{{ table.name }}</h1>
+      <p class="page-subtitle">Aperçu du contenu</p>
+    </div>
+
+    <div class="preview-card shadow-sm">
+      <pre class="code-area">{{ content }}</pre>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

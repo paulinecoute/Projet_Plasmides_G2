@@ -127,9 +127,3 @@ AUTH_USER_MODEL = 'biolib.User'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR,'media')
 
-
-print("--- DIAGNOSTIC MEDIA ---")
-print(f"BASE_DIR: {BASE_DIR}")
-print(f"MEDIA_ROOT: {MEDIA_ROOT}")
-print(f"MEDIA_URL: {MEDIA_URL}")
-print("------------------------")

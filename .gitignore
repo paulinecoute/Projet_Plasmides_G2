@@ -13,3 +13,11 @@ media/plasmids
 media/simulations
 campaigns_inputs
 
+# Données biologiques (local uniquement)
+plasmids/
+correspondences/
+simulations/
+
+# Médias uploadés
+/media/
+

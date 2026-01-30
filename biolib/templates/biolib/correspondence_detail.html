@@ -1,0 +1,131 @@
+{% extends "biolib/base.html" %}
+{% block title %}{{ table.name }}{% endblock %}
+
+{% block content %}
+<style>
+  :root {
+    --bg-main: #fcfcfc;
+    --border-color: #eee;
+  }
+
+  body { background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+  .content-wrapper {
+    max-width: 850px;
+    margin: 0 auto;
+    padding-bottom: 50px;
+  }
+
+  .nav-header { padding: 20px 0; margin-bottom: 10px; }
+  
+  .btn-back {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px;
+    background: #fff; border: 1px solid var(--border-color);
+    border-radius: 12px; color: #666; transition: 0.2s; text-decoration: none;
+  }
+  .btn-back:hover { border-color: #000; color: #000; }
+
+  .hero-section { margin-bottom: 40px; }
+  .page-title { font-weight: 850; font-size: 2.8rem; letter-spacing: -0.05em; margin-bottom: 5px; }
+  
+  .meta-bar { display: flex; align-items: center; gap: 15px; color: #888; font-size: 0.9rem; margin-top: 10px; }
+  .team-pill { background: #000; color: #fff; padding: 2px 10px; border-radius: 6px; font-weight: 700; font-size: 0.7rem; text-transform: uppercase; }
+
+  .resource-card {
+    background: #fff; border: 1px solid var(--border-color);
+    border-radius: 24px; padding: 35px; margin-bottom: 30px;
+  }
+
+  .label-caps {
+    font-size: 0.7rem; font-weight: 900; text-transform: uppercase;
+    letter-spacing: 0.12em; color: #bbb; margin-bottom: 15px; display: block;
+  }
+
+  .file-display-clean {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0;
+  }
+
+  .file-name-group { display: flex; align-items: center; gap: 15px; font-weight: 700; color: #111; font-size: 1.1rem; }
+
+  /* Actions */
+  .btn-action-dark {
+    background: #000; color: #fff; border-radius: 12px; padding: 10px 24px;
+    font-weight: 700; font-size: 0.85rem; text-decoration: none; transition: 0.2s;
+  }
+  .btn-action-dark:hover { background: #333; transform: translateY(-2px); }
+
+  .btn-action-outline {
+    background: #fff; color: #666; border: 1px solid var(--border-color);
+    border-radius: 12px; padding: 10px 24px; font-weight: 700; font-size: 0.85rem;
+    text-decoration: none; transition: 0.2s;
+  }
+  .btn-action-outline:hover { border-color: #000; color: #000; }
+
+  .btn-delete-outline {
+    background: transparent; border: 1px solid #fee2e2; color: #ef4444;
+    border-radius: 12px; padding: 8px 20px; font-weight: 700; font-size: 0.85rem;
+    transition: 0.2s;
+  }
+  .btn-delete-outline:hover { background: #ef4444; color: #fff; border-color: #ef4444; }
+</style>
+
+<div class="container pb-5">
+  <div class="content-wrapper">
+    
+    <div class="nav-header">
+      <a href="{% url 'correspondences' %}" class="btn-back shadow-sm">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+    </div>
+
+    <div class="hero-section d-flex justify-content-between align-items-start">
+      <div>
+        <h1 class="page-title">{{ table.name }}</h1>
+        <div class="meta-bar">
+          <span><i class="bi bi-calendar3 me-1"></i> {{ table.uploaded_at|date:"d/m/Y" }}</span>
+          {% if table.team %}
+            <span class="team-pill">{{ table.team.name }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <form method="post" action="{% url 'correspondence_delete' table.id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-delete-outline" onclick="return confirm('Supprimer cette table ?');">
+          <i class="bi bi-trash3 me-1"></i> Supprimer
+        </button>
+      </form>
+    </div>
+
+    <div class="resource-card shadow-sm">
+      <span class="label-caps">Fichier de correspondance</span>
+      
+      <div class="file-display-clean">
+        <div class="file-name-group">
+          <i class="bi bi-file-earmark-spreadsheet text-muted fs-4"></i>
+          {% if table.file %}
+            {{ table.file.name|cut:"correspondences/" }}
+          {% else %}
+            <span class="text-muted fst-italic">Aucun fichier associé</span>
+          {% endif %}
+        </div>
+
+        {% if table.file %}
+        <div class="d-flex gap-2">
+            <a href="{% url 'correspondence_view_file' table.id %}" class="btn-action-outline">
+              <i class="bi bi-eye me-1"></i> Voir
+            </a>
+          
+            <a href="{{ table.file.url }}" download class="btn-action-dark shadow-sm">
+              <i class="bi bi-download me-1"></i> Télécharger
+            </a>
+        </div>          
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

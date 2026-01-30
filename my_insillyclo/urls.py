@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.urls import path, include
 from biolib import views
 from django.contrib.auth import views as auth_views
+from django.conf import settings
+from django.conf.urls.static import static
 
 from django.conf import settings
 from django.conf.urls.static import static
@@ -27,7 +29,13 @@ urlpatterns = [
 
     # page résultats détaillé
     path('simulation_result/', views.simulation_result, name='simulation_result'),
-    path('template_detail/', views.template_detail, name='template_detail'),
+
+    # template details
+    path('template/<int:pk>/details/', views.template_detail, name='template_detail'),
+
+    # --- NOUVELLE LIGNE AJOUTÉE ICI (Suppression) ---
+    path('template/<int:pk>/delete/', views.delete_template, name='delete_template'),
+    # -----------------------------------------------
 
     # authentification
     path('signup/', views.signup, name='signup'),
@@ -45,6 +53,32 @@ urlpatterns = [
     # espace personnel
     path('dashboard/', views.dashboard, name='dashboard'),
 
+    # COLLECTIONS
+    path("collections/", views.collections_view, name="collections"),
+    path("collections/new/", views.collection_create, name="collection_create"),
+    path("collections/<int:collection_id>/", views.collection_detail, name="collection_detail"),
+    path("collections/<int:collection_id>/upload/", views.plasmid_upload, name="plasmid_upload"),
+    path(
+    "plasmids/<int:plasmid_id>/delete/",
+    views.plasmid_delete,
+    name="plasmid_delete"
+    ),
+    path(
+    "collections/<int:collection_id>/delete/",
+    views.collection_delete,
+    name="collection_delete"
+    ),
+
+
+    # TABLES DE CORRESPONDANCE
+    path("correspondences/", views.correspondences_view, name="correspondences"),
+    path("correspondences/upload/", views.correspondence_upload, name="correspondence_upload"),
+    path("correspondences/<int:correspondence_id>/", views.correspondence_detail, name="correspondence_detail"),
+    path("correspondences/<int:correspondence_id>/delete/", views.correspondence_delete, name="correspondence_delete"),
+    path("correspondences/<int:correspondence_id>/view/", views.correspondence_view_file, name="correspondence_view_file"),
+
+
+
     # simulations
     path('simulation/new/', views.create_simulation, name='create_simulation'),
     path('simulation/<int:pk>/', views.simulation_result, name='simulation_result'),
@@ -55,7 +89,7 @@ urlpatterns = [
     path('simulation/<int:pk>/download_file/<str:filename>/', views.download_specific_file, name='download_specific_file'),
     path('simulation/<int:pk>/update_gel/', views.update_simulation_gel, name='update_simulation_gel'),
 
-    #équipes
+    # équipes
     path('teams/', views.team_list, name='teams'),
     path('teams/create/', views.team_create, name='team_create'),
     path('teams/<int:team_id>/', views.team_detail, name='team_detail'),
@@ -69,8 +103,20 @@ urlpatterns = [
         'teams/<int:team_id>/delete/',
         views.team_delete,
         name='team_delete'
+    ),
+    path(
+        'teams/<int:team_id>/leave/',
+        views.team_leave,
+        name='team_leave'
+    ),
+    path(
+        'teams/<int:team_id>/change_leader/<int:user_id>/',
+        views.team_change_leader,
+        name='team_change_leader'
     )
 ]
+
+
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

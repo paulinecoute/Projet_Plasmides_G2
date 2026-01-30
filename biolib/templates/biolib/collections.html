@@ -1,0 +1,168 @@
+{% extends "biolib/base.html" %}
+{% block title %}Collections{% endblock %}
+
+{% block content %}
+<style>
+  :root {
+    --bg-main: #fcfcfc;
+    --border-color: #eee;
+  }
+
+  body { background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+  .content-wrapper {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .nav-header { padding: 20px 0; margin-bottom: 20px; }
+  
+  .btn-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    color: #666;
+    transition: 0.2s;
+  }
+  .btn-back:hover { border-color: #000; color: #000; }
+
+  .hero-section { margin-bottom: 40px; }
+  .page-title { font-weight: 850; font-size: 2.8rem; letter-spacing: -0.05em; margin-bottom: 0; }
+
+  .collection-card {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    padding: 20px 24px;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    position: relative;
+    margin-bottom: 12px;
+  }
+  .collection-card:hover {
+    border-color: #000;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+  }
+
+  .status-dot {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+  .dot { height: 6px; width: 6px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .dot-public { background-color: #10b981; }
+  .dot-team { background-color: #0066ff; }
+  .dot-private { background-color: #6b7280; }
+
+  .collection-name { font-weight: 700; font-size: 1.15rem; margin-bottom: 2px; color: #111; }
+  .collection-desc { color: #888; font-size: 0.9rem; margin-bottom: 12px; }
+
+  .meta-info {
+    font-size: 0.8rem;
+    color: #bbb;
+    font-family: 'SF Mono', monospace;
+  }
+
+  .trash-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    color: #eee;
+    background: transparent;
+    border: none;
+    transition: color 0.2s;
+  }
+  .collection-card:hover .trash-btn { color: #ccc; }
+  .trash-btn:hover { color: #ff4d4d !important; }
+
+  .btn-create {
+    background: #000;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: 0.2s;
+  }
+  .btn-create:hover { background: #333; color: #fff; }
+</style>
+
+<div class="container pb-5">
+  <div class="content-wrapper">
+    
+    <div class="nav-header">
+      <a href="{% url 'dashboard' %}" class="btn-back shadow-sm">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+    </div>
+
+    <div class="hero-section d-flex justify-content-between align-items-center">
+      <h1 class="page-title">Collections</h1>
+      <a href="{% url 'collection_create' %}" class="btn-create">
+        <i class="bi bi-plus-lg"></i>
+      </a>
+    </div>
+
+    <div class="mt-4">
+      {% for collection in collections %}
+        <a href="{% url 'collection_detail' collection.id %}" class="collection-card">
+          
+          <div class="status-dot">
+            {% if collection.is_public %}
+              <span class="dot dot-public"></span> Public
+            {% elif collection.team %}
+              <span class="dot dot-team"></span> Équipe
+            {% else %}
+              <span class="dot dot-private"></span> Privé
+            {% endif %}
+          </div>
+
+          <h3 class="collection-name">{{ collection.name }}</h3>
+          
+          {% if collection.description %}
+            <p class="collection-desc text-truncate">{{ collection.description }}</p>
+          {% endif %}
+
+          <div class="meta-info">
+            {{ collection.plasmids.count }} PLASMIDES
+            {% if collection.team %}
+              <span class="ms-2">// {{ collection.team.name|upper }}</span>
+            {% endif %}
+          </div>
+
+          <form method="post" 
+                action="{% url 'collection_delete' collection.id %}"
+                class="m-0"
+                onclick="event.stopPropagation();">
+            {% csrf_token %}
+            <button type="submit"
+                    class="trash-btn"
+                    onclick="return confirm('Supprimer cette collection ?');">
+                <i class="bi bi-x-lg"></i>
+            </button>
+          </form>
+
+        </a>
+      {% empty %}
+        <div class="p-5 text-center text-muted fw-light bg-white rounded-4 border">
+          Aucune collection.
+        </div>
+      {% endfor %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

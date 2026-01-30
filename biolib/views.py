@@ -20,6 +20,8 @@ import zipfile
 import openpyxl
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 import pandas as pd
+from .forms import CampaignTemplateForm, TemplatePartFormSet
+from .models import CampaignTemplate, Plasmid, Team, User, Correspondence, PlasmidCollection
 
 import insillyclo.data_source
 try:
@@ -48,13 +50,65 @@ def template(request):
             Q(id__in=anon_ids) |
             Q(visibility='public')
         ).distinct().order_by('-id')
+    view_type = request.GET.get('view', 'recent')
 
-    return render(request, 'biolib/template.html', {'templates': templates})
+    templates = CampaignTemplate.objects.none()
+    title = "Templates récents"
+
+    if request.user.is_authenticated:
+        # 1. TEMPLATES PRIVÉS
+        if view_type == 'private':
+            templates = CampaignTemplate.objects.filter(owner=request.user, visibility='private').order_by('-created_at')
+            title = "Mes templates privés"
+
+        # 2. TEMPLATES D'EQUPE (LOGIQUE CORRIGÉE)
+        elif view_type == 'team':
+            # On affiche les templates marqués 'team' QUI APPARTIENNENT à une équipe dont je suis membre
+            templates = CampaignTemplate.objects.filter(
+                visibility='team',
+                team__members=request.user
+            ).distinct().order_by('-created_at')
+            title = "Templates d'équipe"
+
+        # 3. TEMPLATES PUBLICS
+        elif view_type == 'public':
+            templates = CampaignTemplate.objects.filter(visibility='public').order_by('-created_at')
+            title = "Templates publics"
+
+        # 4. RÉCENTS (Défaut) - (LOGIQUE CORRIGÉE)
+        else:
+            templates = CampaignTemplate.objects.filter(
+                Q(owner=request.user) |
+                Q(visibility='team', team__members=request.user) |
+                Q(visibility='public')
+            ).distinct().order_by('-id')[:5]
+            title = "Templates récents"
+
+    else:
+        # GESTION INVITÉ
+        anon_ids = request.session.get('anon_templates', [])
+        if view_type == 'public':
+            templates = CampaignTemplate.objects.filter(visibility='public').order_by('-id')
+            title = "Templates publics"
+        else:
+            templates = CampaignTemplate.objects.filter(
+                Q(id__in=anon_ids) | Q(visibility='public')
+            ).distinct().order_by('-id')[:5]
+            title = "Templates récents"
+
+    context = {
+        'templates': templates,
+        'current_view': view_type,
+        'page_title': title
+    }
+    return render(request, 'biolib/template.html', context)
 
 
 def create_template(request):
+    # 1. Sauvegarde du formulaire (POST)
     if request.method == 'POST':
-        form = CampaignTemplateForm(request.POST, request.FILES)
+        # IMPORTANT : On passe user=request.user pour filtrer les équipes
+        form = CampaignTemplateForm(request.POST, request.FILES, user=request.user)
         formset = TemplatePartFormSet(request.POST)
 
         if form.is_valid() and formset.is_valid():
@@ -64,6 +118,10 @@ def create_template(request):
                 template.owner = request.user
             else:
                 template.owner = None
+                template.visibility = 'private'
+
+            # Sécurité : Si Team choisi mais pas d'équipe sélectionnée -> Force Privé
+            if template.visibility == 'team' and not template.team:
                 template.visibility = 'private'
 
             template.save()
@@ -80,16 +138,83 @@ def create_template(request):
                 request.session.modified = True
 
             return redirect('template')
-    else:
-        # Affichage du formulaire vide
-        form = CampaignTemplateForm()
-        formset = TemplatePartFormSet()
 
-    # On envoie les formulaires au bon fichier HTML
+    # 2. Affichage du formulaire (GET)
+    else:
+        clone_id = request.GET.get('clone_from')
+
+        if clone_id:
+            original = get_object_or_404(CampaignTemplate, pk=clone_id)
+
+            # Pré-remplissage (avec user=request.user)
+            form = CampaignTemplateForm(user=request.user, initial={
+                'name': f"{original.name} (Copie)",
+                'enzyme': original.enzyme,
+                'output_separator': original.output_separator,
+                'description': original.description,
+                'visibility': 'private', # Reset visibilité par sécurité
+                'team': None             # Reset équipe
+            })
+
+            original_parts = original.parts.all().order_by('order')
+            parts_data = []
+            for part in original_parts:
+                parts_data.append({
+                    'name': part.name,
+                    'type_id': part.type_id,
+                    'order': part.order,
+                    'is_mandatory': part.is_mandatory,
+                    'include_in_output': part.include_in_output,
+                    'is_separable': part.is_separable
+                })
+
+            formset = TemplatePartFormSet(initial=parts_data)
+            formset.extra = len(parts_data)
+
+        else:
+            # Formulaire vide (avec user=request.user)
+            form = CampaignTemplateForm(user=request.user)
+            formset = TemplatePartFormSet()
+
     return render(request, 'biolib/create_template.html', {
         'form': form,
         'formset': formset
     })
+
+
+# --- SUPPRESSION SÉCURISÉE ---
+@login_required
+def delete_template(request, pk):
+    template = get_object_or_404(CampaignTemplate, pk=pk)
+
+    # 1. CAS PUBLIC : Seul un Admin (Staff) peut supprimer
+    if template.visibility == 'public':
+        if not request.user.is_staff:
+            return HttpResponse("Accès refusé : Seuls les administrateurs peuvent supprimer un template public.", status=403)
+
+    # 2. CAS EQUIPE : Le propriétaire OU le chef de CETTE équipe spécifique
+    elif template.visibility == 'team':
+        # On vérifie si l'utilisateur est le chef de l'équipe associée au template
+        is_team_leader = False
+        if template.team:
+            is_team_leader = (template.team.leader == request.user)
+
+        if request.user != template.owner and not is_team_leader:
+             return HttpResponse("Accès refusé : Seul le propriétaire ou le chef d'équipe peut supprimer.", status=403)
+
+    # 3. CAS PRIVÉ : Seul le propriétaire
+    else:
+        if request.user != template.owner:
+            return HttpResponse("Accès refusé : Vous n'êtes pas le propriétaire.", status=403)
+
+    # Si on arrive ici, c'est qu'on a le droit
+    if request.method == 'POST':
+        template.delete()
+        return redirect('template')
+
+    # Page de confirmation simple
+    return render(request, 'biolib/template_confirm_delete.html', {'template': template})
+
 
 def simulation(request):
     return render(request, 'biolib/simulation.html')
@@ -141,8 +266,9 @@ def simulation_result(request, pk=None):
         'csv_data': csv_data
     })
 
-def template_detail(request):
-    return render(request, 'biolib/template_detail.html')
+def template_detail(request, pk):
+    template = get_object_or_404(CampaignTemplate, pk=pk)
+    return render(request, 'biolib/template_detail.html', {'template': template})
 
 def signup(request):
     if request.method == 'POST':
@@ -159,13 +285,183 @@ def signup(request):
 
 @login_required
 def dashboard(request):
-    teams_count = Team.objects.filter(
-        Q(leader=request.user) | Q(members=request.user)
-    ).distinct().count()
+    collections_count = PlasmidCollection.objects.filter(
+        owner=request.user
+    ).count()
 
-    return render(request, 'biolib/dashboard.html', {
-        'teams_count': teams_count
+    correspondences_count = Correspondence.objects.filter(
+        owner=request.user
+    ).count()
+
+    teams_count = request.user.teams.count()
+
+    return render(request, "biolib/dashboard.html", {
+        "collections_count": collections_count,
+        "correspondences_count": correspondences_count,
+        "teams_count": teams_count,
     })
+
+########################################################
+# COLLECTIONS
+########################################################
+
+@login_required
+def collections_view(request):
+    collections = PlasmidCollection.objects.filter(owner=request.user)
+    return render(request, "biolib/collections.html", {
+        "collections": collections
+    })
+
+@login_required
+def correspondences_view(request):
+    correspondences = Correspondence.objects.filter(owner=request.user)
+    return render(request, "biolib/correspondences.html", {
+        "correspondences": correspondences
+    })
+
+@login_required
+def collection_create(request):
+    if request.method == "POST":
+        collection = PlasmidCollection.objects.create(
+            name=request.POST["name"],
+            description=request.POST.get("description", ""),
+            owner=request.user
+        )
+        return redirect("collection_detail", collection.id)
+
+    return render(request, "biolib/collection_create.html")
+
+
+@login_required
+def collection_detail(request, collection_id):
+    collection = get_object_or_404(PlasmidCollection, id=collection_id)
+    is_owner = collection.owner == request.user
+
+    return render(request, "biolib/collection_detail.html", {
+        "collection": collection,
+        "is_owner": is_owner
+    })
+
+@login_required
+def plasmid_upload(request, collection_id):
+    collection = get_object_or_404(
+        PlasmidCollection,
+        id=collection_id,
+        owner=request.user
+    )
+
+    if request.method == "POST":
+        files = request.FILES.getlist("files")
+
+        for f in files:
+            Plasmid.objects.create(
+                collection=collection,
+                identifier=f.name,
+                name="",
+                genbank_file=f,
+                sequence=""
+            )
+
+        return redirect("collection_detail", collection.id)
+
+    return render(request, "biolib/plasmid_upload.html", {
+        "collection": collection
+    })
+
+@login_required
+def plasmid_delete(request, plasmid_id):
+    plasmid = get_object_or_404(
+        Plasmid,
+        id=plasmid_id,
+        collection__owner=request.user
+    )
+
+    if request.method == "POST":
+        collection_id = plasmid.collection.id
+        plasmid.delete()
+        return redirect("collection_detail", collection_id)
+
+@login_required
+def collection_delete(request, collection_id):
+    collection = get_object_or_404(
+        PlasmidCollection,
+        id=collection_id,
+        owner=request.user
+    )
+
+    if request.method == "POST":
+        collection.delete()
+        return redirect("collections")
+
+
+
+####################################
+# TABLES DE CORRESPONDANCES
+####################################
+
+@login_required
+def correspondence_upload(request):
+    if request.method == "POST":
+        Correspondence.objects.create(
+            name=request.POST["name"],
+            file=request.FILES["file"],
+            owner=request.user
+        )
+        return redirect("correspondences")
+
+    return render(request, "biolib/correspondence_upload.html")
+
+
+@login_required
+def correspondence_detail(request, correspondence_id):
+    table = get_object_or_404(
+        Correspondence,
+        id=correspondence_id,
+        owner=request.user
+    )
+
+    return render(request, "biolib/correspondence_detail.html", {
+        "table": table
+    })
+
+
+@login_required
+def correspondence_delete(request, correspondence_id):
+    table = get_object_or_404(
+        Correspondence,
+        id=correspondence_id,
+        owner=request.user
+    )
+
+    if request.method == "POST":
+        table.delete()
+        return redirect("correspondences")
+
+
+@login_required
+def correspondence_view_file(request, correspondence_id):
+    table = get_object_or_404(
+        Correspondence,
+        id=correspondence_id,
+        owner=request.user
+    )
+
+    file_path = table.file.path
+
+    try:
+        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
+    except Exception:
+        content = "Impossible d'afficher le fichier."
+
+    return render(request, "biolib/correspondence_view_file.html", {
+        "table": table,
+        "content": content
+    })
+
+
+
+####################################
 
 
 def export_template_excel(request, template_id):
@@ -514,27 +810,65 @@ def update_simulation_gel(request, pk):
 #équipes
 @login_required
 def team_list(request):
-    teams = Team.objects.filter(Q(leader=request.user) | Q(members=request.user)).distinct()
+    teams = Team.objects.filter(
+        Q(leader=request.user) | Q(members=request.user)
+    ).distinct()
+
+    # Ajout des compteurs par équipe
+    for team in teams:
+        team.tables_count = Correspondence.objects.filter(team=team).count()
+        team.campaigns_count = Simulation.objects.filter(team=team).count()
+        team.plasmids_count = Plasmid.objects.filter(
+            collection__team=team
+        ).count()
+
     return render(request, 'biolib/teams.html', {'teams': teams})
+
 
 @login_required
 def team_create(request):
     if request.method == 'POST':
         name = request.POST.get('name')
+        description = request.POST.get('description', '')
+        purpose = request.POST.get('purpose') or None
+
         if name:
-            team = Team.objects.create(name=name, leader=request.user)
+            team = Team.objects.create(
+                name=name,
+                description=description,
+                purpose=purpose,
+                leader=request.user
+            )
             team.members.add(request.user)
             return redirect('teams')
+
     return render(request, 'biolib/team_create.html')
 
 @login_required
 def team_detail(request, team_id):
     team = get_object_or_404(Team, id=team_id, members=request.user)
-    return render(request, 'biolib/team_detail.html', {'team': team, 'is_leader': team.leader == request.user})
+
+    collections_count = team.plasmidcollection_set.count()
+    tables_count = team.correspondence_set.count()
+    campaigns_count = team.simulation_set.count()
+    plasmids_count = Plasmid.objects.filter(collection__team=team).count()
+
+    return render(
+        request,
+        'biolib/team_detail.html',
+        {
+            'team': team,
+            'is_leader': team.leader == request.user,
+            'collections_count': collections_count,
+            'tables_count': tables_count,
+            'campaigns_count': campaigns_count,
+            'plasmids_count': plasmids_count,
+        }
+    )
 
 @login_required
 def team_manage_members(request, team_id):
-    team = get_object_or_404(Team, id=team_id)
+    team = get_object_or_404(Team, id=team_id, members=request.user)
     if team.leader != request.user: return HttpResponse("Accès refusé", status=403)
     if request.method == 'POST':
         email = request.POST.get('email')
@@ -546,13 +880,40 @@ def team_manage_members(request, team_id):
     return render(request, 'biolib/team_manage_members.html', {'team': team})
 
 @login_required
+def team_change_leader(request, team_id, user_id):
+    team = get_object_or_404(Team, id=team_id, members=request.user)
+    if team.leader != request.user:
+        return HttpResponse("Accès refusé", status=403)
+
+    new_leader = get_object_or_404(User, id=user_id)
+    if new_leader not in team.members.all():
+        return HttpResponse("Accès refusé", status=400)
+
+    if request.method == 'POST':
+        team.leader = new_leader
+        team.save()
+
+    return redirect('team_detail', team_id=team.id)
+
+
+@login_required
 def team_remove_member(request, team_id, user_id):
-    team = get_object_or_404(Team, id=team_id)
+    team = get_object_or_404(Team, id=team_id, members=request.user)
     if team.leader != request.user: return HttpResponse("Accès refusé", status=403)
     user = get_object_or_404(User, id=user_id)
     if user == team.leader: return HttpResponse("Impossible de retirer la cheffe", status=400)
     if request.method == 'POST': team.members.remove(user)
     return redirect('team_manage_members', team_id=team.id)
+
+@login_required
+def team_leave(request, team_id):
+    team = get_object_or_404(Team, id=team_id, members=request.user)
+    if request.user == team.leader:
+        return HttpResponse("Vous devez nommer une autre cheffe avant de quitter", status=400)
+    if request.method == 'POST':
+        team.members.remove(request.user)
+        return redirect('teams')
+    return redirect('team_detail', team_id=team.id)
 
 @login_required
 def team_delete(request, team_id):
