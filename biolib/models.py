@@ -186,11 +186,13 @@ class TemplatePart(models.Model):
         return f"{self.template.name} - {self.name} ({self.order})"
 
 class Simulation(models.Model):
+    name = models.CharField(max_length=200, verbose_name="Nom de la simulation", default="Ma Simulation")
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     status = models.CharField(max_length=20, default='PENDING')
     date_run = models.DateTimeField(auto_now_add=True)
     result_file = models.CharField(max_length=255, blank=True, null=True)
-
+    custom_enzymes = models.CharField(max_length=255, blank=True, null=True)
+    pcr_primers = models.TextField(blank=True, null=True)
     # --- MODIFICATIONS ---
 
     # 1. Le lien vers CampaignTemplate devient optionnel ou obsolète
@@ -205,7 +207,7 @@ class Simulation(models.Model):
         null=True, blank=False # Obligatoire
     )
 
-    # 3. L'enzyme (Puisqu'on n'a plus l'objet Template pour nous le dire, il faut le demander)
+    # 3. L'enzyme
     ENZYME_CHOICES = [
         ('BsaI', 'BsaI (Golden Gate)'),
         ('BsmBI', 'BsmBI (Golden Gate)'),
@@ -223,5 +225,17 @@ class Simulation(models.Model):
         null=True, blank=False
     )
 
+    custom_enzymes = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Liste des enzymes séparées par des virgules (ex: EcoRI, BamHI)"
+    )
+
+    pcr_primers = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Séquences des amorces (Forward et Reverse) pour simulation PCR"
+    )
     def __str__(self):
         return f"Simu #{self.id} ({self.date_run})"

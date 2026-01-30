@@ -284,6 +284,16 @@ def create_simulation(request):
             simulation = form.save(commit=False)
             simulation.user = request.user
             simulation.status = 'RUNNING'
+
+            # Récupération des enzymes pour le gel (Cases à cocher)
+            selected_enzymes = form.cleaned_data.get('custom_enzymes')
+
+            # Sauvegarde en texte pour la BDD
+            if selected_enzymes:
+                simulation.custom_enzymes = ",".join(selected_enzymes)
+            else:
+                simulation.custom_enzymes = ""
+
             simulation.save()
 
             output_folder = os.path.join(settings.BASE_DIR, 'media', 'simulations', str(simulation.id))
@@ -292,32 +302,32 @@ def create_simulation(request):
             path_xlsx = simulation.template_file.path
             path_csv_list = [simulation.campaign_file.path] if simulation.campaign_file else []
 
-            # --- PRÉPARATION DES INPUTS ET DE LA LISTE D'EXCLUSION ---
+            # --- PRÉPARATION DES INPUTS ---
             gb_plasmids_paths = []
-            input_filenames_to_exclude = [] # Liste pour le filtre
+            input_filenames_to_exclude = []
 
             all_parts = Plasmid.objects.all()
             print(f"DEBUG DIAGNOSTIC: {all_parts.count()} plasmides trouvés dans la BDD.")
 
             for p in all_parts:
                 if p.genbank_file:
-                    # On récupère le chemin absolu
                     file_path = p.genbank_file.path
-
                     if os.path.exists(file_path):
                         gb_plasmids_paths.append(file_path)
-
                     else:
-                        print(f"  [ERREUR] {p.name} : Le fichier n'existe pas au chemin -> {file_path}")
+                        print(f"  [ERREUR] {p.name} : Le fichier n'existe pas -> {file_path}")
                 else:
-                    print(f"  [IGNORE] {p.name} : Pas de fichier GenBank associé.")
+                    print(f"  [IGNORE] {p.name} : Pas de fichier GenBank.")
 
             if len(gb_plasmids_paths) == 0:
                 print("!!! ARRÊT CRITIQUE : Aucun fichier d'entrée valide trouvé !!!")
+
+            primers_text = form.cleaned_data.get('pcr_primers')
+
             try:
                 observer = DjangoConsoleObserver()
 
-                # 1. Exécution (génère inputs copiés + outputs dans output_folder)
+                # --- CORRECTION ICI : APPEL DU SIMULATEUR AVEC LES BONS ARGUMENTS ---
                 compute_all(
                     observer=observer,
                     settings=None,
@@ -326,50 +336,52 @@ def create_simulation(request):
                     gb_plasmids=gb_plasmids_paths,
                     output_dir=output_folder,
                     data_source="Django",
-                    enzyme_names=simulation.enzyme,
+
+                    # 1. Enzyme pour construire le plasmide (Menu déroulant)
+                    assembly_enzyme=simulation.enzyme,
+
+                    # 2. Enzymes pour voir le gel (Cases à cocher)
+                    # Si vide, on envoie [] (le simulateur gèrera le fallback)
+                    gel_enzymes=selected_enzymes if selected_enzymes else [],
+
+                    user_primers=primers_text,
                     default_mass_concentration=200
                 )
+                # --------------------------------------------------------------------
 
-
+                # Gestion des CSV (Conversion virgule/point-virgule)
                 tous_les_csv = glob.glob(os.path.join(output_folder, "*.csv"))
-
-
                 for csv_path in tous_les_csv:
                     try:
-                        # Lecture (on laisse python deviner le format d'entrée)
                         df_temp = pd.read_csv(csv_path, sep=None, engine='python')
-
-                        df_temp.to_csv(csv_path, sep=';', decimal=',', index=False) # <--- C'est ici
+                        df_temp.to_csv(csv_path, sep=';', decimal=',', index=False)
                     except Exception as e:
-                        print(f"  -> ERREUR : {e}")
+                        print(f"  -> ERREUR CSV : {e}")
 
-                # On lui donne la liste des inputs pour qu'il ne les mette pas dans le zip
                 creer_archive_resultats_seulement(
                     dossier_source=output_folder,
                     simulation_id=simulation.id,
                     fichiers_a_exclure=input_filenames_to_exclude
                 )
 
-                # 3. Finalisation
                 simulation.status = 'COMPLETED'
 
                 path_png = os.path.join(output_folder, 'digestion.png')
                 path_svg = os.path.join(output_folder, 'digestion.svg')
 
-                # On ne cherche QUE l'image. On oublie le CSV ici.
+                # Correction : On associe la bonne extension au bon fichier
                 if os.path.exists(path_png):
-                    simulation.result_file = f"simulations/{simulation.id}/digestion.svg"
-                elif os.path.exists(path_svg):
                     simulation.result_file = f"simulations/{simulation.id}/digestion.png"
+                elif os.path.exists(path_svg):
+                    simulation.result_file = f"simulations/{simulation.id}/digestion.svg"
                 else:
-                    # Si pas d'image, on laisse vide.
-                    # Les CSV sont gérés par l'autre accordéon.
                     simulation.result_file = None
 
                 simulation.save()
                 return redirect('simulation_result', pk=simulation.id)
 
             except Exception as e:
+                import traceback
                 traceback.print_exc()
                 simulation.status = 'FAILED'
                 simulation.save()
@@ -377,7 +389,6 @@ def create_simulation(request):
     else:
         form = SimulationForm()
     return render(request, 'biolib/create_simulation.html', {'form': form})
-
 def simulation_result(request, pk=None):
     csv_data = []
 

@@ -39,24 +39,24 @@ class CampaignTemplateForm(forms.ModelForm):
     class Meta:
         model = CampaignTemplate
         fields = ['name', 'description', 'enzyme', 'output_separator', 'visibility']
-        
+
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: YTK_Assembly'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'enzyme': forms.Select(attrs={'class': 'form-select'}), 
-            'output_separator': forms.Select(attrs={'class': 'form-select'}), 
+            'enzyme': forms.Select(attrs={'class': 'form-select'}),
+            'output_separator': forms.Select(attrs={'class': 'form-select'}),
         }
 
 class TemplatePartForm(forms.ModelForm):
     class Meta:
         model = TemplatePart
         fields = ['name', 'type_id', 'order', 'is_mandatory', 'include_in_output', 'is_separable']
-        
+
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nom'}),
             'type_id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Type'}),
             'order': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'style': 'width: 80px'}),
-            
+
             # Les checkbox stylisées
             'is_mandatory': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'include_in_output': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
@@ -66,31 +66,71 @@ class TemplatePartForm(forms.ModelForm):
 TemplatePartFormSet = inlineformset_factory(
     CampaignTemplate,
     TemplatePart,
-    form=TemplatePartForm, 
+    form=TemplatePartForm,
     extra=1,
     can_delete=True
 )
 
 
+# biolib/forms.py
 
 class SimulationForm(forms.ModelForm):
+    # --- 1. DEFINITION DES CHOIX (Enzymes Avancées) ---
+    GEL_ENZYME_CHOICES = [
+        ('BsaI', 'BsaI (Golden Gate)'),
+        ('BsmBI', 'BsmBI (Golden Gate)'),
+        ('BbsI', 'BbsI (Golden Gate)'),
+        ('SapI', 'SapI'),
+        ('NotI', 'NotI (BioBrick)'),
+    ]
+
+    # --- 2. CHAMPS SUPPLEMENTAIRES (Hors Modèle direct ou Widgets Spéciaux) ---
+
+    # Cases à cocher pour le Gel (Options avancées)
+    custom_enzymes = forms.MultipleChoiceField(
+        choices=GEL_ENZYME_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+        label="Enzymes pour le gel"
+    )
+
     class Meta:
         model = Simulation
-        fields = ['template_file', 'enzyme', 'campaign_file']
+        # --- 3. LISTE DE TOUS LES CHAMPS A AFFICHER ---
+        # C'est ici que l'erreur se situait. On remet tout le monde !
+        fields = [
+            'name',           # Le nom (si ajouté au modèle)
+            'template_file',  # L'upload du template CSV
+            'enzyme',         # L'enzyme principale
+            'campaign_file',  # L'upload de la campagne XLSX
+            'custom_enzymes', # Nos cases à cocher
+            'pcr_primers'     # La zone de texte pour les amorces
+        ]
 
-    def __init__(self, *args, **kwargs):
-        super(SimulationForm, self).__init__(*args, **kwargs)
+        # --- 4. STYLES (Bootstrap) ---
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nom de la simulation'
+            }),
 
-        # Template -> CSV
-        self.fields['template_file'].widget.attrs.update({
-            'class': 'form-control',
-            'accept': '.csv, .xlsx, .xls'
-        })
+            # Restauration des styles pour les fichiers
+            'template_file': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': '.csv, .xlsx, .xls'
+            }),
+            'enzyme': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'campaign_file': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': '.csv, .xls, .xlsx'
+            }),
 
-        self.fields['enzyme'].widget.attrs.update({'class': 'form-select'})
-
-        # Campagne -> Excel
-        self.fields['campaign_file'].widget.attrs.update({
-            'class': 'form-control',
-            'accept': '.csv, .xls, .xlsx'
-        })
+            # Style pour les amorces
+            'pcr_primers': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Format: Nom: SEQUENCE (ou juste la séquence)'
+            }),
+        }
