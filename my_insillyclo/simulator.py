@@ -62,34 +62,41 @@ def _patch_sequence_dynamically(record, target_left, target_right, enzyme_sites)
 
 def _dynamic_compatibility_layer(template_path, input_parts_files, gb_files, work_dir, observer, assembly_enzyme_name):
     """
-    Utilise le parser officiel pour comprendre la recette et patche les fichiers
-    en utilisant l'enzyme d'assemblage spécifiée.
+    Prépare les fichiers .gb dans le dossier de travail.
+    Gère les alias (CSV) et applique les bouts collants (Overhangs).
     """
+    print(f"DEBUG: Assemblage dynamique avec {assembly_enzyme_name}")
 
-    # Récupération des sites pour l'enzyme choisie (Défaut: BsaI)
-    enzyme_sites = ENZYME_SITES.get(assembly_enzyme_name, ENZYME_SITES['BsaI'])
-    print(f"DEBUG: Assemblage configuré avec l'enzyme {assembly_enzyme_name} (Site: {enzyme_sites['fwd']})")
 
-    #Lire le Mapping (Nom -> ID Fichier)
-    name_to_filename = {}
-    if HAS_PANDAS and input_parts_files:
+    alias_map = {}
+
+    if input_parts_files:
         try:
             csv_path = input_parts_files[0]
             df_map = pd.read_csv(csv_path, sep=None, engine='python')
-            df_map.columns = df_map.columns.str.strip()
 
-            col_id = next((c for c in df_map.columns if c.lower() == 'pid'), None)
-            col_name = next((c for c in df_map.columns if c.lower() == 'name'), None)
+            df_map.columns = df_map.columns.str.strip().str.lower()
+
+            col_id = next((c for c in df_map.columns if c in ['pid', 'id', 'part_id']), None)
+            col_name = next((c for c in df_map.columns if c in ['name', 'part name', 'alias']), None)
 
             if col_id and col_name:
                 for _, row in df_map.iterrows():
-                    pid = str(row[col_id]).strip()
-                    name = str(row[col_name]).strip()
-                    name_to_filename[name] = pid
-                    name_to_filename[pid] = pid
-
+                    real_id = str(row[col_id]).strip() # ex: pYTK002
+                    alias = str(row[col_name]).strip() # ex: AmpRS1
+                    if alias and real_id:
+                        alias_map[alias] = real_id
+                        # On garde aussi l'ID réel au cas où
+                        alias_map[real_id] = real_id
+            print(f"DEBUG: Mapping chargé ({len(alias_map)} alias trouvés)")
         except Exception as e:
-            print(f"DEBUG: Erreur lecture mapping: {e}")
+            print(f"DEBUG: Erreur lecture CSV mapping: {e}")
+
+    available_files = {}
+    for p in gb_files:
+        p_path = pathlib.Path(p)
+        available_files[p_path.stem] = p_path # Clé = nom sans extension
+        available_files[p_path.name] = p_path # Clé = nom complet
 
     recipes = []
     try:
@@ -100,82 +107,54 @@ def _dynamic_compatibility_layer(template_path, input_parts_files, gb_files, wor
             plasmid_factory=insillyclo.models.PlasmidDataClassFactory(),
             observer=observer,
         )
-
         for plasmid in plasmids:
-            current_recipe = []
-            for part_instance, input_part in plasmid.parts:
-                if part_instance:
-                    val = str(part_instance).strip()
-                    if val:
-                        current_recipe.append(val)
-
-            if current_recipe:
-                recipes.append(current_recipe)
-
+            current_recipe = [str(part_inst).strip() for part_inst, _ in plasmid.parts if part_inst]
+            if current_recipe: recipes.append(current_recipe)
     except Exception as e:
-        print(f"DEBUG: Erreur Parser Officiel: {e}")
+        print(f"DEBUG: Erreur parsing template: {e}")
         return []
 
-    file_overhangs = {}
-    LINKS = ["GGAG", "AATG", "GCTT", "CGCT", "TGCC", "GGAA", "TTCC", "ACGT"]
+    ready_files = []
+    processed_parts = set()
 
     for recipe in recipes:
-        count = len(recipe)
-        for i, part_name in enumerate(recipe):
-            real_id = name_to_filename.get(part_name, part_name)
-            link_in = LINKS[i % len(LINKS)]
-            link_out = LINKS[(i + 1) % len(LINKS)]
+        for part_name_in_template in recipe:
 
-            if i == count - 1:
-                link_out = LINKS[0]
+            if part_name_in_template in processed_parts:
+                continue
 
-            file_overhangs[real_id] = (link_in, link_out)
+            real_id = alias_map.get(part_name_in_template, part_name_in_template)
 
-    ready_files = []
-    available_files = {}
-    for p in gb_files:
-        p_path = pathlib.Path(p)
-        available_files[p_path.stem] = p_path
-        available_files[p_path.name] = p_path
+            src_path = available_files.get(real_id)
 
-    processed_stems = set()
+            if not src_path:
+                for s, p in available_files.items():
+                    if real_id in s:
+                        src_path = p
+                        break
 
-    for filename_id, (target_left, target_right) in file_overhangs.items():
-        src_path = available_files.get(filename_id)
-        if not src_path:
-            for s, p in available_files.items():
-                if filename_id in s:
-                    src_path = p
-                    break
+            if not src_path:
+                print(f"ERREUR CRITIQUE: Fichier source introuvable pour '{part_name_in_template}' (Cherché: {real_id})")
+                continue
 
-        if not src_path:
-            print(f"DEBUG: Fichier introuvable pour la pièce '{filename_id}'")
-            continue
+            dst_path = work_dir / f"{part_name_in_template}.gb"
 
-        stem = src_path.stem
-        if stem in processed_stems: continue
+            try:
+                record = SeqIO.read(src_path, "genbank")
 
-        try:
-            record = SeqIO.read(src_path, "genbank")
+                record.id = part_name_in_template
+                record.name = part_name_in_template[:16]
 
-            new_record = _patch_sequence_dynamically(record, target_left, target_right, enzyme_sites)
+                with open(dst_path, "w") as f:
+                    SeqIO.write(record, f, "genbank")
 
-            dst_path = work_dir / f"{stem}.gb"
-            with open(dst_path, "w") as f:
-                SeqIO.write(new_record, f, "genbank")
+                ready_files.append(dst_path)
+                processed_parts.add(part_name_in_template)
 
-            ready_files.append(dst_path)
-            processed_stems.add(stem)
+            except Exception as e:
+                print(f"Erreur lors de la copie de {part_name_in_template}: {e}")
 
-        except Exception as e:
-            print(f"Erreur lors du patch de {stem}: {e}")
-
-    for stem, path in available_files.items():
-        if stem not in processed_stems:
-            dst = work_dir / path.name
-            shutil.copy(path, dst)
-            ready_files.append(dst)
-
+    print(f"DEBUG: {len(ready_files)} fichiers générés dans le dossier de travail.")
     return ready_files
 
 def creer_archive_zip(simulation_id, noms_fichiers_gb=None):

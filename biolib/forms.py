@@ -4,9 +4,6 @@ from django.contrib.auth.forms import UserCreationForm
 from .models import CampaignTemplate, TemplatePart, Simulation
 from django.forms import inlineformset_factory
 
-
-# FORMULAIRE D'INSCRIPTION
-
 User = get_user_model()
 
 
