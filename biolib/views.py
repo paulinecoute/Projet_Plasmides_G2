@@ -14,7 +14,7 @@ from types import SimpleNamespace
 import traceback
 import glob
 import os
-import pathlib
+import csv
 import zipfile
 import openpyxl
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
@@ -259,14 +259,14 @@ def creer_archive_resultats_seulement(dossier_source, simulation_id, fichiers_a_
 
 def download_specific_file(request, pk, filename):
     """
-    Télécharge un fichier spécifique situé dans biolib/simulations/{pk}/{filename}
+    Télécharge un fichier spécifique situé dans simulations/{pk}/{filename}
     """
     # Sécurité basique : on empêche de remonter dans les dossiers avec ".."
     if ".." in filename or "/" in filename:
         raise Http404("Nom de fichier invalide.")
 
     # Construction du chemin (identique à ton dossier de sortie corrigé)
-    file_path = os.path.join(settings.BASE_DIR, 'biolib', 'simulations', str(pk), filename)
+    file_path = os.path.join(settings.BASE_DIR, 'media','simulations', str(pk), filename)
 
     if os.path.exists(file_path):
         # On ouvre le fichier
@@ -286,7 +286,7 @@ def create_simulation(request):
             simulation.status = 'RUNNING'
             simulation.save()
 
-            output_folder = os.path.join(settings.BASE_DIR, 'biolib', 'simulations', str(simulation.id))
+            output_folder = os.path.join(settings.BASE_DIR, 'media', 'simulations', str(simulation.id))
             os.makedirs(output_folder, exist_ok=True)
 
             path_xlsx = simulation.template_file.path
@@ -297,14 +297,23 @@ def create_simulation(request):
             input_filenames_to_exclude = [] # Liste pour le filtre
 
             all_parts = Plasmid.objects.all()
+            print(f"DEBUG DIAGNOSTIC: {all_parts.count()} plasmides trouvés dans la BDD.")
+
             for p in all_parts:
                 if p.genbank_file:
+                    # On récupère le chemin absolu
                     file_path = p.genbank_file.path
+
                     if os.path.exists(file_path):
                         gb_plasmids_paths.append(file_path)
-                        # On stocke juste le nom (ex: "pTDH3.gb") pour l'exclure plus tard
-                        input_filenames_to_exclude.append(os.path.basename(file_path))
 
+                    else:
+                        print(f"  [ERREUR] {p.name} : Le fichier n'existe pas au chemin -> {file_path}")
+                else:
+                    print(f"  [IGNORE] {p.name} : Pas de fichier GenBank associé.")
+
+            if len(gb_plasmids_paths) == 0:
+                print("!!! ARRÊT CRITIQUE : Aucun fichier d'entrée valide trouvé !!!")
             try:
                 observer = DjangoConsoleObserver()
 
@@ -344,9 +353,18 @@ def create_simulation(request):
                 # 3. Finalisation
                 simulation.status = 'COMPLETED'
 
-                # Détection du fichier de résultat pour l'affichage web
-                if os.path.exists(os.path.join(output_folder, 'digestion.svg')):
-                     simulation.result_file = f"simulations/{simulation.id}/digestion.svg"
+                path_png = os.path.join(output_folder, 'digestion.png')
+                path_svg = os.path.join(output_folder, 'digestion.svg')
+
+                # On ne cherche QUE l'image. On oublie le CSV ici.
+                if os.path.exists(path_png):
+                    simulation.result_file = f"simulations/{simulation.id}/digestion.svg"
+                elif os.path.exists(path_svg):
+                    simulation.result_file = f"simulations/{simulation.id}/digestion.png"
+                else:
+                    # Si pas d'image, on laisse vide.
+                    # Les CSV sont gérés par l'autre accordéon.
+                    simulation.result_file = None
 
                 simulation.save()
                 return redirect('simulation_result', pk=simulation.id)
@@ -361,11 +379,37 @@ def create_simulation(request):
     return render(request, 'biolib/create_simulation.html', {'form': form})
 
 def simulation_result(request, pk=None):
+    csv_data = []
+
     if pk is not None:
+        # Cas Simulation Réelle
         simulation = get_object_or_404(Simulation, pk=pk, user=request.user)
+
+        file_path = os.path.join(settings.MEDIA_ROOT, 'simulations', str(pk), 'dilution-direct.csv')
+
+        if os.path.exists(file_path):
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    reader = csv.reader(f, delimiter=';')
+                    csv_data = list(reader)
+            except Exception as e:
+                print(f"Erreur lors de la lecture du CSV : {e}")
+
     else:
-        simulation = SimpleNamespace(id=0, status='COMPLETED', date_run=datetime.now(), template=SimpleNamespace(name="DÉMO", enzyme="BsaI"), user=request.user)
-    return render(request, 'biolib/simulation_result.html', {'simulation': simulation})
+        # Cas Mode DÉMO
+        simulation = SimpleNamespace(
+            id=0,
+            status='COMPLETED',
+            date_run=datetime.now(),
+            template=SimpleNamespace(name="DÉMO", enzyme="BsaI"),
+            user=request.user
+        )
+
+    # 3. Envoi au template
+    return render(request, 'biolib/simulation_result.html', {
+        'simulation': simulation,
+        'csv_data': csv_data  # C'est cette variable que le HTML va utiliser pour le tableau
+    })
 
 def download_simulation_csv(request, pk):
     simulation = get_object_or_404(Simulation, pk=pk)
@@ -387,7 +431,7 @@ def download_simulation_zip(request, pk):
 
     # 2. Construction du chemin EXACT basé sur votre indication
     # settings.BASE_DIR est la racine de votre projet (là où il y a manage.py généralement)
-    path_to_zip = os.path.join(settings.BASE_DIR, 'biolib', 'simulations', str(pk), zip_filename)
+    path_to_zip = os.path.join(settings.BASE_DIR, 'media', 'simulations', str(pk), zip_filename)
 
 
     # 3. Vérification et envoi

@@ -1,7 +1,11 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from biolib import views
 from django.contrib.auth import views as auth_views
+
+from django.conf import settings
+from django.conf.urls.static import static
+
 
 urlpatterns = [
     # administration
@@ -64,5 +68,8 @@ urlpatterns = [
         'teams/<int:team_id>/delete/',
         views.team_delete,
         name='team_delete'
-    ),
+    )
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

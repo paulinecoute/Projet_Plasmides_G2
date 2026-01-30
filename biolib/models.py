@@ -93,7 +93,7 @@ class Plasmid(models.Model):
     name = models.CharField(max_length=200, blank=True)
 
     # AGASH : Fichier source
-    genbank_file = models.FileField(upload_to='plasmids/', verbose_name="Fichier GenBank", null=True, blank=True)
+    genbank_file = models.FileField(upload_to='media/plasmids/', verbose_name="Fichier GenBank", null=True, blank=True)
 
     # MAIN/AGASH : Séquence brute (utile pour recherche rapide)
     sequence = models.TextField(help_text="Séquence nucléotidique")
@@ -144,9 +144,9 @@ class CampaignTemplate(models.Model):
         ('public', 'Public (Tout le monde)'),
     ]
     visibility = models.CharField(
-        max_length=20, 
-        choices=VISIBILITY_CHOICES, 
-        default='private', 
+        max_length=20,
+        choices=VISIBILITY_CHOICES,
+        default='private',
         verbose_name="Visibilité"
     )
     # ----------------------------------------------------

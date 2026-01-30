@@ -74,8 +74,10 @@ class Command(BaseCommand):
 
                         # Mode binaire pour le fichier
                         with open(file_path, 'rb') as f_byte:
-                            plasmid.genbank_file.save(filename, File(f_byte), save=True)
 
+                            nom_sauvegarde = os.path.join('plasmids', folder_name, filename)
+                            # On sauvegarde
+                            plasmid.genbank_file.save(nom_sauvegarde, File(f_byte), save=True)
                         count_success += 1
                         self.stdout.write(f"   + {filename} (dans {collection_name})")
 

@@ -8,3 +8,8 @@ data_web/pMYTK
 data_web/pYS
 data_web/pYTK
 data_web/requirements.txt
+simulation_templates
+media/plasmids
+media/simulations
+campaigns_inputs
+

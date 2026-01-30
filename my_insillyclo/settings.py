@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
-
+import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -123,3 +123,13 @@ LOGOUT_REDIRECT_URL = '/'  # Redirection après déconnexion
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'biolib.User'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR,'media')
+
+
+print("--- DIAGNOSTIC MEDIA ---")
+print(f"BASE_DIR: {BASE_DIR}")
+print(f"MEDIA_ROOT: {MEDIA_ROOT}")
+print(f"MEDIA_URL: {MEDIA_URL}")
+print("------------------------")
