@@ -636,7 +636,7 @@ def create_simulation(request):
         if form.is_valid():
             simulation = form.save(commit=False)
             simulation.user = request.user
-            simulation.status = 'RUNNING'-
+            simulation.status = 'RUNNING'
             
             # Enzymes pour le gel (Cases à cocher)
             # On récupère la liste brute depuis le POST car custom_enzymes n'est pas un champ ManyToMany standard
