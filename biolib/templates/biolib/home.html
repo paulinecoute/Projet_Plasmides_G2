@@ -1,27 +1,19 @@
 {% extends "biolib/base.html" %}
 
 {% block content %}
-<div class="p-5 mb-4 bg-light rounded-3 shadow-sm border">
-    <div class="container-fluid py-3 text-center">
-        <h1 class="display-4 fw-bold text-dark mb-3">
-            <i class="bi bi-dna text-primary"></i> InSillyClo
-        </h1>
-        <p class="col-md-8 fs-4 mx-auto text-muted">
-            L'outil indispensable pour vos assemblages <strong>MoClo</strong> et <strong>Golden Gate</strong>.
-            Concevez, simulez et validez vos campagnes de clonage in-silico.
-        </p>
-        <div class="d-flex justify-content-center gap-3 mt-4">
-            <a href="{% url 'create_template' %}" class="btn btn-success btn-lg px-4 shadow-sm">
-                <i class="bi bi-file-earmark-plus me-2"></i> Créer un Template
-            </a>
-            <a href="{% url 'create_simulation' %}" class="btn btn-primary btn-lg px-4 shadow-sm">
-                <i class="bi bi-play-circle me-2"></i> Lancer une Simulation
-            </a>
-        </div>
-    </div>
+<div class="container py-5 text-center">
+    <h1 class="display-3 fw-bold text-dark mb-3">
+        Bienvenue sur InSillyClo
+    </h1>
+    <p class="fs-4 text-muted col-md-9 mx-auto fw-light">
+        Votre assistant numérique pour la conception et la validation d'assemblages <span class="fw-normal text-dark">MoClo</span> et <span class="fw-normal text-dark">Golden Gate</span>.
+    </p>
+    <p class="text-secondary small">
+        Simplifiez vos expériences, de la définition du template jusqu'à la simulation sur gel.
+    </p>
 </div>
 
-<div class="container">
+<div class="container mb-5">
     <div class="row align-items-stretch g-4">
         
         <div class="col-md-6">
@@ -71,12 +63,11 @@
     </div>
     
     <div class="text-center mt-5 mb-5 text-muted small opacity-75">
-        <p>Projet AMI2B 2026 • Université Paris-Saclay • Encadré par Bryan Brancotte</p>
+        <p>Projet M2 AMI2B 2025-2026 • Université Paris-Saclay </p>
     </div>
 </div>
 
 <style>
-    /* Petite animation sympa au survol des cartes */
     .hover-scale {
         transition: transform 0.3s ease;
     }
