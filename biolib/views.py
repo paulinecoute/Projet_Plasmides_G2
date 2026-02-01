@@ -109,8 +109,14 @@ def template(request):
     })
 
 def create_template(request):
+    # On définit proprement l'utilisateur à passer au formulaire
+    # Si connecté -> request.user
+    # Si invité -> None (pour éviter le crash "AnonymousUser")
+    form_user = request.user if request.user.is_authenticated else None
+
     if request.method == 'POST':
-        form = CampaignTemplateForm(request.POST, request.FILES, user=request.user)
+        # On utilise form_user au lieu de request.user
+        form = CampaignTemplateForm(request.POST, request.FILES, user=form_user)
         formset = TemplatePartFormSet(request.POST)
 
         if form.is_valid() and formset.is_valid():
@@ -122,6 +128,7 @@ def create_template(request):
                 template.owner = None
                 template.visibility = 'private'
 
+            # Sécurité : Si Team choisi mais pas d'équipe sélectionnée -> Force Privé
             if template.visibility == 'team' and not template.team:
                 template.visibility = 'private'
 
@@ -139,35 +146,47 @@ def create_template(request):
                 request.session.modified = True
 
             return redirect('template')
+
     else:
         clone_id = request.GET.get('clone_from')
+
         if clone_id:
             original = get_object_or_404(CampaignTemplate, pk=clone_id)
-            form = CampaignTemplateForm(user=request.user, initial={
+
+            # Pré-remplissage (avec form_user)
+            form = CampaignTemplateForm(user=form_user, initial={
                 'name': f"{original.name} (Copie)",
                 'enzyme': original.enzyme,
                 'output_separator': original.output_separator,
                 'description': original.description,
-                'visibility': 'private',
-                'team': None
+                'visibility': 'private', # Reset visibilité par sécurité
+                'team': None             # Reset équipe
             })
+
             original_parts = original.parts.all().order_by('order')
-            parts_data = [{
-                'name': part.name,
-                'type_id': part.type_id,
-                'order': part.order,
-                'is_mandatory': part.is_mandatory,
-                'include_in_output': part.include_in_output,
-                'is_separable': part.is_separable
-            } for part in original_parts]
+            parts_data = []
+            for part in original_parts:
+                parts_data.append({
+                    'name': part.name,
+                    'type_id': part.type_id,
+                    'order': part.order,
+                    'is_mandatory': part.is_mandatory,
+                    'include_in_output': part.include_in_output,
+                    'is_separable': part.is_separable
+                })
+
             formset = TemplatePartFormSet(initial=parts_data)
             formset.extra = len(parts_data)
+
         else:
-            form = CampaignTemplateForm(user=request.user)
+            # Formulaire vide (avec form_user)
+            form = CampaignTemplateForm(user=form_user)
             formset = TemplatePartFormSet()
 
-    return render(request, 'biolib/create_template.html', {'form': form, 'formset': formset})
-
+    return render(request, 'biolib/create_template.html', {
+        'form': form,
+        'formset': formset
+    })
 def template_detail(request, pk):
     template = get_object_or_404(CampaignTemplate, pk=pk)
     return render(request, 'biolib/template_detail.html', {'template': template})
