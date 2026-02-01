@@ -538,20 +538,26 @@ class DjangoConsoleObserver(insillyclo.observer.InSillyCloCliObserver):
 
 @login_required
 def simulation_list(request):
-    view_type = request.GET.get('view', 'mine') # Par défaut : Mes simulations
-    title = "Mes simulations"
+    # Par défaut, on arrive sur "Récents" pour faire comme la page Templates
+    view_type = request.GET.get('view', 'recent') 
+    
     simulations = Simulation.objects.none()
+    title = "Simulations récentes"
 
-    if view_type == 'team':
-        # On récupère les simulations liées à une équipe dont je suis membre
+    if view_type == 'recent':
+        simulations = Simulation.objects.filter(
+            user=request.user
+        ).order_by('-date_run')[:5] # On garde les 5 premières seulement
+        title = "Simulations récentes"
+
+    elif view_type == 'team':
         simulations = Simulation.objects.filter(
             visibility='team',
             team__members=request.user
         ).distinct().order_by('-date_run')
         title = "Simulations d'équipe"
 
-    else:
-        # On récupère uniquement celles que j'ai lancées (User = Moi)
+    else: # view == 'mine'
         simulations = Simulation.objects.filter(
             user=request.user
         ).order_by('-date_run')
