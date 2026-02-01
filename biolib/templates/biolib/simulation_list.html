@@ -59,7 +59,7 @@
                                         <div class="text-muted small mb-2">
                                             <i class="bi bi-calendar3 me-1"></i> {{ simu.date_run|date:"d M Y à H:i" }} 
                                             <span class="mx-2">•</span>
-                                            <i class="bi bi-person me-1"></i> {{ simu.user.username }}
+                                            <i class="bi bi-person me-1"></i> {{ simu.user.username|default:"Invité" }}
                                             
                                             {% if simu.team %}
                                                 <span class="ms-2 badge bg-info text-dark">
@@ -101,7 +101,7 @@
                             <h4>Aucune simulation trouvée</h4>
                             <p class="text-muted">Il n'y a rien à afficher dans cette catégorie pour le moment.</p>
                             {% if current_view == 'mine' or current_view == 'recent' %}
-                                <a href="{% url 'create_simulation' %}" class="btn btn-primary mt-2">Lancer ma première simulation</a>
+                                <a href="{% url 'create_simulation' %}" class="btn btn-primary mt-2">Lancer une simulation</a>
                             {% endif %}
                         </div>
                     </div>
@@ -113,6 +113,7 @@
 </div>
 
 <style>
+    /* Style harmonisé */
     .hover-shadow:hover {
         transform: translateY(-2px);
         box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
