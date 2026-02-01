@@ -1,119 +1,125 @@
 {% extends "biolib/base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
+<div class="container mt-5">
+    
+    <div class="row g-4">
         
-        <div class="col-md-3">
+        <div class="col-md-4 col-lg-3">
+            
             <div class="d-grid mb-4">
                 <a href="{% url 'create_simulation' %}" class="btn btn-success btn-lg shadow-sm">
-                    <i class="fas fa-plus-circle"></i> Nouvelle simulation
+                    <i class="bi bi-plus-lg me-2"></i> Nouvelle simulation
                 </a>
             </div>
 
             <div class="list-group shadow-sm mb-4">
                 
                 <a href="?view=recent" 
-                   class="list-group-item list-group-item-action d-flex align-items-center p-3 {% if current_view == 'recent' %}bg-primary text-white border-primary{% else %}text-dark{% endif %}">
-                    <i class="fas fa-clock me-3"></i> 
-                    <span class="fw-bold">Récents</span>
+                   class="list-group-item list-group-item-action py-3 d-flex align-items-center {% if current_view == 'recent' %}active fw-bold{% endif %}">
+                    <i class="bi bi-clock-history fs-5 me-3"></i>
+                    <div>Récents</div>
                 </a>
 
                 <a href="?view=mine" 
-                   class="list-group-item list-group-item-action d-flex align-items-center p-3 {% if current_view == 'mine' %}bg-primary text-white border-primary{% else %}text-dark{% endif %}">
-                    <i class="fas fa-lock me-3"></i> 
-                    <span>Mes simulations</span>
+                   class="list-group-item list-group-item-action py-3 d-flex align-items-center {% if current_view == 'mine' %}active fw-bold{% endif %}">
+                    <i class="bi bi-lock fs-5 me-3"></i>
+                    <div>Mes simulations</div>
                 </a>
-                
+
                 <a href="?view=team" 
-                   class="list-group-item list-group-item-action d-flex align-items-center p-3 {% if current_view == 'team' %}bg-primary text-white border-primary{% else %}text-dark{% endif %}">
-                    <i class="fas fa-users me-3"></i> 
-                    <span>Simulations d'équipe</span>
+                   class="list-group-item list-group-item-action py-3 d-flex align-items-center {% if current_view == 'team' %}active fw-bold{% endif %}">
+                    <i class="bi bi-people fs-5 me-3"></i>
+                    <div>Simulations d'équipe</div>
                 </a>
             </div>
-            
         </div>
 
-        <div class="col-md-9">
+        <div class="col-md-8 col-lg-9">
             
-            <div class="d-flex justify-content-between align-items-center pb-2 mb-4 border-bottom">
-                <h3 class="fw-bold text-dark m-0">
-                    {{ page_title }}
-                </h3>
-                <span class="badge bg-secondary rounded-pill px-3">{{ simulations|length }}</span>
+            <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
+                <h2 class="fw-bold m-0">{{ page_title }}</h2>
+                <span class="badge bg-secondary rounded-pill">{{ simulations.count }}</span>
             </div>
 
-            {% if simulations %}
-                <div class="d-flex flex-column gap-3">
-                    {% for simu in simulations %}
-                    <div class="card shadow-sm border-0 h-100">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                
-                                <div>
-                                    <h5 class="card-title fw-bold mb-1">
-                                        {% if simu.name %}
-                                            {{ simu.name }}
+            <div class="row">
+                {% for simu in simulations %}
+                    <div class="col-12 mb-3">
+                        <div class="card shadow-sm border h-100 hover-shadow transition-all">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    
+                                    <div>
+                                        <h5 class="fw-bold text-primary mb-1">
+                                            <a href="{% url 'simulation_result' pk=simu.id %}" class="text-decoration-none text-primary stretched-link">
+                                                {% if simu.name %}{{ simu.name }}{% else %}Simulation #{{ simu.id }}{% endif %}
+                                            </a>
+                                        </h5>
+                                        
+                                        <div class="text-muted small mb-2">
+                                            <i class="bi bi-calendar3 me-1"></i> {{ simu.date_run|date:"d M Y à H:i" }} 
+                                            <span class="mx-2">•</span>
+                                            <i class="bi bi-person me-1"></i> {{ simu.user.username }}
+                                            
+                                            {% if simu.team %}
+                                                <span class="ms-2 badge bg-info text-dark">
+                                                    {{ simu.team.name }}
+                                                </span>
+                                            {% else %}
+                                                <span class="ms-2 badge bg-warning text-dark">
+                                                    Privé
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="mt-1">
+                                            <span class="badge bg-light text-dark border fw-normal">Enzyme : {{ simu.enzyme }}</span>
+                                            {% if simu.template_file %}
+                                                <span class="badge bg-light text-dark border fw-normal">Template : {{ simu.template_file.name|truncatechars:25 }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        {% if simu.status == 'COMPLETED' %}
+                                            <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Terminé</span>
+                                        {% elif simu.status == 'FAILED' %}
+                                            <span class="badge bg-danger"><i class="bi bi-exclamation-triangle me-1"></i> Échec</span>
                                         {% else %}
-                                            Simulation #{{ simu.id }}
-                                        {% endif %}
-                                    </h5>
-                                    
-                                    <div class="text-muted small mb-2">
-                                        <i class="far fa-calendar-alt"></i> {{ simu.date_run|date:"d M Y à H:i" }} 
-                                        &bull; 
-                                        <span class="fst-italic">Par {{ simu.user.username }}</span>
-                                    </div>
-
-                                    {% if simu.team %}
-                                        <span class="badge bg-info text-dark mb-2">
-                                            <i class="fas fa-users"></i> {{ simu.team.name }}
-                                        </span>
-                                    {% else %}
-                                        <span class="badge bg-secondary mb-2">
-                                            <i class="fas fa-lock"></i> Privé
-                                        </span>
-                                    {% endif %}
-
-                                    <div class="mt-1">
-                                        <span class="badge bg-light text-dark border">Enzyme : {{ simu.enzyme }}</span>
-                                        {% if simu.template_file %}
-                                            <span class="badge bg-light text-dark border">Template : {{ simu.template_file.name|truncatechars:25 }}</span>
+                                            <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> En cours</span>
                                         {% endif %}
                                     </div>
-                                </div>
 
-                                <div class="text-end">
-                                    {% if simu.status == 'COMPLETED' %}
-                                        <span class="badge bg-success mb-2"><i class="fas fa-check-circle"></i> Terminé</span>
-                                    {% elif simu.status == 'FAILED' %}
-                                        <span class="badge bg-danger mb-2"><i class="fas fa-exclamation-triangle"></i> Échec</span>
-                                    {% else %}
-                                        <span class="badge bg-warning text-dark mb-2"><i class="fas fa-hourglass-half"></i> En cours</span>
-                                    {% endif %}
-                                    
-                                    <br>
-                                    <a href="{% url 'simulation_result' pk=simu.id %}" class="btn btn-outline-primary btn-sm mt-2">
-                                        Voir résultats &rarr;
-                                    </a>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="card shadow-sm border-0 text-center py-5">
-                    <div class="card-body">
-                        <i class="fas fa-inbox display-1 text-muted opacity-25 mb-3"></i>
-                        <h4 class="fw-bold">Aucune simulation trouvée</h4>
-                        <p class="text-muted col-md-8 mx-auto">
-                            Il n'y a rien à afficher dans cette catégorie pour le moment.
-                        </p>
+                {% empty %}
+                    <div class="col-12">
+                        <div class="text-center py-5 bg-light rounded border border-dashed">
+                            <i class="bi bi-inbox fs-1 text-muted mb-3"></i>
+                            <h4>Aucune simulation trouvée</h4>
+                            <p class="text-muted">Il n'y a rien à afficher dans cette catégorie pour le moment.</p>
+                            {% if current_view == 'mine' or current_view == 'recent' %}
+                                <a href="{% url 'create_simulation' %}" class="btn btn-primary mt-2">Lancer ma première simulation</a>
+                            {% endif %}
+                        </div>
                     </div>
-                </div>
-            {% endif %}
+                {% endfor %}
+            </div>
+
         </div>
     </div>
 </div>
+
+<style>
+    .hover-shadow:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+        transition: all 0.2s ease-in-out;
+    }
+    .transition-all {
+        transition: all 0.2s ease-in-out;
+    }
+</style>
 {% endblock %}
