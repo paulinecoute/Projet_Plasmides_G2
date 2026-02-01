@@ -48,7 +48,8 @@
                             {{ form.campaign_file }}
                             <div class="form-text">Liste des parties à insérer.</div>
                         </div>
-                        <div class="accordion mb-3" id="accordionOptions">
+                        
+                        <div class="accordion mb-4" id="accordionOptions">
                             <div class="accordion-item">
                                 <h2 class="accordion-header" id="headingOptions">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOptions" aria-expanded="false" aria-controls="collapseOptions">
@@ -75,6 +76,21 @@
                             </div>
                         </div>
 
+                        <div class="card bg-light border-0 mb-4 p-3">
+                            <h6 class="fw-bold mb-3"><i class="fas fa-users"></i> Partage et Visibilité</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Qui peut voir ce résultat ?</label>
+                                    {{ form.visibility }}
+                                </div>
+                                <div class="col-md-6 mb-3" id="sim-team-selector-div" style="display:none;">
+                                    <label class="form-label text-primary">{{ form.team.label }}</label>
+                                    {{ form.team }}
+                                    <div class="form-text">Sélectionnez l'équipe avec laquelle partager.</div>
+                                </div>
+                            </div>
+                        </div>
+
                         <button type="submit" class="btn btn-success w-100">
                             <i class="fas fa-play"></i> Lancer la simulation
                         </button>
@@ -84,4 +100,25 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const visibilitySelect = document.getElementById('id_sim_visibility');
+        const teamDiv = document.getElementById('sim-team-selector-div');
+
+        function toggleTeamField() {
+            if (visibilitySelect && visibilitySelect.value === 'team') {
+                teamDiv.style.display = 'block';
+            } else if (teamDiv) {
+                teamDiv.style.display = 'none';
+            }
+        }
+
+        if (visibilitySelect) {
+            toggleTeamField();
+            visibilitySelect.addEventListener('change', toggleTeamField);
+        }
+    });
+</script>
+
 {% endblock %}
