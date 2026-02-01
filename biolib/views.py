@@ -536,9 +536,32 @@ class DjangoConsoleObserver(insillyclo.observer.InSillyCloCliObserver):
     def notify_message(self, message):
         print(f"[INSILLYCLO] {message}")
 
+@login_required
 def simulation_list(request):
-    simulations = Simulation.objects.filter(user=request.user).order_by('-date_run')
-    return render(request, 'biolib/simulation_list.html', {'simulations': simulations})
+    view_type = request.GET.get('view', 'mine') # Par défaut : Mes simulations
+    title = "Mes simulations"
+    simulations = Simulation.objects.none()
+
+    if view_type == 'team':
+        # On récupère les simulations liées à une équipe dont je suis membre
+        simulations = Simulation.objects.filter(
+            visibility='team',
+            team__members=request.user
+        ).distinct().order_by('-date_run')
+        title = "Simulations d'équipe"
+
+    else:
+        # On récupère uniquement celles que j'ai lancées (User = Moi)
+        simulations = Simulation.objects.filter(
+            user=request.user
+        ).order_by('-date_run')
+        title = "Mes simulations"
+
+    return render(request, 'biolib/simulation_list.html', {
+        'simulations': simulations,
+        'current_view': view_type,
+        'page_title': title
+    })
 
 def creer_archive_resultats_seulement(dossier_source, simulation_id, fichiers_a_exclure=None):
     """
@@ -604,55 +627,60 @@ def download_specific_file(request, pk, filename):
     else:
         raise Http404(f"Le fichier {filename} est introuvable pour la simulation {pk}.")
 
+@login_required
 def create_simulation(request):
     if request.method == 'POST':
-        form = SimulationForm(request.POST, request.FILES)
+        # IMPORTANT : On passe user=request.user pour que le formulaire sache quelles équipes afficher
+        form = SimulationForm(request.POST, request.FILES, user=request.user)
+        
         if form.is_valid():
             simulation = form.save(commit=False)
             simulation.user = request.user
-            simulation.status = 'RUNNING'
-
-            # Récupération des enzymes pour le gel (Cases à cocher)
+            simulation.status = 'RUNNING'-
+            
+            # Enzymes pour le gel (Cases à cocher)
+            # On récupère la liste brute depuis le POST car custom_enzymes n'est pas un champ ManyToMany standard
             selected_enzymes = form.cleaned_data.get('custom_enzymes')
-
-            # Sauvegarde en texte pour la BDD
             if selected_enzymes:
                 simulation.custom_enzymes = ",".join(selected_enzymes)
             else:
                 simulation.custom_enzymes = ""
 
+            # Amorces PCR
+            simulation.pcr_primers = form.cleaned_data.get('pcr_primers')
+
+            # Si l'utilisateur choisit 'Team' mais ne sélectionne pas d'équipe -> Force en Privé
+            if simulation.visibility == 'team' and not simulation.team:
+                simulation.visibility = 'private'
+
             simulation.save()
 
-            output_folder = os.path.join(settings.BASE_DIR, 'media', 'simulations', str(simulation.id))
+            output_folder = os.path.join(settings.MEDIA_ROOT, 'simulations', str(simulation.id))
             os.makedirs(output_folder, exist_ok=True)
 
             path_xlsx = simulation.template_file.path
             path_csv_list = [simulation.campaign_file.path] if simulation.campaign_file else []
-
+            
             gb_plasmids_paths = []
             input_filenames_to_exclude = []
-
+            
+            # Récupération des plasmides (Optimisé pour  pas planter si fichier manquant)
             all_parts = Plasmid.objects.all()
-            print(f"DEBUG DIAGNOSTIC: {all_parts.count()} plasmides trouvés dans la BDD.")
-
             for p in all_parts:
-                if p.genbank_file:
-                    file_path = p.genbank_file.path
-                    if os.path.exists(file_path):
-                        gb_plasmids_paths.append(file_path)
-                    else:
-                        print(f"  [ERREUR] {p.name} : Le fichier n'existe pas -> {file_path}")
-                else:
-                    print(f"  [IGNORE] {p.name} : Pas de fichier GenBank.")
+                if p.genbank_file: 
+                    try:
+                        file_path = p.genbank_file.path
+                        if os.path.exists(file_path):
+                            gb_plasmids_paths.append(file_path)
+                    except ValueError:
+                        pass # Gestion des cas où le fichier n'a pas de path
 
             if len(gb_plasmids_paths) == 0:
-                print("!!! ARRÊT CRITIQUE : Aucun fichier d'entrée valide trouvé !!!")
-
-            primers_text = form.cleaned_data.get('pcr_primers')
+                print("ATTENTION : Aucun fichier GenBank trouvé pour la simulation !")
 
             try:
+      
                 observer = DjangoConsoleObserver()
-
                 compute_all(
                     observer=observer,
                     settings=None,
@@ -661,19 +689,20 @@ def create_simulation(request):
                     gb_plasmids=gb_plasmids_paths,
                     output_dir=output_folder,
                     data_source="Django",
-                    assembly_enzyme=simulation.enzyme,
-                    gel_enzymes=selected_enzymes if selected_enzymes else [],
-                    user_primers=primers_text,
+                    assembly_enzyme=simulation.enzyme, # Enzyme principale
+                    gel_enzymes=selected_enzymes if selected_enzymes else [], # Enzymes gel
+                    user_primers=simulation.pcr_primers, # Amorces PCR
                     default_mass_concentration=200
                 )
-
+                
+                # conversion CSV (virgules  points-virgules)
                 tous_les_csv = glob.glob(os.path.join(output_folder, "*.csv"))
                 for csv_path in tous_les_csv:
                     try:
                         df_temp = pd.read_csv(csv_path, sep=None, engine='python')
                         df_temp.to_csv(csv_path, sep=';', decimal=',', index=False)
-                    except Exception as e:
-                        print(f"  -> ERREUR CSV : {e}")
+                    except Exception:
+                        pass
 
                 creer_archive_resultats_seulement(
                     dossier_source=output_folder,
@@ -682,28 +711,29 @@ def create_simulation(request):
                 )
 
                 simulation.status = 'COMPLETED'
-
+                
+                # Détection du fichier résultat pour l'affichage
                 path_png = os.path.join(output_folder, 'digestion.png')
                 path_svg = os.path.join(output_folder, 'digestion.svg')
-
+                
                 if os.path.exists(path_png):
-                    simulation.result_file = f"simulations/{simulation.id}/digestion.png"
+                      simulation.result_file = f"simulations/{simulation.id}/digestion.png"
                 elif os.path.exists(path_svg):
-                    simulation.result_file = f"simulations/{simulation.id}/digestion.svg"
-                else:
-                    simulation.result_file = None
-
+                      simulation.result_file = f"simulations/{simulation.id}/digestion.svg"
+                
                 simulation.save()
                 return redirect('simulation_result', pk=simulation.id)
 
             except Exception as e:
-                import traceback
+                print("\n!!! ERREUR INSILLYCLO !!!")
                 traceback.print_exc()
                 simulation.status = 'FAILED'
                 simulation.save()
                 return redirect('simulation_list')
+
     else:
-        form = SimulationForm()
+        form = SimulationForm(user=request.user)
+
     return render(request, 'biolib/create_simulation.html', {'form': form})
 
 def download_simulation_csv(request, pk):
