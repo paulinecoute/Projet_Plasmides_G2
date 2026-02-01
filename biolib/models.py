@@ -217,28 +217,40 @@ class TemplatePart(models.Model):
 
 class Simulation(models.Model):
     name = models.CharField(max_length=200, verbose_name="Nom de la simulation", default="Ma Simulation")
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    team = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, blank=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     status = models.CharField(max_length=20, default='PENDING')
     date_run = models.DateTimeField(auto_now_add=True)
     result_file = models.CharField(max_length=255, blank=True, null=True)
-    custom_enzymes = models.CharField(max_length=255, blank=True, null=True)
-    pcr_primers = models.TextField(blank=True, null=True)
-    # --- MODIFICATIONS ---
+    
+    VISIBILITY_CHOICES = [
+        ('private', 'Privé (Moi uniquement)'),
+        ('team', 'Visible par mon équipe'),
+    ]
+    visibility = models.CharField(
+        max_length=20, 
+        choices=VISIBILITY_CHOICES, 
+        default='private', 
+        verbose_name="Visibilité"
+    )
 
-    # 1. Le lien vers CampaignTemplate devient optionnel ou obsolète
-    # (On le garde en null=True au cas où vous changeriez d'avis, sinon on peut le supprimer)
+    team = models.ForeignKey(
+        Team, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='simulations', 
+        verbose_name="Équipe associée"
+    )
+
     template = models.ForeignKey('CampaignTemplate', on_delete=models.SET_NULL, null=True, blank=True)
-
-    # 2. Le fichier Template (XLSX) uploadé directement
+    
     template_file = models.FileField(
         upload_to='simulation_templates/',
         verbose_name="Fichier Template (Excel)",
         validators=[FileExtensionValidator(allowed_extensions=['csv', 'xls', 'xlsx'])],
-        null=True, blank=False # Obligatoire
+        null=True, blank=False
     )
 
-    # 3. L'enzyme
     ENZYME_CHOICES = [
         ('BsaI', 'BsaI (Golden Gate)'),
         ('BsmBI', 'BsmBI (Golden Gate)'),
@@ -248,7 +260,6 @@ class Simulation(models.Model):
     ]
     enzyme = models.CharField(max_length=50, choices=ENZYME_CHOICES, default='BsaI')
 
-    # 4. Le fichier Campagne (CSV) - Déjà fait avant
     campaign_file = models.FileField(
         upload_to='campaigns_inputs/',
         verbose_name="Fichier Campagne (CSV)",
@@ -257,16 +268,17 @@ class Simulation(models.Model):
     )
 
     custom_enzymes = models.CharField(
-        max_length=255,
-        blank=True,
-        null=True,
+        max_length=255, 
+        blank=True, 
+        null=True, 
         help_text="Liste des enzymes séparées par des virgules (ex: EcoRI, BamHI)"
     )
 
     pcr_primers = models.TextField(
-        blank=True,
-        null=True,
+        blank=True, 
+        null=True, 
         help_text="Séquences des amorces (Forward et Reverse) pour simulation PCR"
     )
+
     def __str__(self):
         return f"Simu #{self.id} ({self.date_run})"
