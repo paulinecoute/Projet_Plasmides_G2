@@ -19,7 +19,7 @@ urlpatterns = [
     # menu templates
     path('template/', views.template, name='template'),
 
-    path('simulation/', views.simulation, name='simulation'),
+    path('simulation/', views.simulation_list, name='simulation_list'),
 
     # télécharger doc excel
     path('template/export/<int:template_id>/', views.export_template_excel, name='export_template_excel'),
