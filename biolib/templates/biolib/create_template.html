@@ -52,10 +52,17 @@
                         </div>
                     </div>
                 {% else %}
-                    <div class="alert alert-warning d-flex align-items-center" role="alert">
-                        <div><strong>Mode invité :</strong> Template privé (éphémère).</div>
+                    <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-3">
+                        <i class="bi bi-incognito fs-1 me-3"></i>
+                        <div>
+                            <h5 class="alert-heading fw-bold mb-1">Mode Invité</h5>
+                            <p class="mb-0 small text-muted">
+                                Vous n'êtes pas connecté. Ce template sera <strong>privé</strong> et stocké temporairement.
+                                <br>Il disparaîtra à la fermeture de votre navigateur.
+                            </p>
+                        </div>
+                        <input type="hidden" name="visibility" value="private">
                     </div>
-                    <input type="hidden" name="visibility" value="private">
                 {% endif %}
             </div>
         </div>
