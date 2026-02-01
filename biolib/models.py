@@ -217,7 +217,7 @@ class TemplatePart(models.Model):
 
 class Simulation(models.Model):
     name = models.CharField(max_length=200, verbose_name="Nom de la simulation", default="Ma Simulation")
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     status = models.CharField(max_length=20, default='PENDING')
     date_run = models.DateTimeField(auto_now_add=True)
     result_file = models.CharField(max_length=255, blank=True, null=True)
