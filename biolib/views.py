@@ -237,9 +237,6 @@ def export_template_excel(request, template_id):
     wb.save(response)
     return response
 
-# ==============================================================================
-# 3. GESTION DES SIMULATIONS
-# ==============================================================================
 
 def simulation_list(request):
     view_type = request.GET.get('view', 'recent')
@@ -247,21 +244,29 @@ def simulation_list(request):
     title = "Simulations récentes"
 
     if request.user.is_authenticated:
-        if view_type == 'recent':
-            simulations = Simulation.objects.filter(user=request.user).order_by('-date_run')[:5]
-            title = "Simulations récentes"
-        elif view_type == 'team':
-            simulations = Simulation.objects.filter(visibility='team', team__members=request.user).distinct().order_by('-date_run')
-            title = "Simulations d'équipe"
-        else: # mine
-            simulations = Simulation.objects.filter(user=request.user).order_by('-date_run')
-            title = "Mes simulations"
+        # CAS CONNECTÉ : On prend tout depuis la BDD liée à l'user
+        source_qs = Simulation.objects.filter(user=request.user)
+        team_qs = Simulation.objects.filter(visibility='team', team__members=request.user)
     else:
-        # Invité
+        # CAS INVITÉ : On prend tout depuis la Session
         sim_ids = request.session.get('anonymous_simulations', [])
-        simulations = Simulation.objects.filter(id__in=sim_ids).order_by('-date_run')
-        title = "Session Temporaire"
-        view_type = 'session'
+        source_qs = Simulation.objects.filter(id__in=sim_ids)
+        team_qs = Simulation.objects.none() # Un invité n'a pas d'équipe
+
+    if view_type == 'recent':
+        # On affiche les 5 dernières (BDD ou Session)
+        simulations = source_qs.order_by('-date_run')[:5]
+        title = "Simulations récentes"
+
+    elif view_type == 'team':
+        # Uniquement si connecté, sinon vide (mais la page reste la même)
+        simulations = team_qs.distinct().order_by('-date_run')
+        title = "Simulations d'équipe"
+
+    else: # view == 'mine'
+        # Tout l'historique (BDD ou Session)
+        simulations = source_qs.order_by('-date_run')
+        title = "Mes simulations"
 
     return render(request, 'biolib/simulation_list.html', {
         'simulations': simulations,
