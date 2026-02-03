@@ -685,7 +685,7 @@ def team_detail(request, team_id):
         'is_leader': team.leader == request.user,
         'collections_count': team.plasmidcollection_set.count(),
         'tables_count': team.correspondence_set.count(),
-        'campaigns_count': team.simulation_set.count(),
+        'campaigns_count': team.simulations.count(),
         'plasmids_count': Plasmid.objects.filter(collection__team=team).count(),
     })
 
