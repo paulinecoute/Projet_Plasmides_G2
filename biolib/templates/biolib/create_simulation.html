@@ -10,10 +10,10 @@
                 </div>
                 <div class="card-body p-4">
                     <p class="text-muted mb-4">Importez vos fichiers pour lancer l'assemblage et la simulation.</p>
-                    
+
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
-                        
+
                         <div class="mb-3">
                             <label class="form-label fw-bold">Nom de la simulation</label>
                             {{ form.name }}
@@ -30,7 +30,17 @@
                             <label class="form-label fw-bold">Campagne (Liste des parties - CSV)</label>
                             {{ form.campaign_file }}
                         </div>
-                        
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-file-earmark-zip-fill text-warning me-1"></i> Fichiers GenBank (.zip)
+                            </label>
+                            {{ form.zip_file }}
+                            <div class="form-text">
+                                <small>Compressez vos fichiers <strong>.gb</strong> dans une archive ZIP et déposez-la ici.</small>
+                            </div>
+                        </div>
+
                         <div class="accordion mb-4" id="accordionOptions">
                             <div class="accordion-item border-0 shadow-sm">
                                 <h2 class="accordion-header" id="headingOptions">

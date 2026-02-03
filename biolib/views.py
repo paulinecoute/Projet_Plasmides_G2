@@ -17,22 +17,56 @@ from openpyxl.styles import PatternFill, Font, Alignment
 import pandas as pd
 
 # Import Insillyclo
+#try:
+#    import insillyclo.observer
+#    import insillyclo.simulator
+#    from insillyclo.simulator import compute_all
+#except ImportError:
+#    class BaseObserver: pass
+#    def compute_all(*args, **kwargs): pass
+#
+## Observer pour la console Django
+#class DjangoConsoleObserver(insillyclo.observer.InSillyCloCliObserver if 'insillyclo.observer' in locals() else object):
+#    def __init__(self):
+#        if hasattr(insillyclo.observer, 'InSillyCloCliObserver'):
+#            super().__init__(debug=False, fail_on_error=True)
+#
+#    def notify_message(self, message):
+#        print(f"[INSILLYCLO] {message}")
+#    def notify_progress(self, val): pass
+#    def notify_missing_sequence_for_input_part(self, *args, **kwargs): pass
+#    def assembly_start(self, *args, **kwargs): pass
+#    def __getattr__(self, name):
+#        # Sécurité ultime : si le simulateur appelle une méthode inconnue, on ne plante pas
+#        def _missing(*args, **kwargs): return None
+#        return _missing
+
+
+import insillyclo.data_source
 try:
     import insillyclo.observer
-    import insillyclo.simulator
-    from insillyclo.simulator import compute_all
+    BaseObserver = insillyclo.observer.InSillyCloObserver
 except ImportError:
     class BaseObserver: pass
+import insillyclo.simulator
+try:
+    from my_insillyclo.simulator import compute_all
+except ImportError:
     def compute_all(*args, **kwargs): pass
 
-# Observer pour la console Django
-class DjangoConsoleObserver(insillyclo.observer.InSillyCloCliObserver if 'insillyclo.observer' in locals() else object):
+class ConsoleObserver:
+    def notify_message(self, message):
+        print(f"[SIMULATION] {message}")
+    def notify_progress(self, value):
+        pass
+
+class DjangoConsoleObserver(insillyclo.observer.InSillyCloCliObserver):
     def __init__(self):
-        if hasattr(insillyclo.observer, 'InSillyCloCliObserver'):
-            super().__init__(debug=False, fail_on_error=True)
-    
+        super().__init__(debug=False, fail_on_error=True)
+
     def notify_message(self, message):
         print(f"[INSILLYCLO] {message}")
+
 
 # ==============================================================================
 # 1. PAGES GÉNÉRALES
@@ -298,14 +332,14 @@ def create_simulation(request):
         form = SimulationForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             simulation = form.save(commit=False)
-            
+
             if request.user.is_authenticated:
                 simulation.user = request.user
             else:
                 simulation.user = None
-            
+
             simulation.status = 'RUNNING'
-            
+
             selected_enzymes = form.cleaned_data.get('custom_enzymes')
             simulation.custom_enzymes = ",".join(selected_enzymes) if selected_enzymes else ""
             simulation.pcr_primers = form.cleaned_data.get('pcr_primers')
@@ -326,17 +360,41 @@ def create_simulation(request):
 
             path_xlsx = simulation.template_file.path
             path_csv_list = [simulation.campaign_file.path] if simulation.campaign_file else []
-            
+
             gb_plasmids_paths = []
             all_parts = Plasmid.objects.all()
             for p in all_parts:
-                if p.genbank_file: 
+                if p.genbank_file:
                     try:
                         file_path = p.genbank_file.path
                         if os.path.exists(file_path):
                             gb_plasmids_paths.append(file_path)
                     except ValueError:
                         pass
+            if simulation.zip_file:
+                try:
+                    zip_path = simulation.zip_file.path
+                    extract_path = os.path.join(output_folder, 'extracted_parts')
+                    os.makedirs(extract_path, exist_ok=True)
+
+                    print(f"DEBUG: Extraction du ZIP {zip_path} vers {extract_path}")
+
+                    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                        zip_ref.extractall(extract_path)
+
+                    # On parcourt le dossier extrait pour trouver tous les .gb
+                    count_zip = 0
+                    for root, dirs, files in os.walk(extract_path):
+                        for file in files:
+                            if file.lower().endswith(".gb") or file.lower().endswith(".gbk"):
+                                full_path = os.path.join(root, file)
+                                gb_plasmids_paths.append(full_path)
+                                count_zip += 1
+
+                    print(f"DEBUG: {count_zip} fichiers .gb ajoutés depuis le ZIP.")
+
+                except Exception as e:
+                    print(f"ERREUR ZIP: {e}")
 
             try:
                 observer = DjangoConsoleObserver()
@@ -353,7 +411,7 @@ def create_simulation(request):
                     user_primers=simulation.pcr_primers,
                     default_mass_concentration=200
                 )
-                
+
                 # Correction séparateurs CSV
                 tous_les_csv = glob.glob(os.path.join(output_folder, "*.csv"))
                 for csv_path in tous_les_csv:
@@ -366,14 +424,14 @@ def create_simulation(request):
                 creer_archive_resultats_seulement(dossier_source=output_folder, simulation_id=simulation.id)
 
                 simulation.status = 'COMPLETED'
-                
+
                 path_png = os.path.join(output_folder, 'digestion.png')
                 path_svg = os.path.join(output_folder, 'digestion.svg')
                 if os.path.exists(path_png):
                        simulation.result_file = f"simulations/{simulation.id}/digestion.png"
                 elif os.path.exists(path_svg):
                        simulation.result_file = f"simulations/{simulation.id}/digestion.svg"
-                
+
                 simulation.save()
                 return redirect('simulation_result', pk=simulation.id)
 
@@ -390,11 +448,11 @@ def create_simulation(request):
 
 def simulation_result(request, pk=None):
     simulation = get_object_or_404(Simulation, pk=pk)
-    
+
     # Sécurité : Si privé, vérifier user. Si session, vérifier session.
     if simulation.visibility == 'private' and simulation.user and simulation.user != request.user:
         return HttpResponse("Accès refusé", status=403)
-        
+
     output_folder = os.path.join(settings.BASE_DIR, 'media', 'simulations', str(pk))
     csv_path = os.path.join(output_folder, 'dilutions.csv')
 
@@ -423,7 +481,7 @@ def simulation_result(request, pk=None):
 
 def update_simulation_gel(request, pk):
     simulation = get_object_or_404(Simulation, pk=pk)
-    
+
     if request.method == 'POST':
         new_enzymes = request.POST.getlist('gel_enzymes')
         simulation.custom_enzymes = ",".join(new_enzymes) if new_enzymes else ""
@@ -432,7 +490,7 @@ def update_simulation_gel(request, pk):
         output_folder = os.path.join(settings.BASE_DIR, 'media', 'simulations', str(simulation.id))
         path_xlsx = simulation.template_file.path
         path_csv_list = [simulation.campaign_file.path] if simulation.campaign_file else []
-        
+
         gb_plasmids_paths = []
         all_parts = Plasmid.objects.all()
         for p in all_parts:
@@ -483,9 +541,9 @@ def creer_archive_resultats_seulement(dossier_source, simulation_id, fichiers_a_
     if fichiers_a_exclure is None: fichiers_a_exclure = []
     nom_zip = f"simulation_{simulation_id}_archive.zip"
     chemin_zip = os.path.join(dossier_source, nom_zip)
-    
+
     candidats = glob.glob(os.path.join(dossier_source, "*.gb")) + glob.glob(os.path.join(dossier_source, "*.csv")) + glob.glob(os.path.join(dossier_source, "*.png"))
-    
+
     noms_exclus = set(os.path.basename(f) for f in fichiers_a_exclure)
     fichiers_finaux = [f for f in candidats if os.path.basename(f) not in noms_exclus]
 

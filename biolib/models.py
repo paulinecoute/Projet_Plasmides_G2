@@ -221,29 +221,29 @@ class Simulation(models.Model):
     status = models.CharField(max_length=20, default='PENDING')
     date_run = models.DateTimeField(auto_now_add=True)
     result_file = models.CharField(max_length=255, blank=True, null=True)
-    
+
     VISIBILITY_CHOICES = [
         ('private', 'Privé (Moi uniquement)'),
         ('team', 'Visible par mon équipe'),
     ]
     visibility = models.CharField(
-        max_length=20, 
-        choices=VISIBILITY_CHOICES, 
-        default='private', 
+        max_length=20,
+        choices=VISIBILITY_CHOICES,
+        default='private',
         verbose_name="Visibilité"
     )
 
     team = models.ForeignKey(
-        Team, 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True, 
-        related_name='simulations', 
+        Team,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='simulations',
         verbose_name="Équipe associée"
     )
 
     template = models.ForeignKey('CampaignTemplate', on_delete=models.SET_NULL, null=True, blank=True)
-    
+
     template_file = models.FileField(
         upload_to='simulation_templates/',
         verbose_name="Fichier Template (Excel)",
@@ -268,17 +268,23 @@ class Simulation(models.Model):
     )
 
     custom_enzymes = models.CharField(
-        max_length=255, 
-        blank=True, 
-        null=True, 
+        max_length=255,
+        blank=True,
+        null=True,
         help_text="Liste des enzymes séparées par des virgules (ex: EcoRI, BamHI)"
     )
 
     pcr_primers = models.TextField(
-        blank=True, 
-        null=True, 
+        blank=True,
+        null=True,
         help_text="Séquences des amorces (Forward et Reverse) pour simulation PCR"
     )
 
+    zip_file = models.FileField(
+        upload_to='simulations/zips/',
+        verbose_name="Archive GenBank (.zip)",
+        blank=True,
+        null=True
+    )
     def __str__(self):
         return f"Simu #{self.id} ({self.date_run})"
