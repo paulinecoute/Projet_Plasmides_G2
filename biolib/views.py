@@ -16,6 +16,9 @@ import openpyxl
 from openpyxl.styles import PatternFill, Font, Alignment
 import pandas as pd
 from django.core.files.base import ContentFile
+import re
+import shutil
+from Bio import SeqIO
 
 # Import Insillyclo
 #try:
@@ -358,6 +361,7 @@ def create_simulation(request):
                 anon_sims.append(simulation.id)
                 request.session['anonymous_simulations'] = anon_sims
                 request.session.modified = True
+            form.save_m2m()
 
             output_folder = os.path.join(settings.MEDIA_ROOT, 'simulations', str(simulation.id))
             os.makedirs(output_folder, exist_ok=True)
@@ -365,16 +369,25 @@ def create_simulation(request):
             path_xlsx = simulation.template_file.path
             path_csv_list = [simulation.campaign_file.path] if simulation.campaign_file else []
 
-            gb_plasmids_paths = []
-            all_parts = Plasmid.objects.all()
-            for p in all_parts:
-                if p.genbank_file:
-                    try:
-                        file_path = p.genbank_file.path
-                        if os.path.exists(file_path):
-                            gb_plasmids_paths.append(file_path)
-                    except ValueError:
-                        pass
+            raw_paths_list = []
+            new_files_to_insert = []
+            selected_collections = simulation.collections.all()
+            print(f"DEBUG: {selected_collections.count()} collections sélectionnées.")
+
+            for collection in selected_collections:
+                plasmids = collection.plasmids.all()
+                for p in plasmids:
+                    if p.genbank_file:
+                        try:
+                            # On vérifie que le fichier existe physiquement sur le disque
+                            file_path = p.genbank_file.path
+                            if os.path.exists(file_path):
+                                raw_paths_list.append(file_path)
+                            else:
+                                print(f"ATTENTION: Fichier manquant pour le plasmide {p.name}")
+                        except ValueError:
+                            pass
+
             should_save = form.cleaned_data.get('save_to_library')
             col_name_input = form.cleaned_data.get('new_collection_name')
             camp_name_input = form.cleaned_data.get('campaign_save_name')
@@ -428,37 +441,63 @@ def create_simulation(request):
                     print(f"ERREUR ZIP: {e}")
 
             if len(new_files_to_insert) > 0:
-
                 final_col_name = col_name_input if col_name_input else f"Import Simu #{simulation.id}"
-
-                # Création de la collection
                 created_collection = PlasmidCollection.objects.create(
                     name=final_col_name,
                     owner=request.user,
-                    description=f"Créée automatiquement depuis la simulation {simulation.name}"
+                    description=f"Issue de la simulation {simulation.name}"
                 )
-                print(f"DEBUG: Collection '{final_col_name}' créée.")
-
-                # Création des objets Plasmides liés à cette collection
-                count_saved = 0
-                for file_name, file_path in new_files_to_insert:
+                for f_name, f_path in new_files_to_insert:
                     try:
-                        with open(file_path, 'rb') as f_gb:
-                            content = f_gb.read()
-
-                        Plasmid.objects.create(
-                            collection=created_collection,
-                            name=file_name,
-                            genbank_file=ContentFile(content, name=file_name)
-                        )
-                        count_saved += 1
-                    except Exception as e_save:
-                        print(f"Erreur lors de la création du plasmide BDD {file_name}: {e_save}")
-
-                print(f"DEBUG: {count_saved} nouveaux plasmides enregistrés en BDD.")
-
+                        with open(f_path, 'rb') as f_gb:
+                            Plasmid.objects.create(
+                                collection=created_collection,
+                                name=f_name,
+                                genbank_file=ContentFile(f_gb.read(), name=f_name)
+                            )
+                    except Exception:
+                        pass
             elif should_save and request.user.is_authenticated:
                 print("DEBUG: Sauvegarde demandée, mais tous les plasmides existent déjà. Aucune collection créée.")
+
+            staging_dir = os.path.join(output_folder, 'staging_plasmids')
+            os.makedirs(staging_dir, exist_ok=True)
+
+            final_gb_paths_for_simulation = []
+            seen_names = set()
+
+            def clean_filename(name):
+                return re.sub(r'[^\w\-]', '', name.replace(" ", "_"))
+
+            # ICI : raw_paths_list est maintenant bien défini et rempli
+            for original_path in raw_paths_list:
+                try:
+                    record = SeqIO.read(original_path, "genbank")
+
+                    # Logique de nommage prioritaire
+                    internal_name = record.description.split(",")[0].strip()
+                    if not internal_name or internal_name == "<unknown description>":
+                        internal_name = record.name
+                    if not internal_name: # Fallback ultime
+                         internal_name = os.path.splitext(os.path.basename(original_path))[0]
+
+                    safe_name = clean_filename(internal_name)[:60]
+
+                    if safe_name in seen_names:
+                        continue # On évite les doublons exacts pour le simulateur
+
+                    seen_names.add(safe_name)
+
+                    new_filename = f"{safe_name}.gb"
+                    new_full_path = os.path.join(staging_dir, new_filename)
+
+                    shutil.copy(original_path, new_full_path)
+                    final_gb_paths_for_simulation.append(new_full_path)
+
+                except Exception as e:
+                    print(f"Erreur lecture fichier {original_path}: {e}")
+
+            print(f"DEBUG: {len(final_gb_paths_for_simulation)} fichiers prêts dans le Staging.")
 
             def_conc = form.cleaned_data.get('default_concentration')
             if def_conc is None:
@@ -541,7 +580,7 @@ def create_simulation(request):
                     settings=None,
                     input_template_filled=path_xlsx,
                     input_parts_files=path_csv_list,
-                    gb_plasmids=gb_plasmids_paths,
+                    gb_plasmids=final_gb_paths_for_simulation,
                     output_dir=output_folder,
                     data_source="Django",
                     assembly_enzyme=simulation.enzyme,

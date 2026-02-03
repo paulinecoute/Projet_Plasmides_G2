@@ -30,7 +30,13 @@
                             <label class="form-label fw-bold">Campagne (Liste des parties - CSV)</label>
                             {{ form.campaign_file }}
                         </div>
-
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-collection-fill text-primary me-1"></i> Utiliser des collections existantes
+                            </label>
+                            {{ form.collections }}
+                            <div class="form-text">Maintenez Ctrl (ou Cmd) pour sélectionner plusieurs collections.</div>
+                        </div>
                         <div class="mb-4">
                             <label class="form-label fw-bold">
                                 <i class="bi bi-file-earmark-zip-fill text-warning me-1"></i> Fichiers GenBank (.zip)

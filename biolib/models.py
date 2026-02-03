@@ -302,5 +302,12 @@ class Simulation(models.Model):
         blank=True,
         null=True
     )
+
+    collections = models.ManyToManyField(
+        'PlasmidCollection',
+        blank=True,
+        related_name='simulations',
+        verbose_name="Collections utilisées"
+    )
     def __str__(self):
         return f"Simu #{self.id} ({self.date_run})"

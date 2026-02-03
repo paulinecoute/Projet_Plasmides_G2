@@ -1,8 +1,9 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
-from .models import CampaignTemplate, TemplatePart, Simulation, Team
+from .models import CampaignTemplate, TemplatePart, Simulation, Team, PlasmidCollection
 from django.forms import inlineformset_factory
+from django.db.models import Q
 
 User = get_user_model()
 
@@ -97,6 +98,13 @@ class SimulationForm(forms.ModelForm):
         label="Enzymes pour le gel"
     )
 
+    collections = forms.ModelMultipleChoiceField(
+        queryset=PlasmidCollection.objects.none(), # Vide par défaut, rempli dans __init__
+        required=False,
+        widget=forms.SelectMultiple(attrs={'class': 'form-select', 'size': '5'}),
+        label="Utiliser des collections existantes"
+    )
+
     pcr_primers = forms.CharField(
         widget=forms.Textarea(attrs={
             'class': 'form-control',
@@ -144,7 +152,8 @@ class SimulationForm(forms.ModelForm):
             'team'        ,
             'zip_file',
             'default_concentration',
-            'concentration_file'
+            'concentration_file',
+            'collections'
         ]
 
         labels = {
@@ -188,9 +197,15 @@ class SimulationForm(forms.ModelForm):
         if user and user.is_authenticated:
             # On ne montre que les équipes de l'utilisateur
             self.fields['team'].queryset = Team.objects.filter(members=user)
+            self.fields['collections'].queryset = PlasmidCollection.objects.filter(
+                Q(owner=user) | Q(is_public='True')
+            ).distinct()
         else:
             # Si pas connecté, pas d'équipe possible
             self.fields['team'].queryset = Team.objects.none()
+            self.fields['collections'].queryset = PlasmidCollection.objects.filter(
+                is_public='True'
+            )
         self.fields['visibility'].required = False
         self.fields['team'].required = False
         self.fields['team'].empty_label = "--- Sélectionner une équipe ---"
