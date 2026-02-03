@@ -118,7 +118,9 @@ class SimulationForm(forms.ModelForm):
             'pcr_primers',
             'visibility',
             'team'        ,
-            'zip_file'
+            'zip_file',
+            'default_concentration',
+            'concentration_file'
         ]
 
         labels = {
@@ -134,7 +136,9 @@ class SimulationForm(forms.ModelForm):
             # IDs SPÉCIAUX POUR LE JAVASCRIPT (Comme pour Templates)
             'visibility': forms.Select(attrs={'class': 'form-select', 'id': 'id_sim_visibility'}),
             'team': forms.Select(attrs={'class': 'form-select', 'id': 'id_sim_team'}),
-            'zip_file': forms.ClearableFileInput(attrs={'class': 'form-control', 'accept': '.zip,application/zip,application/x-zip,application/x-zip-compressed'
+            'zip_file': forms.ClearableFileInput(attrs={'class': 'form-control', 'accept': '.zip,application/zip,application/x-zip,application/x-zip-compressed',
+            'default_concentration': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': '200.0'}),
+            'concentration_file': forms.ClearableFileInput(attrs={'class': 'form-control', 'accept': '.csv'})
             })
         }
 
