@@ -15,6 +15,7 @@ import zipfile
 import openpyxl
 from openpyxl.styles import PatternFill, Font, Alignment
 import pandas as pd
+from django.core.files.base import ContentFile
 
 # Import Insillyclo
 #try:
@@ -344,6 +345,9 @@ def create_simulation(request):
             simulation.custom_enzymes = ",".join(selected_enzymes) if selected_enzymes else ""
             simulation.pcr_primers = form.cleaned_data.get('pcr_primers')
 
+            if not simulation.visibility:
+                simulation.visibility = 'private'
+
             if simulation.visibility == 'team' and not simulation.team:
                 simulation.visibility = 'private'
 
@@ -371,6 +375,25 @@ def create_simulation(request):
                             gb_plasmids_paths.append(file_path)
                     except ValueError:
                         pass
+            should_save = form.cleaned_data.get('save_to_library')
+            col_name_input = form.cleaned_data.get('new_collection_name')
+            camp_name_input = form.cleaned_data.get('campaign_save_name')
+
+
+            # On le fait tout de suite, peu importe ce qui se passe avec les plasmides.
+            if should_save and simulation.campaign_file and request.user.is_authenticated:
+                final_camp_name = camp_name_input if camp_name_input else f"Campagne - {simulation.name}"
+                Correspondence.objects.create(
+                    name=final_camp_name,
+                    file=simulation.campaign_file,
+                    owner=request.user
+                )
+                print(f"DEBUG: Fichier de correspondance '{final_camp_name}' sauvegardé.")
+
+
+            gb_plasmids_paths = [] # Pour la simulation (calcul)
+            new_files_to_insert = [] # Pour la base de données (sauvegarde)
+
             if simulation.zip_file:
                 try:
                     zip_path = simulation.zip_file.path
@@ -378,23 +401,64 @@ def create_simulation(request):
                     os.makedirs(extract_path, exist_ok=True)
 
                     print(f"DEBUG: Extraction du ZIP {zip_path} vers {extract_path}")
-
                     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                         zip_ref.extractall(extract_path)
 
-                    # On parcourt le dossier extrait pour trouver tous les .gb
-                    count_zip = 0
+                    # On parcourt le dossier pour lister les fichiers
                     for root, dirs, files in os.walk(extract_path):
                         for file in files:
                             if file.lower().endswith(".gb") or file.lower().endswith(".gbk"):
                                 full_path = os.path.join(root, file)
-                                gb_plasmids_paths.append(full_path)
-                                count_zip += 1
 
-                    print(f"DEBUG: {count_zip} fichiers .gb ajoutés depuis le ZIP.")
+                                gb_plasmids_paths.append(full_path)
+
+                                # Si l'utilisateur veut sauvegarder, on vérifie les doublons MAINTENANT
+                                if should_save and request.user.is_authenticated:
+                                    already_exists = Plasmid.objects.filter(
+                                        collection__owner=request.user,
+                                        name=file
+                                    ).exists()
+
+                                    if not already_exists:
+                                        new_files_to_insert.append((file, full_path))
+                                    else:
+                                        print(f"DEBUG: Plasmide '{file}' ignoré (existe déjà).")
 
                 except Exception as e:
                     print(f"ERREUR ZIP: {e}")
+
+            if len(new_files_to_insert) > 0:
+
+                final_col_name = col_name_input if col_name_input else f"Import Simu #{simulation.id}"
+
+                # Création de la collection
+                created_collection = PlasmidCollection.objects.create(
+                    name=final_col_name,
+                    owner=request.user,
+                    description=f"Créée automatiquement depuis la simulation {simulation.name}"
+                )
+                print(f"DEBUG: Collection '{final_col_name}' créée.")
+
+                # Création des objets Plasmides liés à cette collection
+                count_saved = 0
+                for file_name, file_path in new_files_to_insert:
+                    try:
+                        with open(file_path, 'rb') as f_gb:
+                            content = f_gb.read()
+
+                        Plasmid.objects.create(
+                            collection=created_collection,
+                            name=file_name,
+                            genbank_file=ContentFile(content, name=file_name)
+                        )
+                        count_saved += 1
+                    except Exception as e_save:
+                        print(f"Erreur lors de la création du plasmide BDD {file_name}: {e_save}")
+
+                print(f"DEBUG: {count_saved} nouveaux plasmides enregistrés en BDD.")
+
+            elif should_save and request.user.is_authenticated:
+                print("DEBUG: Sauvegarde demandée, mais tous les plasmides existent déjà. Aucune collection créée.")
 
             def_conc = form.cleaned_data.get('default_concentration')
             if def_conc is None:
@@ -516,7 +580,15 @@ def create_simulation(request):
                 simulation.status = 'FAILED'
                 simulation.save()
                 return redirect('simulation_list')
+        else :
+            # --- LE MOUCHARD EST ICI ---
+            print("\n" + "="*30)
+            print("ERREUR DE VALIDATION DU FORMULAIRE :")
+            print(form.errors)
+            print("="*30 + "\n")
+            # ---------------------------
     else:
+
         form = SimulationForm(user=request.user)
 
     return render(request, 'biolib/create_simulation.html', {'form': form})

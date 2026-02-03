@@ -106,6 +106,30 @@ class SimulationForm(forms.ModelForm):
         required=False,
         label="Amorces PCR (Optionnel)"
     )
+    save_to_library = forms.BooleanField(
+        required=False,
+        label="Sauvegarder ces fichiers dans ma bibliothèque ?",
+        initial=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+
+    new_collection_name = forms.CharField(
+        required=False,
+        label="Nom de la collection (si sauvegarde)",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Ex: Mes Plasmides Projet A'
+        })
+    )
+
+    campaign_save_name = forms.CharField(
+        required=False,
+        label="Nom pour sauvegarder le fichier de campagne",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Ex: Ma Campagne Vaccin'
+        })
+    )
 
     class Meta:
         model = Simulation
@@ -167,6 +191,6 @@ class SimulationForm(forms.ModelForm):
         else:
             # Si pas connecté, pas d'équipe possible
             self.fields['team'].queryset = Team.objects.none()
-
+        self.fields['visibility'].required = False
         self.fields['team'].required = False
         self.fields['team'].empty_label = "--- Sélectionner une équipe ---"

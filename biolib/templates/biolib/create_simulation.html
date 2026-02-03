@@ -40,7 +40,53 @@
                                 <small>Compressez vos fichiers <strong>.gb</strong> dans une archive ZIP et déposez-la ici.</small>
                             </div>
                         </div>
+                        {% if user.is_authenticated %}
+                        <div class="card border-success mb-4 shadow-sm">
+                            <div class="card-header bg-success text-white bg-opacity-75">
+                                <h6 class="mb-0"><i class="bi bi-save-fill me-2"></i> Sauvegarde (Optionnel)</h6>
+                            </div>
+                            <div class="card-body bg-success bg-opacity-10">
+                                <div class="form-check form-switch mb-3">
+                                    {{ form.save_to_library }}
+                                    <label class="form-check-label fw-bold" for="{{ form.save_to_library.id_for_label }}">
+                                        Enregistrer les fichiers d'entrée dans ma bibliothèque
+                                    </label>
+                                </div>
 
+                                <div id="collection-name-field" style="display:none;">
+                                    <div class="mb-3">
+                                        <label class="form-label small text-muted">Nommer la nouvelle collection de plasmides :</label>
+                                        {{ form.new_collection_name }}
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small text-muted">Nommer le fichier de campagne (Correspondance) :</label>
+                                        {{ form.campaign_save_name }}
+                                        <div class="form-text x-small">Laissez vide pour utiliser le nom par défaut.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const checkSave = document.getElementById('{{ form.save_to_library.id_for_label }}');
+                                const nameField = document.getElementById('collection-name-field');
+
+                                function toggleName() {
+                                    nameField.style.display = checkSave.checked ? 'block' : 'none';
+                                }
+
+                                if(checkSave) {
+                                    checkSave.addEventListener('change', toggleName);
+                                    toggleName();
+                                }
+                            });
+                        </script>
+                            {%else%}
+                            <input type="hidden" name="visibility" value="private">
+                        {% endif %}  <button type="submit" class="btn btn-primary w-100 btn-lg py-3 shadow-sm hover-scale">
+                            <i class="bi bi-play-circle-fill me-2"></i> Lancer la simulation
+                        </button>
+                    </form>
                         <div class="accordion mb-4" id="accordionOptions">
                             <div class="accordion-item border-0 shadow-sm">
                                 <h2 class="accordion-header" id="headingOptions">
