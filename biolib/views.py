@@ -396,6 +396,80 @@ def create_simulation(request):
                 except Exception as e:
                     print(f"ERREUR ZIP: {e}")
 
+            def_conc = form.cleaned_data.get('default_concentration')
+            if def_conc is None:
+                def_conc = 200.0
+
+            path_conc = form.cleaned_data.get('concentration_file')
+            if simulation.concentration_file:
+                path_conc = simulation.concentration_file.path
+            if path_conc and os.path.exists(path_conc):
+                try:
+
+                    df_conc = pd.read_csv(path_conc, sep=None, engine='python')
+
+                    df_conc.columns = df_conc.columns.str.strip()
+
+                    # Identification des colonnes
+                    map_conc = {}
+                    for col in df_conc.columns:
+                        if col.lower() in ['pid', 'id', 'part_id', 'plasmid_id']: map_conc[col] = 'pID'
+                        if col.lower() in ['mass concentration', 'concentration', 'conc', 'ng/ul']: map_conc[col] = 'Mass Concentration'
+
+                    if 'pID' in map_conc.values() and 'Mass Concentration' in map_conc.values():
+                        # Renommage et sélection des colonnes utiles
+                        df_conc = df_conc.rename(columns=map_conc)[['pID', 'Mass Concentration']]
+
+                        # On enlève les espaces vides, et on retire les lignes vides
+                        df_conc['pID'] = df_conc['pID'].astype(str).str.strip()
+                        df_conc = df_conc[df_conc['pID'] != 'nan']
+                        df_conc = df_conc[df_conc['pID'] != '']
+
+                        # Conversion numérique des concentrations
+                        df_conc['Mass Concentration'] = pd.to_numeric(df_conc['Mass Concentration'], errors='coerce')
+
+                        if simulation.campaign_file and os.path.exists(simulation.campaign_file.path):
+                            try:
+                                path_camp = simulation.campaign_file.path
+                                df_camp = pd.read_csv(path_camp, sep=None, engine='python')
+                                df_camp.columns = df_camp.columns.str.strip()
+
+                                col_sci_id = next((c for c in df_camp.columns if c.lower() in ['pid', 'id', 'part_id']), None)
+                                col_common_name = next((c for c in df_camp.columns if c.lower() in ['name', 'part name', 'alias']), None)
+
+                                if col_sci_id and col_common_name:
+                                    ref_dict = df_conc.dropna(subset=['Mass Concentration']).set_index('pID')['Mass Concentration'].to_dict()
+
+                                    nouveaux_ajouts = []
+                                    for _, row in df_camp.iterrows():
+                                        sci_id = str(row[col_sci_id]).strip()
+                                        common_name = str(row[col_common_name]).strip()
+
+                                        if sci_id in ref_dict:
+                                            nouveaux_ajouts.append({
+                                                'pID': common_name,
+                                                'Mass Concentration': ref_dict[sci_id]
+                                            })
+
+                                    if nouveaux_ajouts:
+                                        df_conc = pd.concat([df_conc, pd.DataFrame(nouveaux_ajouts)], ignore_index=True)
+                            except Exception as e_camp:
+                                print(f"ATTENTION: Erreur traduction : {e_camp}")
+
+                        # On garde la DERNIÈRE occurrence (keep='last').
+                        df_conc = df_conc.drop_duplicates(subset=['pID'], keep='last')
+
+                        # Pour ceux qui n'ont ni traduction ni valeur, on met la valeur par défaut
+                        valeur_defaut = float(def_conc) if def_conc else 200.0
+                        df_conc['Mass Concentration'] = df_conc['Mass Concentration'].fillna(valeur_defaut)
+
+                        #On trie par ordre alphabétique pour faire joli
+                        df_conc = df_conc.sort_values(by='pID')
+
+                        df_conc.to_csv(path_conc, index=False, sep=',')
+
+                except Exception as e:
+                    print(f"ATTENTION: Erreur traitement CSV : {e}")
             try:
                 observer = DjangoConsoleObserver()
                 compute_all(
@@ -409,7 +483,8 @@ def create_simulation(request):
                     assembly_enzyme=simulation.enzyme,
                     gel_enzymes=selected_enzymes if selected_enzymes else [],
                     user_primers=simulation.pcr_primers,
-                    default_mass_concentration=200
+                    default_mass_concentration=def_conc,
+                    concentration_file=path_conc
                 )
 
                 # Correction séparateurs CSV

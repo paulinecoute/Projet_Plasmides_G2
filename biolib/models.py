@@ -286,5 +286,21 @@ class Simulation(models.Model):
         blank=True,
         null=True
     )
+
+    default_concentration = models.FloatField(
+        default=200.0,
+        verbose_name="Concentration par défaut (ng/µL)",
+        help_text="Utilisée si aucune concentration n'est spécifiée pour une pièce.",
+        blank=True,
+        null=True
+    )
+
+    concentration_file = models.FileField(
+        upload_to='concentrations/',
+        verbose_name="Fichier de concentrations (.csv)",
+        help_text="Fichier CSV optionnel associant ID de pièce et concentration.",
+        blank=True,
+        null=True
+    )
     def __str__(self):
         return f"Simu #{self.id} ({self.date_run})"
