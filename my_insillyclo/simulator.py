@@ -196,6 +196,8 @@ def compute_all(
     data_source=None,
     gel_enzymes=None,
     assembly_enzyme='BsaI',
+    default_mass_concentration=200,
+    concentration_file=None,
     **kwargs
 ):
     work_dir = pathlib.Path(output_dir)
@@ -311,8 +313,8 @@ def compute_all(
         enzyme_names=real_gel_enzymes, #
         primers_file=primers_file_path,
         primer_id_pairs=kwargs.get('primer_id_pairs', []),
-        default_mass_concentration=kwargs.get('default_mass_concentration', 200),
         sbol_export=kwargs.get('sbol_export', False),
-        concentration_file=kwargs.get('concentration_file', None)
+        default_mass_concentration=default_mass_concentration,
+        concentration_file=concentration_file
     )
 

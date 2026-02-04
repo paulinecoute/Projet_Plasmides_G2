@@ -15,24 +15,62 @@ import zipfile
 import openpyxl
 from openpyxl.styles import PatternFill, Font, Alignment
 import pandas as pd
+from django.core.files.base import ContentFile
+import re
+import shutil
+from Bio import SeqIO
 
 # Import Insillyclo
+#try:
+#    import insillyclo.observer
+#    import insillyclo.simulator
+#    from insillyclo.simulator import compute_all
+#except ImportError:
+#    class BaseObserver: pass
+#    def compute_all(*args, **kwargs): pass
+#
+## Observer pour la console Django
+#class DjangoConsoleObserver(insillyclo.observer.InSillyCloCliObserver if 'insillyclo.observer' in locals() else object):
+#    def __init__(self):
+#        if hasattr(insillyclo.observer, 'InSillyCloCliObserver'):
+#            super().__init__(debug=False, fail_on_error=True)
+#
+#    def notify_message(self, message):
+#        print(f"[INSILLYCLO] {message}")
+#    def notify_progress(self, val): pass
+#    def notify_missing_sequence_for_input_part(self, *args, **kwargs): pass
+#    def assembly_start(self, *args, **kwargs): pass
+#    def __getattr__(self, name):
+#        # Sécurité ultime : si le simulateur appelle une méthode inconnue, on ne plante pas
+#        def _missing(*args, **kwargs): return None
+#        return _missing
+
+
+import insillyclo.data_source
 try:
     import insillyclo.observer
-    import insillyclo.simulator
-    from insillyclo.simulator import compute_all
+    BaseObserver = insillyclo.observer.InSillyCloObserver
 except ImportError:
     class BaseObserver: pass
+import insillyclo.simulator
+try:
+    from my_insillyclo.simulator import compute_all
+except ImportError:
     def compute_all(*args, **kwargs): pass
 
-# Observer pour la console Django
-class DjangoConsoleObserver(insillyclo.observer.InSillyCloCliObserver if 'insillyclo.observer' in locals() else object):
+class ConsoleObserver:
+    def notify_message(self, message):
+        print(f"[SIMULATION] {message}")
+    def notify_progress(self, value):
+        pass
+
+class DjangoConsoleObserver(insillyclo.observer.InSillyCloCliObserver):
     def __init__(self):
-        if hasattr(insillyclo.observer, 'InSillyCloCliObserver'):
-            super().__init__(debug=False, fail_on_error=True)
-    
+        super().__init__(debug=False, fail_on_error=True)
+
     def notify_message(self, message):
         print(f"[INSILLYCLO] {message}")
+
 
 # ==============================================================================
 # 1. PAGES GÉNÉRALES
@@ -256,6 +294,27 @@ def export_template_excel(request, template_id):
     wb.save(response)
     return response
 
+#### TEMPLATES LIÉES AUX ÉQUIPES
+@login_required
+def team_templates(request, team_id):
+    team = get_object_or_404(
+        Team,
+        id=team_id,
+        members=request.user
+    )
+
+    templates = CampaignTemplate.objects.filter(
+        visibility='team',
+        team=team
+    ).order_by('-created_at')
+
+    return render(request, "biolib/template.html", {
+        "templates": templates,
+        "current_view": "team",
+        "page_title": f"Templates de l’équipe {team.name}",
+    })
+
+
 
 def simulation_list(request):
     view_type = request.GET.get('view', 'recent')
@@ -298,17 +357,20 @@ def create_simulation(request):
         form = SimulationForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             simulation = form.save(commit=False)
-            
+
             if request.user.is_authenticated:
                 simulation.user = request.user
             else:
                 simulation.user = None
-            
+
             simulation.status = 'RUNNING'
-            
+
             selected_enzymes = form.cleaned_data.get('custom_enzymes')
             simulation.custom_enzymes = ",".join(selected_enzymes) if selected_enzymes else ""
             simulation.pcr_primers = form.cleaned_data.get('pcr_primers')
+
+            if not simulation.visibility:
+                simulation.visibility = 'private'
 
             if simulation.visibility == 'team' and not simulation.team:
                 simulation.visibility = 'private'
@@ -320,24 +382,218 @@ def create_simulation(request):
                 anon_sims.append(simulation.id)
                 request.session['anonymous_simulations'] = anon_sims
                 request.session.modified = True
+            form.save_m2m()
 
             output_folder = os.path.join(settings.MEDIA_ROOT, 'simulations', str(simulation.id))
             os.makedirs(output_folder, exist_ok=True)
 
             path_xlsx = simulation.template_file.path
             path_csv_list = [simulation.campaign_file.path] if simulation.campaign_file else []
-            
-            gb_plasmids_paths = []
-            all_parts = Plasmid.objects.all()
-            for p in all_parts:
-                if p.genbank_file: 
-                    try:
-                        file_path = p.genbank_file.path
-                        if os.path.exists(file_path):
-                            gb_plasmids_paths.append(file_path)
-                    except ValueError:
-                        pass
 
+            raw_paths_list = []
+            new_files_to_insert = []
+            selected_collections = simulation.collections.all()
+            print(f"DEBUG: {selected_collections.count()} collections sélectionnées.")
+
+            for collection in selected_collections:
+                plasmids = collection.plasmids.all()
+                for p in plasmids:
+                    if p.genbank_file:
+                        try:
+                            # On vérifie que le fichier existe physiquement sur le disque
+                            file_path = p.genbank_file.path
+                            if os.path.exists(file_path):
+                                raw_paths_list.append(file_path)
+                            else:
+                                print(f"ATTENTION: Fichier manquant pour le plasmide {p.name}")
+                        except ValueError:
+                            pass
+
+            should_save = form.cleaned_data.get('save_to_library')
+            col_name_input = form.cleaned_data.get('new_collection_name')
+            camp_name_input = form.cleaned_data.get('campaign_save_name')
+
+
+            # On le fait tout de suite, peu importe ce qui se passe avec les plasmides.
+            if should_save and simulation.campaign_file and request.user.is_authenticated:
+                final_camp_name = camp_name_input if camp_name_input else f"Campagne - {simulation.name}"
+                Correspondence.objects.create(
+                    name=final_camp_name,
+                    file=simulation.campaign_file,
+                    owner=request.user
+                )
+                print(f"DEBUG: Fichier de correspondance '{final_camp_name}' sauvegardé.")
+
+
+            gb_plasmids_paths = [] # Pour la simulation (calcul)
+            new_files_to_insert = [] # Pour la base de données (sauvegarde)
+
+            if simulation.zip_file:
+                try:
+                    zip_path = simulation.zip_file.path
+                    extract_path = os.path.join(output_folder, 'extracted_parts')
+                    os.makedirs(extract_path, exist_ok=True)
+
+                    print(f"DEBUG: Extraction du ZIP {zip_path} vers {extract_path}")
+                    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                        zip_ref.extractall(extract_path)
+
+                    # On parcourt le dossier pour lister les fichiers
+                    for root, dirs, files in os.walk(extract_path):
+                        for file in files:
+                            if file.lower().endswith(".gb") or file.lower().endswith(".gbk"):
+                                full_path = os.path.join(root, file)
+
+                                gb_plasmids_paths.append(full_path)
+
+                                # Si l'utilisateur veut sauvegarder, on vérifie les doublons MAINTENANT
+                                if should_save and request.user.is_authenticated:
+                                    already_exists = Plasmid.objects.filter(
+                                        collection__owner=request.user,
+                                        name=file
+                                    ).exists()
+
+                                    if not already_exists:
+                                        new_files_to_insert.append((file, full_path))
+                                    else:
+                                        print(f"DEBUG: Plasmide '{file}' ignoré (existe déjà).")
+
+                except Exception as e:
+                    print(f"ERREUR ZIP: {e}")
+
+            if len(new_files_to_insert) > 0:
+                final_col_name = col_name_input if col_name_input else f"Import Simu #{simulation.id}"
+                created_collection = PlasmidCollection.objects.create(
+                    name=final_col_name,
+                    owner=request.user,
+                    description=f"Issue de la simulation {simulation.name}"
+                )
+                for f_name, f_path in new_files_to_insert:
+                    try:
+                        with open(f_path, 'rb') as f_gb:
+                            Plasmid.objects.create(
+                                collection=created_collection,
+                                name=f_name,
+                                genbank_file=ContentFile(f_gb.read(), name=f_name)
+                            )
+                    except Exception:
+                        pass
+            elif should_save and request.user.is_authenticated:
+                print("DEBUG: Sauvegarde demandée, mais tous les plasmides existent déjà. Aucune collection créée.")
+
+            staging_dir = os.path.join(output_folder, 'staging_plasmids')
+            os.makedirs(staging_dir, exist_ok=True)
+
+            final_gb_paths_for_simulation = []
+            seen_names = set()
+
+            def clean_filename(name):
+                return re.sub(r'[^\w\-]', '', name.replace(" ", "_"))
+
+            # ICI : raw_paths_list est maintenant bien défini et rempli
+            for original_path in raw_paths_list:
+                try:
+                    record = SeqIO.read(original_path, "genbank")
+
+                    # Logique de nommage prioritaire
+                    internal_name = record.description.split(",")[0].strip()
+                    if not internal_name or internal_name == "<unknown description>":
+                        internal_name = record.name
+                    if not internal_name: # Fallback ultime
+                         internal_name = os.path.splitext(os.path.basename(original_path))[0]
+
+                    safe_name = clean_filename(internal_name)[:60]
+
+                    if safe_name in seen_names:
+                        continue # On évite les doublons exacts pour le simulateur
+
+                    seen_names.add(safe_name)
+
+                    new_filename = f"{safe_name}.gb"
+                    new_full_path = os.path.join(staging_dir, new_filename)
+
+                    shutil.copy(original_path, new_full_path)
+                    final_gb_paths_for_simulation.append(new_full_path)
+
+                except Exception as e:
+                    print(f"Erreur lecture fichier {original_path}: {e}")
+
+            print(f"DEBUG: {len(final_gb_paths_for_simulation)} fichiers prêts dans le Staging.")
+
+            def_conc = form.cleaned_data.get('default_concentration')
+            if def_conc is None:
+                def_conc = 200.0
+
+            path_conc = form.cleaned_data.get('concentration_file')
+            if simulation.concentration_file:
+                path_conc = simulation.concentration_file.path
+            if path_conc and os.path.exists(path_conc):
+                try:
+
+                    df_conc = pd.read_csv(path_conc, sep=None, engine='python')
+
+                    df_conc.columns = df_conc.columns.str.strip()
+
+                    # Identification des colonnes
+                    map_conc = {}
+                    for col in df_conc.columns:
+                        if col.lower() in ['pid', 'id', 'part_id', 'plasmid_id']: map_conc[col] = 'pID'
+                        if col.lower() in ['mass concentration', 'concentration', 'conc', 'ng/ul']: map_conc[col] = 'Mass Concentration'
+
+                    if 'pID' in map_conc.values() and 'Mass Concentration' in map_conc.values():
+                        # Renommage et sélection des colonnes utiles
+                        df_conc = df_conc.rename(columns=map_conc)[['pID', 'Mass Concentration']]
+
+                        # On enlève les espaces vides, et on retire les lignes vides
+                        df_conc['pID'] = df_conc['pID'].astype(str).str.strip()
+                        df_conc = df_conc[df_conc['pID'] != 'nan']
+                        df_conc = df_conc[df_conc['pID'] != '']
+
+                        # Conversion numérique des concentrations
+                        df_conc['Mass Concentration'] = pd.to_numeric(df_conc['Mass Concentration'], errors='coerce')
+
+                        if simulation.campaign_file and os.path.exists(simulation.campaign_file.path):
+                            try:
+                                path_camp = simulation.campaign_file.path
+                                df_camp = pd.read_csv(path_camp, sep=None, engine='python')
+                                df_camp.columns = df_camp.columns.str.strip()
+
+                                col_sci_id = next((c for c in df_camp.columns if c.lower() in ['pid', 'id', 'part_id']), None)
+                                col_common_name = next((c for c in df_camp.columns if c.lower() in ['name', 'part name', 'alias']), None)
+
+                                if col_sci_id and col_common_name:
+                                    ref_dict = df_conc.dropna(subset=['Mass Concentration']).set_index('pID')['Mass Concentration'].to_dict()
+
+                                    nouveaux_ajouts = []
+                                    for _, row in df_camp.iterrows():
+                                        sci_id = str(row[col_sci_id]).strip()
+                                        common_name = str(row[col_common_name]).strip()
+
+                                        if sci_id in ref_dict:
+                                            nouveaux_ajouts.append({
+                                                'pID': common_name,
+                                                'Mass Concentration': ref_dict[sci_id]
+                                            })
+
+                                    if nouveaux_ajouts:
+                                        df_conc = pd.concat([df_conc, pd.DataFrame(nouveaux_ajouts)], ignore_index=True)
+                            except Exception as e_camp:
+                                print(f"ATTENTION: Erreur traduction : {e_camp}")
+
+                        # On garde la DERNIÈRE occurrence (keep='last').
+                        df_conc = df_conc.drop_duplicates(subset=['pID'], keep='last')
+
+                        # Pour ceux qui n'ont ni traduction ni valeur, on met la valeur par défaut
+                        valeur_defaut = float(def_conc) if def_conc else 200.0
+                        df_conc['Mass Concentration'] = df_conc['Mass Concentration'].fillna(valeur_defaut)
+
+                        #On trie par ordre alphabétique pour faire joli
+                        df_conc = df_conc.sort_values(by='pID')
+
+                        df_conc.to_csv(path_conc, index=False, sep=',')
+
+                except Exception as e:
+                    print(f"ATTENTION: Erreur traitement CSV : {e}")
             try:
                 observer = DjangoConsoleObserver()
                 compute_all(
@@ -345,15 +601,16 @@ def create_simulation(request):
                     settings=None,
                     input_template_filled=path_xlsx,
                     input_parts_files=path_csv_list,
-                    gb_plasmids=gb_plasmids_paths,
+                    gb_plasmids=final_gb_paths_for_simulation,
                     output_dir=output_folder,
                     data_source="Django",
                     assembly_enzyme=simulation.enzyme,
                     gel_enzymes=selected_enzymes if selected_enzymes else [],
                     user_primers=simulation.pcr_primers,
-                    default_mass_concentration=200
+                    default_mass_concentration=def_conc,
+                    concentration_file=path_conc
                 )
-                
+
                 # Correction séparateurs CSV
                 tous_les_csv = glob.glob(os.path.join(output_folder, "*.csv"))
                 for csv_path in tous_les_csv:
@@ -366,14 +623,14 @@ def create_simulation(request):
                 creer_archive_resultats_seulement(dossier_source=output_folder, simulation_id=simulation.id)
 
                 simulation.status = 'COMPLETED'
-                
+
                 path_png = os.path.join(output_folder, 'digestion.png')
                 path_svg = os.path.join(output_folder, 'digestion.svg')
                 if os.path.exists(path_png):
                        simulation.result_file = f"simulations/{simulation.id}/digestion.png"
                 elif os.path.exists(path_svg):
                        simulation.result_file = f"simulations/{simulation.id}/digestion.svg"
-                
+
                 simulation.save()
                 return redirect('simulation_result', pk=simulation.id)
 
@@ -383,18 +640,26 @@ def create_simulation(request):
                 simulation.status = 'FAILED'
                 simulation.save()
                 return redirect('simulation_list')
+        else :
+            # --- LE MOUCHARD EST ICI ---
+            print("\n" + "="*30)
+            print("ERREUR DE VALIDATION DU FORMULAIRE :")
+            print(form.errors)
+            print("="*30 + "\n")
+            # ---------------------------
     else:
+
         form = SimulationForm(user=request.user)
 
     return render(request, 'biolib/create_simulation.html', {'form': form})
 
 def simulation_result(request, pk=None):
     simulation = get_object_or_404(Simulation, pk=pk)
-    
+
     # Sécurité : Si privé, vérifier user. Si session, vérifier session.
     if simulation.visibility == 'private' and simulation.user and simulation.user != request.user:
         return HttpResponse("Accès refusé", status=403)
-        
+
     output_folder = os.path.join(settings.BASE_DIR, 'media', 'simulations', str(pk))
     csv_path = os.path.join(output_folder, 'dilutions.csv')
 
@@ -423,7 +688,7 @@ def simulation_result(request, pk=None):
 
 def update_simulation_gel(request, pk):
     simulation = get_object_or_404(Simulation, pk=pk)
-    
+
     if request.method == 'POST':
         new_enzymes = request.POST.getlist('gel_enzymes')
         simulation.custom_enzymes = ",".join(new_enzymes) if new_enzymes else ""
@@ -432,7 +697,7 @@ def update_simulation_gel(request, pk):
         output_folder = os.path.join(settings.BASE_DIR, 'media', 'simulations', str(simulation.id))
         path_xlsx = simulation.template_file.path
         path_csv_list = [simulation.campaign_file.path] if simulation.campaign_file else []
-        
+
         gb_plasmids_paths = []
         all_parts = Plasmid.objects.all()
         for p in all_parts:
@@ -475,6 +740,26 @@ def update_simulation_gel(request, pk):
 
     return redirect('simulation_result', pk=simulation.id)
 
+@login_required
+def team_simulations(request, team_id):
+    team = get_object_or_404(
+        Team,
+        id=team_id,
+        members=request.user
+    )
+
+    simulations = Simulation.objects.filter(
+        visibility='team',
+        team=team
+    ).order_by('-date_run')
+
+    return render(request, "biolib/simulation_list.html", {
+        "simulations": simulations,
+        "current_view": "team",
+        "page_title": f"Simulations de l’équipe {team.name}",
+    })
+
+
 # ==============================================================================
 # 4. FICHIERS ET DOWNLOADS
 # ==============================================================================
@@ -483,9 +768,9 @@ def creer_archive_resultats_seulement(dossier_source, simulation_id, fichiers_a_
     if fichiers_a_exclure is None: fichiers_a_exclure = []
     nom_zip = f"simulation_{simulation_id}_archive.zip"
     chemin_zip = os.path.join(dossier_source, nom_zip)
-    
+
     candidats = glob.glob(os.path.join(dossier_source, "*.gb")) + glob.glob(os.path.join(dossier_source, "*.csv")) + glob.glob(os.path.join(dossier_source, "*.png"))
-    
+
     noms_exclus = set(os.path.basename(f) for f in fichiers_a_exclure)
     fichiers_finaux = [f for f in candidats if os.path.basename(f) not in noms_exclus]
 
@@ -552,7 +837,7 @@ def team_detail(request, team_id):
         'is_leader': team.leader == request.user,
         'collections_count': team.plasmidcollection_set.count(),
         'tables_count': team.correspondence_set.count(),
-        'campaigns_count': team.simulation_set.count(),
+        'campaigns_count': team.simulations.count(),
         'plasmids_count': Plasmid.objects.filter(collection__team=team).count(),
     })
 
@@ -604,72 +889,274 @@ def team_delete(request, team_id):
         return render(request, 'biolib/team_confirm_delete.html', {'team': team})
     return HttpResponse("Accès refusé", status=403)
 
+### COLLECTIONS D'ÉQUIPE
+
+@login_required
+def team_collections(request, team_id):
+    team = get_object_or_404(Team, id=team_id, members=request.user)
+    collections = PlasmidCollection.objects.filter(team=team)
+
+    return render(request, "biolib/team_collections.html", {
+        "team": team,
+        "collections": collections,
+        "is_leader": team.leader == request.user
+    })
+
+
+@login_required
+def team_collection_detail(request, team_id, collection_id):
+    team = get_object_or_404(Team, id=team_id, members=request.user)
+    collection = get_object_or_404(
+        PlasmidCollection,
+        id=collection_id,
+        team=team
+    )
+
+    return render(request, "biolib/team_collection_detail.html", {
+        "team": team,
+        "collection": collection,
+        "is_owner": collection.owner == request.user
+    })
+
+
+@login_required
+def team_collection_create(request, team_id):
+    team = get_object_or_404(Team, id=team_id, leader=request.user)
+
+    if request.method == "POST":
+        owner = get_object_or_404(
+            User,
+            id=request.POST.get("owner"),
+            teams=team
+        )
+
+        PlasmidCollection.objects.create(
+            name=request.POST["name"],
+            description=request.POST.get("description", ""),
+            owner=owner,
+            team=team
+        )
+
+        return redirect("team_collections", team_id=team.id)
+
+    return render(request, "biolib/team_collection_create.html", {
+        "team": team,
+        "members": team.members.all()
+    })
+
+@login_required
+def choose_team_for_plasmids(request):
+    teams = request.user.teams.all()
+    return render(
+        request,
+        "biolib/choose_team_for_plasmids.html",
+        {"teams": teams}
+    )
+
+
+### COLLECTIONS UTILISATEUR
+
 @login_required
 def collections_view(request):
-    collections = PlasmidCollection.objects.filter(owner=request.user)
+    collections = PlasmidCollection.objects.filter(
+        owner=request.user,
+        team__isnull=True   
+    )
     return render(request, "biolib/collections.html", {"collections": collections})
+
+
 
 @login_required
 def collection_create(request):
     if request.method == "POST":
-        collection = PlasmidCollection.objects.create(name=request.POST["name"], description=request.POST.get("description", ""), owner=request.user)
+        collection = PlasmidCollection.objects.create(
+            name=request.POST["name"],
+            description=request.POST.get("description", ""),
+            owner=request.user
+        )
+
         return redirect("collection_detail", collection.id)
+
     return render(request, "biolib/collection_create.html")
+
 
 @login_required
 def collection_detail(request, collection_id):
     collection = get_object_or_404(PlasmidCollection, id=collection_id)
-    return render(request, "biolib/collection_detail.html", {"collection": collection, "is_owner": collection.owner == request.user})
+    return render(
+        request,
+        "biolib/collection_detail.html",
+        {
+            "collection": collection,
+            "is_owner": collection.owner == request.user
+        }
+    )
+
 
 @login_required
 def plasmid_upload(request, collection_id):
-    collection = get_object_or_404(PlasmidCollection, id=collection_id, owner=request.user)
+    collection = get_object_or_404(
+        PlasmidCollection,
+        id=collection_id,
+        owner=request.user
+    )
+
+    next_url = request.GET.get("next")
+
     if request.method == "POST":
+        next_url = request.POST.get("next")
+
         for f in request.FILES.getlist("files"):
-            Plasmid.objects.create(collection=collection, identifier=f.name, name="", genbank_file=f, sequence="")
+            Plasmid.objects.create(
+                collection=collection,
+                identifier=f.name,
+                name="",
+                genbank_file=f,
+                sequence=""
+            )
+
+        if next_url:
+            return redirect(next_url)
+
+        if collection.team:
+            return redirect(
+                "team_collection_detail",
+                team_id=collection.team.id,
+                collection_id=collection.id
+            )
         return redirect("collection_detail", collection.id)
-    return render(request, "biolib/plasmid_upload.html", {"collection": collection})
+
+    return render(request, "biolib/plasmid_upload.html", {
+        "collection": collection,
+        "next": next_url
+    })
+
 
 @login_required
 def plasmid_delete(request, plasmid_id):
-    plasmid = get_object_or_404(Plasmid, id=plasmid_id, collection__owner=request.user)
+    plasmid = get_object_or_404(
+        Plasmid,
+        id=plasmid_id,
+        collection__owner=request.user
+    )
+
+    collection = plasmid.collection
+
     if request.method == "POST":
-        col_id = plasmid.collection.id
+        next_url = request.POST.get("next")
         plasmid.delete()
-        return redirect("collection_detail", col_id)
+
+        if next_url:
+            return redirect(next_url)
+
+        # fallback
+        if collection.team:
+            return redirect(
+                "team_collection_detail",
+                team_id=collection.team.id,
+                collection_id=collection.id
+            )
+        return redirect("collection_detail", collection.id)
+
 
 @login_required
 def collection_delete(request, collection_id):
-    collection = get_object_or_404(PlasmidCollection, id=collection_id, owner=request.user)
+    collection = get_object_or_404(
+        PlasmidCollection,
+        id=collection_id,
+        owner=request.user
+    )
+
     if request.method == "POST":
+        next_url = request.POST.get("next")
+        team = collection.team
         collection.delete()
+
+        if next_url:
+            return redirect(next_url)
+
+        if team:
+            return redirect("team_collections", team_id=team.id)
         return redirect("collections")
+    
+###########
+
+###########
 
 @login_required
 def correspondences_view(request):
-    return render(request, "biolib/correspondences.html", {"correspondences": Correspondence.objects.filter(owner=request.user)})
+    correspondences = Correspondence.objects.filter(
+        owner=request.user,
+        team__isnull=True
+    ).order_by("-uploaded_at")
+
+    return render(request, "biolib/correspondences.html", {
+        "correspondences": correspondences
+    })
+
 
 @login_required
 def correspondence_upload(request):
     if request.method == "POST":
-        Correspondence.objects.create(name=request.POST["name"], file=request.FILES["file"], owner=request.user)
+        Correspondence.objects.create(
+            name=request.POST["name"],
+            file=request.FILES["file"],
+            owner=request.user
+        )
         return redirect("correspondences")
+
     return render(request, "biolib/correspondence_upload.html")
+
 
 @login_required
 def correspondence_detail(request, correspondence_id):
-    return render(request, "biolib/correspondence_detail.html", {"table": get_object_or_404(Correspondence, id=correspondence_id, owner=request.user)})
+    table = get_object_or_404(
+        Correspondence.objects.filter(
+            Q(owner=request.user) |
+            Q(is_public=True) |
+            Q(team__members=request.user)
+        ).distinct(),
+        id=correspondence_id
+    )
+
+    next_url = request.GET.get("next")
+
+    return render(request, "biolib/correspondence_detail.html", {
+        "table": table,
+        "next": next_url,
+        "is_owner": table.owner == request.user
+    })
+
 
 @login_required
 def correspondence_delete(request, correspondence_id):
-    table = get_object_or_404(Correspondence, id=correspondence_id, owner=request.user)
+    table = get_object_or_404(
+        Correspondence,
+        id=correspondence_id,
+        owner=request.user
+    )
+
     if request.method == "POST":
+        next_url = request.POST.get("next")
         table.delete()
+
+        if next_url:
+            return redirect(next_url)
+
         return redirect("correspondences")
+
 
 @login_required
 def correspondence_view_file(request, correspondence_id):
-    table = get_object_or_404(Correspondence, id=correspondence_id, owner=request.user)
+    table = get_object_or_404(
+        Correspondence.objects.filter(
+            Q(owner=request.user) |
+            Q(is_public=True) |
+            Q(team__members=request.user)
+        ).distinct(),
+        id=correspondence_id
+    )
+
     try:
         with open(table.file.path, "r", encoding="utf-8", errors="ignore") as f:
             content = f.read()
@@ -750,3 +1237,144 @@ def plasmid_collection_detail(request, pk):
         'collection': collection,
         'plasmids': collection.plasmids.all() # On suppose que le related_name est 'plasmids' par défaut ou défini ainsi
     })
+
+    next_url = request.GET.get("next")
+
+    return render(request, "biolib/correspondence_view_file.html", {
+        "table": table,
+        "content": content,
+        "next": next_url
+    })
+
+@login_required
+def team_correspondences(request, team_id):
+    team = get_object_or_404(Team, id=team_id, members=request.user)
+
+    correspondences = (
+        Correspondence.objects
+        .filter(team=team)
+        .select_related("owner")
+        .order_by("-uploaded_at")
+    )
+
+    return render(request, "biolib/team_correspondences.html", {
+        "team": team,
+        "correspondences": correspondences,
+        "is_leader": team.leader == request.user
+    })
+
+
+@login_required
+def choose_team_for_correspondences(request):
+    teams = request.user.teams.all()
+    return render(
+        request,
+        "biolib/choose_team_for_correspondences.html",
+        {"teams": teams}
+    )
+
+# ==============================================================================
+# CORRESPONDENCES LIÉES AUX ÉQUIPES
+# ==============================================================================
+
+@login_required
+def team_correspondences(request, team_id):
+    team = get_object_or_404(Team, id=team_id, members=request.user)
+
+    correspondences = (
+        Correspondence.objects
+        .filter(team=team)
+        .select_related("owner")
+        .order_by("-uploaded_at")
+    )
+
+    return render(request, "biolib/team_correspondences.html", {
+        "team": team,
+        "correspondences": correspondences,
+        "is_leader": team.leader == request.user
+    })
+
+
+@login_required
+def team_correspondence_create(request, team_id):
+    team = get_object_or_404(Team, id=team_id, leader=request.user)
+
+    if request.method == "POST":
+        owner = get_object_or_404(
+            User,
+            id=request.POST.get("owner"),
+            teams=team
+        )
+
+        Correspondence.objects.create(
+            name=request.POST["name"],
+            description=request.POST.get("description", ""),
+            owner=owner,
+            team=team
+        )
+
+        return redirect("team_correspondences", team_id=team.id)
+
+    return render(request, "biolib/team_correspondence_create.html", {
+        "team": team,
+        "members": team.members.all()
+    })
+
+
+@login_required
+def correspondence_detail(request, correspondence_id):
+    table = get_object_or_404(
+        Correspondence.objects.filter(
+            Q(owner=request.user) |
+            Q(team__members=request.user)
+        ).distinct(),
+        id=correspondence_id
+    )
+
+    return render(request, "biolib/correspondence_detail.html", {
+        "table": table,
+        "is_owner": table.owner == request.user
+    })
+
+
+@login_required
+def correspondence_attach_file(request, correspondence_id):
+    table = get_object_or_404(Correspondence, id=correspondence_id)
+
+    if table.owner != request.user:
+        return HttpResponse("Accès refusé", status=403)
+
+    if request.method == "POST" and request.FILES.get("file"):
+        table.file = request.FILES["file"]
+        table.save()
+
+    return redirect("correspondence_detail", correspondence_id=table.id)
+
+
+@login_required
+def correspondence_remove_file(request, correspondence_id):
+    table = get_object_or_404(Correspondence, id=correspondence_id)
+
+    if table.owner != request.user:
+        return HttpResponse("Accès refusé", status=403)
+
+    if request.method == "POST":
+        table.file.delete(save=False)
+        table.file = None
+        table.save()
+
+    return redirect("correspondence_detail", correspondence_id=table.id)
+
+
+@login_required
+def correspondence_delete(request, correspondence_id):
+    table = get_object_or_404(
+        Correspondence,
+        id=correspondence_id,
+        owner=request.user
+    )
+
+    if request.method == "POST":
+        team_id = table.team.id if table.team else None
+        table.delete()
+        return redirect("team_correspondences", team_id=team_id)

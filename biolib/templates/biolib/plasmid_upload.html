@@ -8,15 +8,21 @@
     --border-color: #eee;
   }
 
-  body { background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body {
+    background-color: var(--bg-main);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
 
   .content-wrapper {
     max-width: 800px;
     margin: 0 auto;
   }
 
-  .nav-header { padding: 20px 0; margin-bottom: 20px; }
-  
+  .nav-header {
+    padding: 20px 0;
+    margin-bottom: 20px;
+  }
+
   .btn-back {
     display: inline-flex;
     align-items: center;
@@ -30,11 +36,22 @@
     transition: 0.2s;
     text-decoration: none;
   }
-  .btn-back:hover { border-color: #000; color: #000; }
+  .btn-back:hover {
+    border-color: #000;
+    color: #000;
+  }
 
-  .hero-section { margin-bottom: 40px; }
-  .page-title { font-weight: 850; font-size: 2.8rem; letter-spacing: -0.05em; margin-bottom: 10px; }
-  
+  .hero-section {
+    margin-bottom: 40px;
+  }
+
+  .page-title {
+    font-weight: 850;
+    font-size: 2.8rem;
+    letter-spacing: -0.05em;
+    margin-bottom: 10px;
+  }
+
   .form-container {
     background: #fff;
     border: 1px solid var(--border-color);
@@ -59,6 +76,7 @@
     font-size: 1rem;
     transition: all 0.2s;
   }
+
   .form-control::file-selector-button {
     background: #000;
     color: #fff;
@@ -70,6 +88,7 @@
     font-weight: 600;
     cursor: pointer;
   }
+
   .form-control:focus {
     background: #fff;
     border-color: #000;
@@ -95,7 +114,9 @@
     border: none;
     transition: 0.2s;
   }
-  .btn-submit:hover { background: #333; }
+  .btn-submit:hover {
+    background: #333;
+  }
 
   .btn-cancel {
     color: #999;
@@ -104,14 +125,17 @@
     font-size: 0.9rem;
     transition: 0.2s;
   }
-  .btn-cancel:hover { color: #000; }
+  .btn-cancel:hover {
+    color: #000;
+  }
 </style>
 
 <div class="container pb-5">
   <div class="content-wrapper">
-    
+
+    <!-- Bouton retour -->
     <div class="nav-header">
-      <a href="{% url 'collection_detail' collection.id %}" class="btn-back shadow-sm">
+      <a href="{{ next|default:request.META.HTTP_REFERER }}" class="btn-back shadow-sm">
         <i class="bi bi-arrow-left"></i>
       </a>
     </div>
@@ -124,14 +148,19 @@
       <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
 
+        <!-- ✅ CONTEXTE DE RETOUR -->
+        <input type="hidden" name="next" value="{{ next }}">
+
         <div class="mb-4">
           <label class="form-label">Fichiers GenBank (.gb, .gbk)</label>
-          <input type="file"
-                 name="files"
-                 class="form-control"
-                 multiple
-                 accept=".gb,.gbk"
-                 required>
+          <input
+            type="file"
+            name="files"
+            class="form-control"
+            multiple
+            accept=".gb,.gbk"
+            required
+          >
           <div class="small text-muted mt-2">
             Vous pouvez sélectionner plusieurs fichiers simultanément.
           </div>
@@ -143,7 +172,7 @@
         </div>
 
         <div class="d-flex align-items-center justify-content-end gap-4 mt-5">
-          <a href="{% url 'collection_detail' collection.id %}" class="btn-cancel">
+          <a href="{{ next|default:request.META.HTTP_REFERER }}" class="btn-cancel">
             Annuler
           </a>
           <button type="submit" class="btn-submit">

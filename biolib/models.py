@@ -120,18 +120,33 @@ class Plasmid(models.Model):
         return f"{self.identifier} - {self.name}"
 
 # ==============================================================================
-# 3. MAPPING & CORRESPONDANCE (Version MAIN améliorée)
+# 3. MAPPING & CORRESPONDANCE 
 # ==============================================================================
 
 class Correspondence(models.Model):
     name = models.CharField(max_length=200, default="Table de correspondance")
+    description = models.TextField(blank=True, default="")  
     file = models.FileField(upload_to="correspondences/")
     uploaded_at = models.DateTimeField(auto_now_add=True)
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True)
-    team = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, blank=True)
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True
+    )
+
+    team = models.ForeignKey(
+        Team,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
+    is_public = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
+
 
 class CorrespondenceEntry(models.Model):
     """ Vient de le branche MAIN : Permet de stocker le contenu du fichier Excel en base """
@@ -221,29 +236,29 @@ class Simulation(models.Model):
     status = models.CharField(max_length=20, default='PENDING')
     date_run = models.DateTimeField(auto_now_add=True)
     result_file = models.CharField(max_length=255, blank=True, null=True)
-    
+
     VISIBILITY_CHOICES = [
         ('private', 'Privé (Moi uniquement)'),
         ('team', 'Visible par mon équipe'),
     ]
     visibility = models.CharField(
-        max_length=20, 
-        choices=VISIBILITY_CHOICES, 
-        default='private', 
+        max_length=20,
+        choices=VISIBILITY_CHOICES,
+        default='private',
         verbose_name="Visibilité"
     )
 
     team = models.ForeignKey(
-        Team, 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True, 
-        related_name='simulations', 
+        Team,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='simulations',
         verbose_name="Équipe associée"
     )
 
     template = models.ForeignKey('CampaignTemplate', on_delete=models.SET_NULL, null=True, blank=True)
-    
+
     template_file = models.FileField(
         upload_to='simulation_templates/',
         verbose_name="Fichier Template (Excel)",
@@ -268,17 +283,46 @@ class Simulation(models.Model):
     )
 
     custom_enzymes = models.CharField(
-        max_length=255, 
-        blank=True, 
-        null=True, 
+        max_length=255,
+        blank=True,
+        null=True,
         help_text="Liste des enzymes séparées par des virgules (ex: EcoRI, BamHI)"
     )
 
     pcr_primers = models.TextField(
-        blank=True, 
-        null=True, 
+        blank=True,
+        null=True,
         help_text="Séquences des amorces (Forward et Reverse) pour simulation PCR"
     )
 
+    zip_file = models.FileField(
+        upload_to='simulations/zips/',
+        verbose_name="Archive GenBank (.zip)",
+        blank=True,
+        null=True
+    )
+
+    default_concentration = models.FloatField(
+        default=200.0,
+        verbose_name="Concentration par défaut (ng/µL)",
+        help_text="Utilisée si aucune concentration n'est spécifiée pour une pièce.",
+        blank=True,
+        null=True
+    )
+
+    concentration_file = models.FileField(
+        upload_to='concentrations/',
+        verbose_name="Fichier de concentrations (.csv)",
+        help_text="Fichier CSV optionnel associant ID de pièce et concentration.",
+        blank=True,
+        null=True
+    )
+
+    collections = models.ManyToManyField(
+        'PlasmidCollection',
+        blank=True,
+        related_name='simulations',
+        verbose_name="Collections utilisées"
+    )
     def __str__(self):
         return f"Simu #{self.id} ({self.date_run})"

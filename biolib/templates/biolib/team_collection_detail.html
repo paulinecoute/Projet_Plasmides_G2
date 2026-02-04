@@ -3,11 +3,7 @@
 
 {% block content %}
 <style>
-  :root {
-    --bg-main: #fcfcfc;
-    --border-color: #eee;
-    --accent-color: #000;
-  }
+  :root { --bg-main: #fcfcfc; --border-color: #eee; }
 
   body { background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 
@@ -16,46 +12,27 @@
   .nav-header { padding: 20px 0; margin-bottom: 20px; }
 
   .btn-back {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     width: 40px; height: 40px;
     background: #fff;
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    color: #666;
-    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  .btn-back:hover { border-color: #000; color: #000; }
 
   .hero-section { margin-bottom: 40px; }
 
   .collection-title {
     font-weight: 800;
     font-size: 2.2rem;
-    letter-spacing: -0.03em;
     margin-bottom: 8px;
   }
-
-  .status-dot {
-    display: inline-flex;
-    align-items: center;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .dot { height: 8px; width: 8px; border-radius: 50%; margin-right: 6px; }
-  .dot-public { background-color: #10b981; }
-  .dot-private { background-color: #6b7280; }
 
   .list-container {
     background: #fff;
     border: 1px solid var(--border-color);
     border-radius: 20px;
-    overflow: hidden;
   }
 
   .plasmid-row {
@@ -68,7 +45,7 @@
   .plasmid-row:last-child { border-bottom: none; }
 
   .id-prefix {
-    font-family: 'SF Mono', monospace;
+    font-family: monospace;
     font-size: 0.7rem;
     background: #f1f1f1;
     padding: 4px 8px;
@@ -76,7 +53,7 @@
     margin-right: 16px;
   }
 
-  .file-name { font-weight: 600; font-size: 0.95rem; }
+  .file-name { font-weight: 600; }
 
   .btn-delete-min {
     background: none;
@@ -91,7 +68,7 @@
   <div class="content-wrapper">
 
     <div class="nav-header">
-      <a href="{% url 'collections' %}" class="btn-back shadow-sm">
+      <a href="{% url 'team_collections' team.id %}" class="btn-back shadow-sm">
         <i class="bi bi-arrow-left"></i>
       </a>
     </div>
@@ -99,10 +76,6 @@
     <div class="hero-section">
       <div class="row align-items-center">
         <div class="col">
-          <div class="status-dot">
-            <span class="dot {% if collection.is_public %}dot-public{% else %}dot-private{% endif %}"></span>
-            {% if collection.is_public %}Public{% else %}Privé{% endif %}
-          </div>
           <h1 class="collection-title">{{ collection.name }}</h1>
           {% if collection.description %}
             <p class="text-muted">{{ collection.description }}</p>
@@ -110,25 +83,11 @@
         </div>
 
         {% if is_owner %}
-        <div class="col-auto d-flex gap-2">
-
-          <!-- 🔒 Bouton public (placeholder) -->
-          <button class="btn btn-outline-secondary rounded-pill px-4 fw-bold"
-                  disabled
-                  title="Fonctionnalité à venir">
-            {% if collection.is_public %}
-              Rendre privée
-            {% else %}
-              Rendre publique
-            {% endif %}
-          </button>
-
-          <!-- ➕ Ajouter -->
+        <div class="col-auto">
           <a href="{% url 'plasmid_upload' collection.id %}?next={{ request.path }}"
              class="btn btn-dark rounded-pill px-4 fw-bold shadow-sm">
             Ajouter
           </a>
-
         </div>
         {% endif %}
       </div>
@@ -138,6 +97,7 @@
       {% for plasmid in collection.plasmids.all %}
       <div class="plasmid-row">
         <div class="id-prefix">GB</div>
+
         <div class="flex-grow-1">
           <span class="file-name">{{ plasmid.identifier }}</span>
         </div>
@@ -146,15 +106,18 @@
         <form method="post" action="{% url 'plasmid_delete' plasmid.id %}">
           {% csrf_token %}
           <input type="hidden" name="next" value="{{ request.path }}">
-          <button type="submit" class="btn-delete-min"
-                  onclick="return confirm('Supprimer ?');">
+          <button type="submit"
+                  class="btn-delete-min"
+                  onclick="return confirm('Supprimer ce plasmide ?');">
             <i class="bi bi-trash3"></i>
           </button>
         </form>
         {% endif %}
       </div>
       {% empty %}
-      <div class="p-5 text-center text-muted">Aucun élément dans cette collection.</div>
+      <div class="p-5 text-center text-muted">
+        Aucun plasmide dans cette collection.
+      </div>
       {% endfor %}
     </div>
 
