@@ -889,7 +889,9 @@ def team_delete(request, team_id):
         return render(request, 'biolib/team_confirm_delete.html', {'team': team})
     return HttpResponse("Accès refusé", status=403)
 
-### COLLECTIONS D'ÉQUIPE
+# ============================================================
+# COLLECTIONS UTILISATEUR (équipe)
+# ============================================================
 
 @login_required
 def team_collections(request, team_id):
@@ -953,8 +955,9 @@ def choose_team_for_plasmids(request):
         {"teams": teams}
     )
 
-
-### COLLECTIONS UTILISATEUR
+# ============================================================
+# COLLECTIONS UTILISATEUR (hors équipe)
+# ============================================================
 
 @login_required
 def collections_view(request):
@@ -1049,7 +1052,7 @@ def plasmid_delete(request, plasmid_id):
         if next_url:
             return redirect(next_url)
 
-        # fallback
+        
         if collection.team:
             return redirect(
                 "team_collection_detail",
@@ -1078,10 +1081,10 @@ def collection_delete(request, collection_id):
         if team:
             return redirect("team_collections", team_id=team.id)
         return redirect("collections")
-    
-###########
-
-###########
+        
+# ============================================================
+# CORRESPONDENCES UTILISATEUR (hors équipe)
+# ============================================================
 
 @login_required
 def correspondences_view(request):
@@ -1111,21 +1114,78 @@ def correspondence_upload(request):
 @login_required
 def correspondence_detail(request, correspondence_id):
     table = get_object_or_404(
-        Correspondence.objects.filter(
-            Q(owner=request.user) |
-            Q(is_public=True) |
-            Q(team__members=request.user)
-        ).distinct(),
-        id=correspondence_id
+        Correspondence,
+        id=correspondence_id,
+        owner=request.user
     )
-
-    next_url = request.GET.get("next")
 
     return render(request, "biolib/correspondence_detail.html", {
         "table": table,
-        "next": next_url,
-        "is_owner": table.owner == request.user
+        "is_owner": True
     })
+
+
+@login_required
+def correspondence_view_file(request, correspondence_id):
+    table = get_object_or_404(
+        Correspondence,
+        id=correspondence_id,
+        owner=request.user
+    )
+
+    try:
+        with open(table.file.path, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
+    except Exception:
+        content = "Erreur lecture."
+
+    return render(request, "biolib/correspondence_view_file.html", {
+        "table": table,
+        "content": content
+    })
+
+
+# ============================================================
+# ACTIONS COMMUNES (UTILISATEUR + ÉQUIPE)
+# ============================================================
+
+@login_required
+def correspondence_attach_file(request, correspondence_id):
+    table = get_object_or_404(
+        Correspondence,
+        id=correspondence_id,
+        team__isnull=True   
+    )
+
+    if table.owner != request.user:
+        return HttpResponse("Accès refusé", status=403)
+
+    if request.method == "POST" and request.FILES.get("file"):
+        table.file = request.FILES["file"]
+        table.save()
+
+    return redirect("correspondence_detail", correspondence_id=table.id)
+
+
+
+@login_required
+def correspondence_remove_file(request, correspondence_id):
+    table = get_object_or_404(
+        Correspondence,
+        id=correspondence_id,
+        team__isnull=True  
+    )
+
+    if table.owner != request.user:
+        return HttpResponse("Accès refusé", status=403)
+
+    if request.method == "POST":
+        table.file.delete(save=False)
+        table.file = None
+        table.save()
+
+    return redirect("correspondence_detail", correspondence_id=table.id)
+
 
 
 @login_required
@@ -1138,144 +1198,22 @@ def correspondence_delete(request, correspondence_id):
 
     if request.method == "POST":
         next_url = request.POST.get("next")
+        team = table.team
         table.delete()
 
         if next_url:
             return redirect(next_url)
 
+        if team:
+            return redirect("team_correspondences", team_id=team.id)
+
         return redirect("correspondences")
 
 
-@login_required
-def correspondence_view_file(request, correspondence_id):
-    table = get_object_or_404(
-        Correspondence.objects.filter(
-            Q(owner=request.user) |
-            Q(is_public=True) |
-            Q(team__members=request.user)
-        ).distinct(),
-        id=correspondence_id
-    )
 
-    try:
-        with open(table.file.path, "r", encoding="utf-8", errors="ignore") as f:
-            content = f.read()
-    except Exception:
-        content = "Erreur lecture."
-    return render(request, "biolib/correspondence_view_file.html", {"table": table, "content": content})
-
-
-# visualisation plasmide
-
-def plasmid_visualize(request, plasmid_id):
-    plasmid = get_object_or_404(Plasmid, id=plasmid_id)
-    
-    # 1. Récupérer le contenu du fichier GenBank s'il existe
-    genbank_content = ""
-    if plasmid.genbank_file:
-        try:
-            with open(plasmid.genbank_file.path, 'r', encoding='utf-8') as f:
-                genbank_content = f.read()
-        except Exception as e:
-            print(f"Erreur de lecture : {e}")
-            # Fallback : utiliser la séquence brute si le fichier échoue
-            genbank_content = plasmid.sequence 
-    else:
-        # Sinon utiliser la séquence brute stockée en BDD
-        genbank_content = plasmid.sequence
-
-    return render(request, 'biolib/plasmid_visualize.html', {
-        'plasmid': plasmid,
-        'genbank_content': genbank_content
-    })
-
-# Dans biolib/views.py
-
-@login_required
-def plasmid_collection_list(request):
-    """
-    Affiche toutes les collections de plasmides (personnelles et d'équipe)
-    sous forme de cartes, similaire à la page templates.
-    """
-    view_type = request.GET.get('view', 'my')
-    title = "Mes Collections"
-    
-    # Récupération des collections
-    if view_type == 'team':
-        # Collections appartenant aux équipes dont l'utilisateur est membre
-        collections = PlasmidCollection.objects.filter(team__members=request.user).distinct().order_by('-id')
-        title = "Collections d'équipe"
-    else:
-        # Collections personnelles (sans équipe ou dont je suis propriétaire)
-        collections = PlasmidCollection.objects.filter(owner=request.user).order_by('-id')
-        title = "Mes Collections"
-
-    return render(request, 'biolib/plasmid_collection_list.html', {
-        'collections': collections,
-        'current_view': view_type,
-        'page_title': title
-    })
-
-@login_required
-def plasmid_collection_detail(request, pk):
-    """
-    Détail d'une collection spécifique avec la liste des plasmides.
-    """
-    collection = get_object_or_404(PlasmidCollection, pk=pk)
-    
-    # Vérification simple des droits d'accès (propriétaire ou membre de l'équipe)
-    has_access = False
-    if collection.owner == request.user:
-        has_access = True
-    elif collection.team and request.user in collection.team.members.all():
-        has_access = True
-        
-    if not has_access:
-        return HttpResponse("Accès refusé à cette collection.", status=403)
-
-    return render(request, 'biolib/plasmid_collection_detail.html', {
-        'collection': collection,
-        'plasmids': collection.plasmids.all() # On suppose que le related_name est 'plasmids' par défaut ou défini ainsi
-    })
-
-    next_url = request.GET.get("next")
-
-    return render(request, "biolib/correspondence_view_file.html", {
-        "table": table,
-        "content": content,
-        "next": next_url
-    })
-
-@login_required
-def team_correspondences(request, team_id):
-    team = get_object_or_404(Team, id=team_id, members=request.user)
-
-    correspondences = (
-        Correspondence.objects
-        .filter(team=team)
-        .select_related("owner")
-        .order_by("-uploaded_at")
-    )
-
-    return render(request, "biolib/team_correspondences.html", {
-        "team": team,
-        "correspondences": correspondences,
-        "is_leader": team.leader == request.user
-    })
-
-
-@login_required
-def choose_team_for_correspondences(request):
-    teams = request.user.teams.all()
-    return render(
-        request,
-        "biolib/choose_team_for_correspondences.html",
-        {"teams": teams}
-    )
-
-# ==============================================================================
-# CORRESPONDENCES LIÉES AUX ÉQUIPES
-# ==============================================================================
+# ============================================================
+# CORRESPONDENCES D’ÉQUIPE
+# ============================================================
 
 @login_required
 def team_correspondences(request, team_id):
@@ -1302,7 +1240,7 @@ def team_correspondence_create(request, team_id):
     if request.method == "POST":
         owner = get_object_or_404(
             User,
-            id=request.POST.get("owner"),
+            id=request.POST["owner"],
             teams=team
         )
 
@@ -1322,24 +1260,55 @@ def team_correspondence_create(request, team_id):
 
 
 @login_required
-def correspondence_detail(request, correspondence_id):
+def team_correspondence_detail(request, team_id, correspondence_id):
+    team = get_object_or_404(Team, id=team_id, members=request.user)
+
     table = get_object_or_404(
-        Correspondence.objects.filter(
-            Q(owner=request.user) |
-            Q(team__members=request.user)
-        ).distinct(),
-        id=correspondence_id
+        Correspondence,
+        id=correspondence_id,
+        team=team
     )
 
-    return render(request, "biolib/correspondence_detail.html", {
+    return render(request, "biolib/team_correspondence_detail.html", {
+        "team": team,
         "table": table,
         "is_owner": table.owner == request.user
     })
 
 
 @login_required
-def correspondence_attach_file(request, correspondence_id):
-    table = get_object_or_404(Correspondence, id=correspondence_id)
+def team_correspondence_view_file(request, team_id, correspondence_id):
+    team = get_object_or_404(Team, id=team_id, members=request.user)
+
+    table = get_object_or_404(
+        Correspondence,
+        id=correspondence_id,
+        team=team
+    )
+
+    try:
+        with open(table.file.path, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
+    except Exception:
+        content = "Erreur lecture."
+
+    return render(request, "biolib/team_correspondence_view_file.html", {
+        "team": team,
+        "table": table,
+        "content": content,
+        "is_owner": table.owner == request.user
+    })
+
+
+@login_required
+def team_correspondence_attach_file(request, team_id, correspondence_id):
+    team = get_object_or_404(Team, id=team_id, members=request.user)
+
+    table = get_object_or_404(
+        Correspondence,
+        id=correspondence_id,
+        team=team
+    )
 
     if table.owner != request.user:
         return HttpResponse("Accès refusé", status=403)
@@ -1348,12 +1317,22 @@ def correspondence_attach_file(request, correspondence_id):
         table.file = request.FILES["file"]
         table.save()
 
-    return redirect("correspondence_detail", correspondence_id=table.id)
+    return redirect(
+        "team_correspondence_detail",
+        team_id=team.id,
+        correspondence_id=table.id
+    )
 
 
 @login_required
-def correspondence_remove_file(request, correspondence_id):
-    table = get_object_or_404(Correspondence, id=correspondence_id)
+def team_correspondence_remove_file(request, team_id, correspondence_id):
+    team = get_object_or_404(Team, id=team_id, members=request.user)
+
+    table = get_object_or_404(
+        Correspondence,
+        id=correspondence_id,
+        team=team
+    )
 
     if table.owner != request.user:
         return HttpResponse("Accès refusé", status=403)
@@ -1363,18 +1342,33 @@ def correspondence_remove_file(request, correspondence_id):
         table.file = None
         table.save()
 
-    return redirect("correspondence_detail", correspondence_id=table.id)
+    return redirect(
+        "team_correspondence_detail",
+        team_id=team.id,
+        correspondence_id=table.id
+    )
 
 
 @login_required
-def correspondence_delete(request, correspondence_id):
+def team_correspondence_delete(request, team_id, correspondence_id):
+    team = get_object_or_404(Team, id=team_id, members=request.user)
+
     table = get_object_or_404(
         Correspondence,
         id=correspondence_id,
+        team=team,
         owner=request.user
     )
 
     if request.method == "POST":
-        team_id = table.team.id if table.team else None
         table.delete()
-        return redirect("team_correspondences", team_id=team_id)
+        return redirect("team_correspondences", team_id=team.id)
+
+@login_required
+def choose_team_for_correspondences(request):
+    teams = request.user.teams.all()
+    return render(
+        request,
+        "biolib/choose_team_for_correspondences.html",
+        {"teams": teams}
+    )

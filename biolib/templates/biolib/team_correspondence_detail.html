@@ -1,0 +1,144 @@
+{% extends "biolib/base.html" %}
+{% block title %}Table · {{ table.name }}{% endblock %}
+
+{% block content %}
+<style>
+  :root { --bg-main: #fcfcfc; --border-color: #eee; }
+  body { background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .content-wrapper { max-width: 900px; margin: 0 auto; padding-bottom: 60px; }
+
+  /* Bouton retour carré */
+  .btn-back-square {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 42px; height: 42px; background: #fff;
+    border: 1px solid var(--border-color); border-radius: 12px;
+    color: #000; transition: 0.2s; text-decoration: none; margin-bottom: 20px;
+  }
+  .btn-back-square:hover { border-color: #000; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+
+  .hero-section { margin-bottom: 40px; margin-top: 10px; }
+  .table-title { font-weight: 900; font-size: 3.2rem; letter-spacing: -0.06em; color: #000; line-height: 1.1; margin-bottom: 12px; }
+  .table-desc { font-size: 1.15rem; color: #666; font-weight: 500; max-width: 650px; line-height: 1.5; }
+
+  /* Card de fichier */
+  .card-box {
+    background: #fff; border: 1px solid var(--border-color);
+    border-radius: 24px; padding: 25px; margin-bottom: 30px;
+  }
+
+  .file-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .file-left { display: flex; align-items: center; gap: 15px; font-weight: 700; color: #111; }
+
+  /* Boutons Pilules */
+  .btn-pill {
+    border-radius: 999px; padding: 10px 22px; font-weight: 800; font-size: 0.85rem;
+    transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border-color);
+    text-decoration: none; cursor: pointer;
+  }
+  .btn-pill-dark { background: #000; color: #fff; border: none; }
+  .btn-pill-dark:hover { background: #333; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); color: #fff; }
+  
+  .btn-pill-outline { background: #fff; color: #666; }
+  .btn-pill-outline:hover { border-color: #000; color: #000; }
+
+  .btn-pill-danger { background: #fff; color: #ef4444; border-color: #fee2e2; }
+  .btn-pill-danger:hover { background: #ef4444; color: #fff; border-color: #ef4444; }
+</style>
+
+<div class="container mt-4">
+  <div class="content-wrapper">
+
+    <a href="{% url 'team_correspondences' team.id %}" class="btn-back-square shadow-sm">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+
+    <div class="hero-section">
+      <div class="row align-items-end">
+        <div class="col">
+          <h1 class="table-title">{{ table.name }}</h1>
+          {% if table.description %}
+            <p class="table-desc">{{ table.description }}</p>
+          {% endif %}
+        </div>
+        
+        {% if is_owner %}
+        <div class="col-auto">
+          <form method="post" action="{% url 'team_correspondence_delete' team.id table.id %}" onsubmit="return confirm('Supprimer définitivement ?');">
+            {% csrf_token %}
+            <button type="submit" class="btn-pill btn-pill-danger shadow-sm">
+              <i class="bi bi-trash3"></i> Supprimer la table
+            </button>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card-box shadow-sm">
+      <div class="file-row">
+        <div class="file-left">
+          <div style="width: 48px; height: 48px; background: #f8f8f8; border-radius: 14px; display: flex; align-items: center; justify-content: center; border: 1px solid #eee;">
+            <i class="bi bi-file-earmark-spreadsheet text-dark fs-4"></i>
+          </div>
+          <div class="d-flex flex-column">
+            <span class="fw-bold" style="font-size: 1.05rem;">
+              {% if table.file %}{{ table.file.name|cut:"correspondences/" }}{% else %}Aucun fichier associé{% endif %}
+            </span>
+            <span class="text-muted small fw-medium">Feuille de calcul (.xlsx, .csv)</span>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          {% if table.file %}
+            {# ACTIONS SI FICHIER EXISTE #}
+            <a href="{% url 'team_correspondence_view_file' team.id table.id %}" class="btn-pill btn-pill-outline">
+              <i class="bi bi-eye"></i> Voir
+            </a>
+            
+            <a href="{{ table.file.url }}" download class="btn-pill btn-pill-outline">
+              <i class="bi bi-download"></i>
+            </a>
+
+            {% if is_owner %}
+              <button type="button" class="btn-pill btn-pill-dark shadow-sm" id="btn-replace-file">
+                <i class="bi bi-pencil-square"></i> Modifier
+              </button>
+
+              <form id="replace-file-form" method="post" enctype="multipart/form-data" 
+                    action="{% url 'team_correspondence_attach_file' team.id table.id %}" style="display:none;">
+                {% csrf_token %}
+                <input type="file" name="file" id="replace-file-input" required>
+              </form>
+            {% endif %}
+
+          {% else %}
+            {# ACTION SI PAS DE FICHIER #}
+            {% if is_owner %}
+              <form method="post" enctype="multipart/form-data" action="{% url 'team_correspondence_attach_file' team.id table.id %}" class="d-flex gap-2 align-items-center">
+                {% csrf_token %}
+                <input type="file" name="file" required class="form-control form-control-sm rounded-3" style="max-width: 200px;">
+                <button class="btn-pill btn-pill-dark shadow-sm">Ajouter</button>
+              </form>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{# SCRIPT LOGIQUE MODIFIER #}
+{% if table.file and is_owner %}
+<script>
+  (function () {
+    const btn = document.getElementById("btn-replace-file");
+    const input = document.getElementById("replace-file-input");
+    const form = document.getElementById("replace-file-form");
+    if (!btn || !input || !form) return;
+    btn.addEventListener("click", () => input.click());
+    input.addEventListener("change", () => { if (input.files.length > 0) form.submit(); });
+  })();
+</script>
+{% endif %}
+{% endblock %}

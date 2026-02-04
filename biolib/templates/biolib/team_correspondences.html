@@ -79,18 +79,17 @@
       </div>
 
       {% if is_leader %}
-        <a href="#"
-           class="btn-create-list shadow-sm"
-           onclick="return false;">
+        <a href="{% url 'team_correspondence_create' team.id %}" class="btn-create-list shadow-sm">
           <i class="bi bi-plus-lg"></i> Ajouter
         </a>
       {% endif %}
+
     </div>
 
     <div class="table-list-container">
       {% for table in correspondences %}
-        <a href="{% url 'correspondence_detail' table.id %}"
-           class="table-row shadow-sm">
+      <a href="{% url 'team_correspondence_detail' team.id table.id %}"
+              class="table-row shadow-sm">
           <div class="t-info-box">
             <div class="t-icon-circle">
               <i class="bi bi-table"></i>
