@@ -66,7 +66,6 @@ class Command(BaseCommand):
                         content = f_read.read()
 
                         plasmid = Plasmid(
-                            collection=collection,
                             identifier=identifier,
                             name=identifier,
                             sequence=content[:200] + "..."
@@ -81,6 +80,8 @@ class Command(BaseCommand):
                                 # Cas des fichiers dans des sous-dossiers (pYTK, etc.)
                                 nom_sauvegarde = os.path.join(folder_name, filename)
                             plasmid.genbank_file.save(nom_sauvegarde, File(f_byte), save=True)
+                        plasmid.save()
+                        plasmid.collections.add(collection)
                         count_success += 1
                         self.stdout.write(f"   + {filename} (dans {collection_name})")
 
