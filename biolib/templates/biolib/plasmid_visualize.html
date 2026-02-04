@@ -1,0 +1,45 @@
+{% extends 'biolib/base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Visualisation : {{ plasmid.name }}</h2>
+
+    <div id="seqviz-root" style="height: 600px; width: 100%; border: 1px solid #ccc; margin-top: 20px;"></div>
+    
+    <div style="margin-top: 10px;">
+        <a href="{{ plasmid.genbank_file.url }}" class="btn btn-primary" download>Télécharger le fichier .gb</a>
+    </div>
+</div>
+
+<script src="https://unpkg.com/seqviz"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        
+        // On récupère les données envoyées par Django via le tag 'escapejs'
+        // Cela transforme le contenu Python en chaîne de caractères JS sécurisée
+        const plasmidName = "{{ plasmid.identifier|escapejs }}";
+        const fileContent = "{{ genbank_content|escapejs }}";
+
+        // Définition des options
+        const viewerOptions = {
+            name: plasmidName,
+            // SeqViz est capable de lire le contenu GenBank directement via la prop 'file' (même si dépréciée, c'est le plus simple ici)
+            // ou via 'seq' si c'est juste une séquence brute.
+            file: fileContent, 
+            style: { height: "100%", width: "100%" },
+            viewer: "both", // Affiche linéaire et circulaire
+            showComplement: true,
+            zoom: { linear: 50 }
+        };
+
+        // 3. Rendu "Without React" comme indiqué dans le README
+        const element = document.getElementById("root");
+        
+        // SeqViz expose un objet global window.seqviz
+        window.seqviz
+            .Viewer("seqviz-root", viewerOptions) // On cible l'ID de la div
+            .render();
+    });
+</script>
+{% endblock %}
