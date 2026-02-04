@@ -19,31 +19,32 @@ from django.core.files.base import ContentFile
 import re
 import shutil
 from Bio import SeqIO
+from io import StringIO  # <--- AJOUT POUR LIRE LE FICHIER EN MÉMOIRE
 
 # Import Insillyclo
 #try:
-#    import insillyclo.observer
-#    import insillyclo.simulator
-#    from insillyclo.simulator import compute_all
+#    import insillyclo.observer
+#    import insillyclo.simulator
+#    from insillyclo.simulator import compute_all
 #except ImportError:
-#    class BaseObserver: pass
-#    def compute_all(*args, **kwargs): pass
+#    class BaseObserver: pass
+#    def compute_all(*args, **kwargs): pass
 #
 ## Observer pour la console Django
 #class DjangoConsoleObserver(insillyclo.observer.InSillyCloCliObserver if 'insillyclo.observer' in locals() else object):
-#    def __init__(self):
-#        if hasattr(insillyclo.observer, 'InSillyCloCliObserver'):
-#            super().__init__(debug=False, fail_on_error=True)
+#    def __init__(self):
+#        if hasattr(insillyclo.observer, 'InSillyCloCliObserver'):
+#            super().__init__(debug=False, fail_on_error=True)
 #
-#    def notify_message(self, message):
-#        print(f"[INSILLYCLO] {message}")
-#    def notify_progress(self, val): pass
-#    def notify_missing_sequence_for_input_part(self, *args, **kwargs): pass
-#    def assembly_start(self, *args, **kwargs): pass
-#    def __getattr__(self, name):
-#        # Sécurité ultime : si le simulateur appelle une méthode inconnue, on ne plante pas
-#        def _missing(*args, **kwargs): return None
-#        return _missing
+#    def notify_message(self, message):
+#        print(f"[INSILLYCLO] {message}")
+#    def notify_progress(self, val): pass
+#    def notify_missing_sequence_for_input_part(self, *args, **kwargs): pass
+#    def assembly_start(self, *args, **kwargs): pass
+#    def __getattr__(self, name):
+#        # Sécurité ultime : si le simulateur appelle une méthode inconnue, on ne plante pas
+#        def _missing(*args, **kwargs): return None
+#        return _missing
 
 
 import insillyclo.data_source
@@ -78,6 +79,71 @@ class DjangoConsoleObserver(insillyclo.observer.InSillyCloCliObserver):
 
 def home(request):
     return render(request, 'biolib/home.html')
+
+def search_view(request):
+    """
+    Moteur de recherche global (Templates, Simulations, Collections, Plasmides + Séquences)
+    """
+    query = request.GET.get('q', '')
+    
+    templates = CampaignTemplate.objects.none()
+    simulations = Simulation.objects.none()
+    plasmids = Plasmid.objects.none()
+    collections = PlasmidCollection.objects.none()
+
+    if query:
+        # 1. DÉFINITION DES DROITS D'ACCÈS
+        if request.user.is_authenticated:
+            # Templates : Mes privés + Mon équipe + Publics
+            tmpl_access = Q(owner=request.user) | Q(visibility='team', team__members=request.user) | Q(visibility='public')
+            
+            # Simulations : Mes privées + Mon équipe
+            sim_access = Q(user=request.user) | Q(visibility='team', team__members=request.user)
+            
+            # Collections : Mes privées + Mon équipe + Publiques
+            col_access = Q(owner=request.user) | Q(team__members=request.user) | Q(is_public=True)
+            
+        else:
+            # Invité : Uniquement le contenu public
+            tmpl_access = Q(visibility='public')
+            sim_access = Q(pk__in=[]) 
+            col_access = Q(is_public=True)
+
+        # 2. EXÉCUTION DE LA RECHERCHE
+
+        # Templates (Nom ou Description)
+        templates = CampaignTemplate.objects.filter(tmpl_access).filter(
+            Q(name__icontains=query) | Q(description__icontains=query)
+        ).distinct()
+
+        # Simulations (Nom) - Seulement si connecté pour l'instant
+        if request.user.is_authenticated:
+            simulations = Simulation.objects.filter(sim_access).filter(
+                name__icontains=query
+            ).distinct()
+
+        # Collections (Nom)
+        collections = PlasmidCollection.objects.filter(col_access).filter(
+            name__icontains=query
+        ).distinct()
+
+        # Plasmides (Nom, ID, OU SÉQUENCE ADN)
+        # On ne cherche que dans les collections accessibles
+        accessible_col_ids = PlasmidCollection.objects.filter(col_access).values_list('id', flat=True)
+        
+        plasmids = Plasmid.objects.filter(collection__id__in=accessible_col_ids).filter(
+            Q(name__icontains=query) | 
+            Q(identifier__icontains=query) | 
+            Q(sequence__icontains=query) # Recherche dans l'ADN !
+        ).distinct()[:20] 
+
+    return render(request, 'biolib/search_results.html', {
+        'query': query,
+        'templates': templates,
+        'simulations': simulations,
+        'collections': collections,
+        'plasmids': plasmids,
+    })
 
 def signup(request):
     if request.method == 'POST':
@@ -627,9 +693,9 @@ def create_simulation(request):
                 path_png = os.path.join(output_folder, 'digestion.png')
                 path_svg = os.path.join(output_folder, 'digestion.svg')
                 if os.path.exists(path_png):
-                       simulation.result_file = f"simulations/{simulation.id}/digestion.png"
+                        simulation.result_file = f"simulations/{simulation.id}/digestion.png"
                 elif os.path.exists(path_svg):
-                       simulation.result_file = f"simulations/{simulation.id}/digestion.svg"
+                        simulation.result_file = f"simulations/{simulation.id}/digestion.svg"
 
                 simulation.save()
                 return redirect('simulation_result', pk=simulation.id)
@@ -731,9 +797,9 @@ def update_simulation_gel(request, pk):
             path_png = os.path.join(output_folder, 'digestion.png')
             path_svg = os.path.join(output_folder, 'digestion.svg')
             if os.path.exists(path_png):
-                   simulation.result_file = f"simulations/{simulation.id}/digestion.png"
+                    simulation.result_file = f"simulations/{simulation.id}/digestion.png"
             elif os.path.exists(path_svg):
-                   simulation.result_file = f"simulations/{simulation.id}/digestion.svg"
+                    simulation.result_file = f"simulations/{simulation.id}/digestion.svg"
             simulation.save()
         except Exception:
             pass
@@ -1010,12 +1076,23 @@ def plasmid_upload(request, collection_id):
         next_url = request.POST.get("next")
 
         for f in request.FILES.getlist("files"):
+            # Extraction séquence
+            seq_str = ""
+            try:
+                content = f.read().decode('utf-8', errors='ignore')
+                f.seek(0)
+                record = SeqIO.read(StringIO(content), "genbank")
+                seq_str = str(record.seq).upper()
+            except Exception as e:
+                print(f"Erreur lecture séquence {f.name}: {e}")
+                f.seek(0)
+
             Plasmid.objects.create(
                 collection=collection,
                 identifier=f.name,
                 name="",
                 genbank_file=f,
-                sequence=""
+                sequence=seq_str
             )
 
         if next_url:
@@ -1376,7 +1453,6 @@ def choose_team_for_correspondences(request):
 
 # VISUALISATION DE PLASMIDES
 
-@login_required
 def plasmid_collection_list(request):
     """
     Affiche toutes les collections de plasmides (personnelles et d'équipe)
@@ -1401,7 +1477,6 @@ def plasmid_collection_list(request):
         'page_title': title
     })
 
-@login_required
 def plasmid_collection_detail(request, pk):
     """
     Détail d'une collection spécifique avec la liste des plasmides.
