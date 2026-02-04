@@ -57,10 +57,12 @@ urlpatterns = [
         name='logout'
     ),
 
-    # espace personnel
-    path('dashboard/', views.dashboard, name='dashboard'),
 
-    
+    path('library/', views.plasmid_collection_list, name='plasmid_collection_list'),
+    path('library/<int:pk>/', views.plasmid_collection_detail, name='plasmid_collection_detail'),
+    path('plasmide_visualize/<int:plasmid_id>/', views.plasmid_visualize, name='plasmid_visualize'),
+
+
     # simulations
     path('simulation/new/', views.create_simulation, name='create_simulation'),
     path('simulation/<int:pk>/', views.simulation_result, name='simulation_result'),
@@ -72,6 +74,12 @@ urlpatterns = [
     path('simulation/<int:pk>/update_gel/', views.update_simulation_gel, name='update_simulation_gel'),
     path("teams/<int:team_id>/simulations/", views.team_simulations, name="team_simulations"),
 
+    # ============================================================
+    # ESPACE PERSONNEL
+    # ============================================================
+
+    path('dashboard/', views.dashboard, name='dashboard'),
+    
     # ============================================================
     # ÉQUIPES
     # ============================================================
