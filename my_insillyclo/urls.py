@@ -69,6 +69,10 @@ urlpatterns = [
     name="collection_delete"
     ),
 
+    path('library/', views.plasmid_collection_list, name='plasmid_collection_list'),
+    path('library/<int:pk>/', views.plasmid_collection_detail, name='plasmid_collection_detail'),
+    path('plasmide_visualize/<int:plasmid_id>/', views.plasmid_visualize, name='plasmid_visualize'),
+
 
     # TABLES DE CORRESPONDANCE
     path("correspondences/", views.correspondences_view, name="correspondences"),

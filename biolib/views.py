@@ -676,3 +676,77 @@ def correspondence_view_file(request, correspondence_id):
     except Exception:
         content = "Erreur lecture."
     return render(request, "biolib/correspondence_view_file.html", {"table": table, "content": content})
+
+
+# visualisation plasmide
+
+def plasmid_visualize(request, plasmid_id):
+    plasmid = get_object_or_404(Plasmid, id=plasmid_id)
+    
+    # 1. Récupérer le contenu du fichier GenBank s'il existe
+    genbank_content = ""
+    if plasmid.genbank_file:
+        try:
+            with open(plasmid.genbank_file.path, 'r', encoding='utf-8') as f:
+                genbank_content = f.read()
+        except Exception as e:
+            print(f"Erreur de lecture : {e}")
+            # Fallback : utiliser la séquence brute si le fichier échoue
+            genbank_content = plasmid.sequence 
+    else:
+        # Sinon utiliser la séquence brute stockée en BDD
+        genbank_content = plasmid.sequence
+
+    return render(request, 'biolib/plasmid_visualize.html', {
+        'plasmid': plasmid,
+        'genbank_content': genbank_content
+    })
+
+# Dans biolib/views.py
+
+@login_required
+def plasmid_collection_list(request):
+    """
+    Affiche toutes les collections de plasmides (personnelles et d'équipe)
+    sous forme de cartes, similaire à la page templates.
+    """
+    view_type = request.GET.get('view', 'my')
+    title = "Mes Collections"
+    
+    # Récupération des collections
+    if view_type == 'team':
+        # Collections appartenant aux équipes dont l'utilisateur est membre
+        collections = PlasmidCollection.objects.filter(team__members=request.user).distinct().order_by('-id')
+        title = "Collections d'équipe"
+    else:
+        # Collections personnelles (sans équipe ou dont je suis propriétaire)
+        collections = PlasmidCollection.objects.filter(owner=request.user).order_by('-id')
+        title = "Mes Collections"
+
+    return render(request, 'biolib/plasmid_collection_list.html', {
+        'collections': collections,
+        'current_view': view_type,
+        'page_title': title
+    })
+
+@login_required
+def plasmid_collection_detail(request, pk):
+    """
+    Détail d'une collection spécifique avec la liste des plasmides.
+    """
+    collection = get_object_or_404(PlasmidCollection, pk=pk)
+    
+    # Vérification simple des droits d'accès (propriétaire ou membre de l'équipe)
+    has_access = False
+    if collection.owner == request.user:
+        has_access = True
+    elif collection.team and request.user in collection.team.members.all():
+        has_access = True
+        
+    if not has_access:
+        return HttpResponse("Accès refusé à cette collection.", status=403)
+
+    return render(request, 'biolib/plasmid_collection_detail.html', {
+        'collection': collection,
+        'plasmids': collection.plasmids.all() # On suppose que le related_name est 'plasmids' par défaut ou défini ainsi
+    })
