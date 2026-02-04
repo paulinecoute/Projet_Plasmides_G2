@@ -19,31 +19,32 @@ from django.core.files.base import ContentFile
 import re
 import shutil
 from Bio import SeqIO
+from io import StringIO  # <--- AJOUT POUR LIRE LE FICHIER EN MÉMOIRE
 
 # Import Insillyclo
 #try:
-#    import insillyclo.observer
-#    import insillyclo.simulator
-#    from insillyclo.simulator import compute_all
+#    import insillyclo.observer
+#    import insillyclo.simulator
+#    from insillyclo.simulator import compute_all
 #except ImportError:
-#    class BaseObserver: pass
-#    def compute_all(*args, **kwargs): pass
+#    class BaseObserver: pass
+#    def compute_all(*args, **kwargs): pass
 #
 ## Observer pour la console Django
 #class DjangoConsoleObserver(insillyclo.observer.InSillyCloCliObserver if 'insillyclo.observer' in locals() else object):
-#    def __init__(self):
-#        if hasattr(insillyclo.observer, 'InSillyCloCliObserver'):
-#            super().__init__(debug=False, fail_on_error=True)
+#    def __init__(self):
+#        if hasattr(insillyclo.observer, 'InSillyCloCliObserver'):
+#            super().__init__(debug=False, fail_on_error=True)
 #
-#    def notify_message(self, message):
-#        print(f"[INSILLYCLO] {message}")
-#    def notify_progress(self, val): pass
-#    def notify_missing_sequence_for_input_part(self, *args, **kwargs): pass
-#    def assembly_start(self, *args, **kwargs): pass
-#    def __getattr__(self, name):
-#        # Sécurité ultime : si le simulateur appelle une méthode inconnue, on ne plante pas
-#        def _missing(*args, **kwargs): return None
-#        return _missing
+#    def notify_message(self, message):
+#        print(f"[INSILLYCLO] {message}")
+#    def notify_progress(self, val): pass
+#    def notify_missing_sequence_for_input_part(self, *args, **kwargs): pass
+#    def assembly_start(self, *args, **kwargs): pass
+#    def __getattr__(self, name):
+#        # Sécurité ultime : si le simulateur appelle une méthode inconnue, on ne plante pas
+#        def _missing(*args, **kwargs): return None
+#        return _missing
 
 
 import insillyclo.data_source
@@ -80,6 +81,9 @@ def home(request):
     return render(request, 'biolib/home.html')
 
 def search_view(request):
+    """
+    Moteur de recherche global (Templates, Simulations, Collections, Plasmides + Séquences)
+    """
     query = request.GET.get('q', '')
     
     templates = CampaignTemplate.objects.none()
@@ -1072,12 +1076,23 @@ def plasmid_upload(request, collection_id):
         next_url = request.POST.get("next")
 
         for f in request.FILES.getlist("files"):
+            # Extraction séquence
+            seq_str = ""
+            try:
+                content = f.read().decode('utf-8', errors='ignore')
+                f.seek(0)
+                record = SeqIO.read(StringIO(content), "genbank")
+                seq_str = str(record.seq).upper()
+            except Exception as e:
+                print(f"Erreur lecture séquence {f.name}: {e}")
+                f.seek(0)
+
             Plasmid.objects.create(
                 collection=collection,
                 identifier=f.name,
                 name="",
                 genbank_file=f,
-                sequence=""
+                sequence=seq_str
             )
 
         if next_url:
