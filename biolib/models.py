@@ -120,18 +120,33 @@ class Plasmid(models.Model):
         return f"{self.identifier} - {self.name}"
 
 # ==============================================================================
-# 3. MAPPING & CORRESPONDANCE (Version MAIN améliorée)
+# 3. MAPPING & CORRESPONDANCE 
 # ==============================================================================
 
 class Correspondence(models.Model):
     name = models.CharField(max_length=200, default="Table de correspondance")
+    description = models.TextField(blank=True, default="")  
     file = models.FileField(upload_to="correspondences/")
     uploaded_at = models.DateTimeField(auto_now_add=True)
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True)
-    team = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, blank=True)
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True
+    )
+
+    team = models.ForeignKey(
+        Team,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
+    is_public = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
+
 
 class CorrespondenceEntry(models.Model):
     """ Vient de le branche MAIN : Permet de stocker le contenu du fichier Excel en base """

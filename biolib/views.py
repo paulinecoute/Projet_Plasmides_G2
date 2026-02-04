@@ -294,6 +294,27 @@ def export_template_excel(request, template_id):
     wb.save(response)
     return response
 
+#### TEMPLATES LIÉES AUX ÉQUIPES
+@login_required
+def team_templates(request, team_id):
+    team = get_object_or_404(
+        Team,
+        id=team_id,
+        members=request.user
+    )
+
+    templates = CampaignTemplate.objects.filter(
+        visibility='team',
+        team=team
+    ).order_by('-created_at')
+
+    return render(request, "biolib/template.html", {
+        "templates": templates,
+        "current_view": "team",
+        "page_title": f"Templates de l’équipe {team.name}",
+    })
+
+
 
 def simulation_list(request):
     view_type = request.GET.get('view', 'recent')
@@ -719,6 +740,26 @@ def update_simulation_gel(request, pk):
 
     return redirect('simulation_result', pk=simulation.id)
 
+@login_required
+def team_simulations(request, team_id):
+    team = get_object_or_404(
+        Team,
+        id=team_id,
+        members=request.user
+    )
+
+    simulations = Simulation.objects.filter(
+        visibility='team',
+        team=team
+    ).order_by('-date_run')
+
+    return render(request, "biolib/simulation_list.html", {
+        "simulations": simulations,
+        "current_view": "team",
+        "page_title": f"Simulations de l’équipe {team.name}",
+    })
+
+
 # ==============================================================================
 # 4. FICHIERS ET DOWNLOADS
 # ==============================================================================
@@ -848,75 +889,417 @@ def team_delete(request, team_id):
         return render(request, 'biolib/team_confirm_delete.html', {'team': team})
     return HttpResponse("Accès refusé", status=403)
 
+### COLLECTIONS D'ÉQUIPE
+
+@login_required
+def team_collections(request, team_id):
+    team = get_object_or_404(Team, id=team_id, members=request.user)
+    collections = PlasmidCollection.objects.filter(team=team)
+
+    return render(request, "biolib/team_collections.html", {
+        "team": team,
+        "collections": collections,
+        "is_leader": team.leader == request.user
+    })
+
+
+@login_required
+def team_collection_detail(request, team_id, collection_id):
+    team = get_object_or_404(Team, id=team_id, members=request.user)
+    collection = get_object_or_404(
+        PlasmidCollection,
+        id=collection_id,
+        team=team
+    )
+
+    return render(request, "biolib/team_collection_detail.html", {
+        "team": team,
+        "collection": collection,
+        "is_owner": collection.owner == request.user
+    })
+
+
+@login_required
+def team_collection_create(request, team_id):
+    team = get_object_or_404(Team, id=team_id, leader=request.user)
+
+    if request.method == "POST":
+        owner = get_object_or_404(
+            User,
+            id=request.POST.get("owner"),
+            teams=team
+        )
+
+        PlasmidCollection.objects.create(
+            name=request.POST["name"],
+            description=request.POST.get("description", ""),
+            owner=owner,
+            team=team
+        )
+
+        return redirect("team_collections", team_id=team.id)
+
+    return render(request, "biolib/team_collection_create.html", {
+        "team": team,
+        "members": team.members.all()
+    })
+
+@login_required
+def choose_team_for_plasmids(request):
+    teams = request.user.teams.all()
+    return render(
+        request,
+        "biolib/choose_team_for_plasmids.html",
+        {"teams": teams}
+    )
+
+
+### COLLECTIONS UTILISATEUR
+
 @login_required
 def collections_view(request):
-    collections = PlasmidCollection.objects.filter(owner=request.user)
+    collections = PlasmidCollection.objects.filter(
+        owner=request.user,
+        team__isnull=True   
+    )
     return render(request, "biolib/collections.html", {"collections": collections})
+
+
 
 @login_required
 def collection_create(request):
     if request.method == "POST":
-        collection = PlasmidCollection.objects.create(name=request.POST["name"], description=request.POST.get("description", ""), owner=request.user)
+        collection = PlasmidCollection.objects.create(
+            name=request.POST["name"],
+            description=request.POST.get("description", ""),
+            owner=request.user
+        )
+
         return redirect("collection_detail", collection.id)
+
     return render(request, "biolib/collection_create.html")
+
 
 @login_required
 def collection_detail(request, collection_id):
     collection = get_object_or_404(PlasmidCollection, id=collection_id)
-    return render(request, "biolib/collection_detail.html", {"collection": collection, "is_owner": collection.owner == request.user})
+    return render(
+        request,
+        "biolib/collection_detail.html",
+        {
+            "collection": collection,
+            "is_owner": collection.owner == request.user
+        }
+    )
+
 
 @login_required
 def plasmid_upload(request, collection_id):
-    collection = get_object_or_404(PlasmidCollection, id=collection_id, owner=request.user)
+    collection = get_object_or_404(
+        PlasmidCollection,
+        id=collection_id,
+        owner=request.user
+    )
+
+    next_url = request.GET.get("next")
+
     if request.method == "POST":
+        next_url = request.POST.get("next")
+
         for f in request.FILES.getlist("files"):
-            Plasmid.objects.create(collection=collection, identifier=f.name, name="", genbank_file=f, sequence="")
+            Plasmid.objects.create(
+                collection=collection,
+                identifier=f.name,
+                name="",
+                genbank_file=f,
+                sequence=""
+            )
+
+        if next_url:
+            return redirect(next_url)
+
+        if collection.team:
+            return redirect(
+                "team_collection_detail",
+                team_id=collection.team.id,
+                collection_id=collection.id
+            )
         return redirect("collection_detail", collection.id)
-    return render(request, "biolib/plasmid_upload.html", {"collection": collection})
+
+    return render(request, "biolib/plasmid_upload.html", {
+        "collection": collection,
+        "next": next_url
+    })
+
 
 @login_required
 def plasmid_delete(request, plasmid_id):
-    plasmid = get_object_or_404(Plasmid, id=plasmid_id, collection__owner=request.user)
+    plasmid = get_object_or_404(
+        Plasmid,
+        id=plasmid_id,
+        collection__owner=request.user
+    )
+
+    collection = plasmid.collection
+
     if request.method == "POST":
-        col_id = plasmid.collection.id
+        next_url = request.POST.get("next")
         plasmid.delete()
-        return redirect("collection_detail", col_id)
+
+        if next_url:
+            return redirect(next_url)
+
+        # fallback
+        if collection.team:
+            return redirect(
+                "team_collection_detail",
+                team_id=collection.team.id,
+                collection_id=collection.id
+            )
+        return redirect("collection_detail", collection.id)
+
 
 @login_required
 def collection_delete(request, collection_id):
-    collection = get_object_or_404(PlasmidCollection, id=collection_id, owner=request.user)
+    collection = get_object_or_404(
+        PlasmidCollection,
+        id=collection_id,
+        owner=request.user
+    )
+
     if request.method == "POST":
+        next_url = request.POST.get("next")
+        team = collection.team
         collection.delete()
+
+        if next_url:
+            return redirect(next_url)
+
+        if team:
+            return redirect("team_collections", team_id=team.id)
         return redirect("collections")
+    
+###########
+
+###########
 
 @login_required
 def correspondences_view(request):
-    return render(request, "biolib/correspondences.html", {"correspondences": Correspondence.objects.filter(owner=request.user)})
+    correspondences = Correspondence.objects.filter(
+        owner=request.user,
+        team__isnull=True
+    ).order_by("-uploaded_at")
+
+    return render(request, "biolib/correspondences.html", {
+        "correspondences": correspondences
+    })
+
 
 @login_required
 def correspondence_upload(request):
     if request.method == "POST":
-        Correspondence.objects.create(name=request.POST["name"], file=request.FILES["file"], owner=request.user)
+        Correspondence.objects.create(
+            name=request.POST["name"],
+            file=request.FILES["file"],
+            owner=request.user
+        )
         return redirect("correspondences")
+
     return render(request, "biolib/correspondence_upload.html")
+
 
 @login_required
 def correspondence_detail(request, correspondence_id):
-    return render(request, "biolib/correspondence_detail.html", {"table": get_object_or_404(Correspondence, id=correspondence_id, owner=request.user)})
+    table = get_object_or_404(
+        Correspondence.objects.filter(
+            Q(owner=request.user) |
+            Q(is_public=True) |
+            Q(team__members=request.user)
+        ).distinct(),
+        id=correspondence_id
+    )
+
+    next_url = request.GET.get("next")
+
+    return render(request, "biolib/correspondence_detail.html", {
+        "table": table,
+        "next": next_url,
+        "is_owner": table.owner == request.user
+    })
+
 
 @login_required
 def correspondence_delete(request, correspondence_id):
-    table = get_object_or_404(Correspondence, id=correspondence_id, owner=request.user)
+    table = get_object_or_404(
+        Correspondence,
+        id=correspondence_id,
+        owner=request.user
+    )
+
     if request.method == "POST":
+        next_url = request.POST.get("next")
         table.delete()
+
+        if next_url:
+            return redirect(next_url)
+
         return redirect("correspondences")
+
 
 @login_required
 def correspondence_view_file(request, correspondence_id):
-    table = get_object_or_404(Correspondence, id=correspondence_id, owner=request.user)
+    table = get_object_or_404(
+        Correspondence.objects.filter(
+            Q(owner=request.user) |
+            Q(is_public=True) |
+            Q(team__members=request.user)
+        ).distinct(),
+        id=correspondence_id
+    )
+
     try:
         with open(table.file.path, "r", encoding="utf-8", errors="ignore") as f:
             content = f.read()
     except Exception:
         content = "Erreur lecture."
-    return render(request, "biolib/correspondence_view_file.html", {"table": table, "content": content})
+
+    next_url = request.GET.get("next")
+
+    return render(request, "biolib/correspondence_view_file.html", {
+        "table": table,
+        "content": content,
+        "next": next_url
+    })
+
+@login_required
+def team_correspondences(request, team_id):
+    team = get_object_or_404(Team, id=team_id, members=request.user)
+
+    correspondences = (
+        Correspondence.objects
+        .filter(team=team)
+        .select_related("owner")
+        .order_by("-uploaded_at")
+    )
+
+    return render(request, "biolib/team_correspondences.html", {
+        "team": team,
+        "correspondences": correspondences,
+        "is_leader": team.leader == request.user
+    })
+
+
+@login_required
+def choose_team_for_correspondences(request):
+    teams = request.user.teams.all()
+    return render(
+        request,
+        "biolib/choose_team_for_correspondences.html",
+        {"teams": teams}
+    )
+
+# ==============================================================================
+# CORRESPONDENCES LIÉES AUX ÉQUIPES
+# ==============================================================================
+
+@login_required
+def team_correspondences(request, team_id):
+    team = get_object_or_404(Team, id=team_id, members=request.user)
+
+    correspondences = (
+        Correspondence.objects
+        .filter(team=team)
+        .select_related("owner")
+        .order_by("-uploaded_at")
+    )
+
+    return render(request, "biolib/team_correspondences.html", {
+        "team": team,
+        "correspondences": correspondences,
+        "is_leader": team.leader == request.user
+    })
+
+
+@login_required
+def team_correspondence_create(request, team_id):
+    team = get_object_or_404(Team, id=team_id, leader=request.user)
+
+    if request.method == "POST":
+        owner = get_object_or_404(
+            User,
+            id=request.POST.get("owner"),
+            teams=team
+        )
+
+        Correspondence.objects.create(
+            name=request.POST["name"],
+            description=request.POST.get("description", ""),
+            owner=owner,
+            team=team
+        )
+
+        return redirect("team_correspondences", team_id=team.id)
+
+    return render(request, "biolib/team_correspondence_create.html", {
+        "team": team,
+        "members": team.members.all()
+    })
+
+
+@login_required
+def correspondence_detail(request, correspondence_id):
+    table = get_object_or_404(
+        Correspondence.objects.filter(
+            Q(owner=request.user) |
+            Q(team__members=request.user)
+        ).distinct(),
+        id=correspondence_id
+    )
+
+    return render(request, "biolib/correspondence_detail.html", {
+        "table": table,
+        "is_owner": table.owner == request.user
+    })
+
+
+@login_required
+def correspondence_attach_file(request, correspondence_id):
+    table = get_object_or_404(Correspondence, id=correspondence_id)
+
+    if table.owner != request.user:
+        return HttpResponse("Accès refusé", status=403)
+
+    if request.method == "POST" and request.FILES.get("file"):
+        table.file = request.FILES["file"]
+        table.save()
+
+    return redirect("correspondence_detail", correspondence_id=table.id)
+
+
+@login_required
+def correspondence_remove_file(request, correspondence_id):
+    table = get_object_or_404(Correspondence, id=correspondence_id)
+
+    if table.owner != request.user:
+        return HttpResponse("Accès refusé", status=403)
+
+    if request.method == "POST":
+        table.file.delete(save=False)
+        table.file = None
+        table.save()
+
+    return redirect("correspondence_detail", correspondence_id=table.id)
+
+
+@login_required
+def correspondence_delete(request, correspondence_id):
+    table = get_object_or_404(
+        Correspondence,
+        id=correspondence_id,
+        owner=request.user
+    )
+
+    if request.method == "POST":
+        team_id = table.team.id if table.team else None
+        table.delete()
+        return redirect("team_correspondences", team_id=team_id)

@@ -8,136 +8,190 @@
     --border-color: #eee;
   }
 
-  body { background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-
-  .content-wrapper {
-    max-width: 850px;
-    margin: 0 auto;
-    padding-bottom: 50px;
+  body {
+    background-color: var(--bg-main);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
 
-  .nav-header { padding: 20px 0; margin-bottom: 10px; }
-  
+  .content-wrapper {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .nav-header {
+    padding: 20px 0;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
   .btn-back {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 40px; height: 40px;
-    background: #fff; border: 1px solid var(--border-color);
-    border-radius: 12px; color: #666; transition: 0.2s; text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    color: #666;
+    transition: 0.2s;
+    text-decoration: none;
   }
   .btn-back:hover { border-color: #000; color: #000; }
 
-  .hero-section { margin-bottom: 50px; } /* Augmenté légèrement pour l'équilibre sans sous-titre */
-  .page-title { font-weight: 850; font-size: 2.8rem; letter-spacing: -0.05em; margin-bottom: 0; }
-
-  .section-label {
-    font-size: 0.75rem; font-weight: 800; text-transform: uppercase;
-    letter-spacing: 0.1em; color: #aaa; margin-bottom: 20px; display: block;
+  .hero-section {
+    margin-bottom: 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 
-  .table-card-link {
-    text-decoration: none;
-    color: inherit;
-    display: block;
-    margin-bottom: 12px;
+  .page-title {
+    font-weight: 850;
+    font-size: 2.8rem;
+    letter-spacing: -0.05em;
+    margin-bottom: 0;
   }
 
   .table-card {
     background: #fff;
     border: 1px solid var(--border-color);
-    border-radius: 20px;
-    padding: 22px 25px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 18px;
+    padding: 20px 24px;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    position: relative;
+    margin-bottom: 12px;
   }
-
-  .table-card-link:hover .table-card {
+  .table-card:hover {
     border-color: #000;
-    transform: translateX(8px);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
   }
 
-  .table-info h5 { font-weight: 800; margin-bottom: 4px; font-size: 1.1rem; letter-spacing: -0.02em; }
-  .table-meta { font-size: 0.85rem; color: #bbb; font-weight: 500; }
-  
-  .team-tag {
-    background: #f0f0f0; color: #000;
-    padding: 3px 10px; border-radius: 7px;
-    font-weight: 800; font-size: 0.65rem;
-    text-transform: uppercase; margin-left: 10px;
+  .status-dot {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
   }
+
+  .dot {
+    height: 6px;
+    width: 6px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+  }
+  .dot-public { background-color: #10b981; }
+  .dot-private { background-color: #6b7280; }
+
+  .table-name {
+    font-weight: 700;
+    font-size: 1.15rem;
+    margin-bottom: 2px;
+    color: #111;
+  }
+
+  .meta-info {
+    font-size: 0.8rem;
+    color: #bbb;
+    font-family: 'SF Mono', monospace;
+  }
+
+  .trash-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    color: #eee;
+    background: transparent;
+    border: none;
+    transition: color 0.2s;
+  }
+  .table-card:hover .trash-btn { color: #ccc; }
+  .trash-btn:hover { color: #ff4d4d !important; }
 
   .btn-import {
-    background: #000; color: #fff;
-    padding: 12px 24px; border-radius: 14px;
-    font-weight: 700; text-decoration: none;
-    transition: 0.2s; display: inline-flex; align-items: center; gap: 8px;
-  }
-  .btn-import:hover { background: #333; transform: translateY(-2px); }
-
-  .delete-wrapper {
-    position: relative;
-    z-index: 2;
-  }
-
-  .btn-trash-minimal {
-    background: none; border: none;
-    color: #eee; padding: 10px;
+    background: #000;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
     transition: 0.2s;
   }
-  .btn-trash-minimal:hover { color: #dc3545; transform: scale(1.1); }
+  .btn-import:hover { background: #333; color: #fff; }
 </style>
 
 <div class="container pb-5">
   <div class="content-wrapper">
-    
+
+    <!-- HEADER -->
     <div class="nav-header">
       <a href="{% url 'dashboard' %}" class="btn-back shadow-sm">
         <i class="bi bi-arrow-left"></i>
       </a>
-    </div>
 
-    <div class="hero-section d-flex justify-content-between align-items-center">
-      <h1 class="page-title">Tables</h1>
-      <a href="{% url 'correspondence_upload' %}" class="btn-import shadow-sm">
-        <i class="bi bi-upload"></i> Importer
+      <!-- ✅ ACCÈS AUX TABLES D'ÉQUIPE -->
+      <a href="{% url 'choose_team_for_correspondences' %}"
+         class="btn btn-outline-dark rounded-pill fw-bold px-4">
+        Tables d’équipe
       </a>
     </div>
 
-    <span class="section-label">Vos fichiers de correspondance</span>
+    <!-- TITRE + IMPORT -->
+    <div class="hero-section">
+      <h1 class="page-title">Tables</h1>
+      <a href="{% url 'correspondence_upload' %}" class="btn-import">
+        <i class="bi bi-upload me-1"></i> Importer
+      </a>
+    </div>
 
-    <div class="tables-list">
-      {% if correspondences %}
-        {% for table in correspondences %}
-          <a href="{% url 'correspondence_detail' table.id %}" class="table-card-link">
-            <div class="table-card shadow-sm">
-              <div class="table-info">
-                <h5>{{ table.name }}</h5>
-                <div class="table-meta">
-                  {{ table.uploaded_at|date:"d M Y" }}
-                  {% if table.team %}
-                    <span class="team-tag">{{ table.team.name }}</span>
-                  {% endif %}
-                </div>
-              </div>
+    <!-- LISTE -->
+    <div class="mt-4">
+      {% for table in correspondences %}
+        <a href="{% url 'correspondence_detail' table.id %}" class="table-card">
 
-              <div class="delete-wrapper" onclick="event.stopPropagation();">
-                <form method="post" action="{% url 'correspondence_delete' table.id %}" class="m-0">
-                  {% csrf_token %}
-                  <button type="submit" class="btn-trash-minimal" onclick="return confirm('Supprimer cette table ?');">
-                    <i class="bi bi-trash3-fill"></i>
-                  </button>
-                </form>
-              </div>
-            </div>
-          </a>
-        {% endfor %}
-      {% else %}
-        <div class="text-center py-5 border rounded-4 bg-white opacity-50">
-          <p class="mb-0">Aucune table importée pour le moment.</p>
+          <div class="status-dot">
+            {% if table.is_public %}
+              <span class="dot dot-public"></span> Public
+            {% else %}
+              <span class="dot dot-private"></span> Privé
+            {% endif %}
+          </div>
+
+          <h3 class="table-name">{{ table.name }}</h3>
+
+          <div class="meta-info">
+            {{ table.uploaded_at|date:"d M Y" }}
+          </div>
+
+          <form method="post"
+                action="{% url 'correspondence_delete' table.id %}"
+                class="m-0"
+                onclick="event.stopPropagation();">
+            {% csrf_token %}
+            <button type="submit"
+                    class="trash-btn"
+                    onclick="return confirm('Supprimer cette table ?');">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </form>
+
+        </a>
+      {% empty %}
+        <div class="p-5 text-center text-muted fw-light bg-white rounded-4 border">
+          Aucune table.
         </div>
-      {% endif %}
+      {% endfor %}
     </div>
 
   </div>

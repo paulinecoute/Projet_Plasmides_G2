@@ -33,8 +33,15 @@ urlpatterns = [
     # template details
     path('template/<int:pk>/details/', views.template_detail, name='template_detail'),
 
-    # --- NOUVELLE LIGNE AJOUTÉE ICI (Suppression) ---
+    # 
     path('template/<int:pk>/delete/', views.delete_template, name='delete_template'),
+
+    path(
+    "teams/<int:team_id>/templates/",
+    views.team_templates,
+    name="team_templates"
+    ),
+
     # -----------------------------------------------
 
     # authentification
@@ -76,6 +83,9 @@ urlpatterns = [
     path("correspondences/<int:correspondence_id>/", views.correspondence_detail, name="correspondence_detail"),
     path("correspondences/<int:correspondence_id>/delete/", views.correspondence_delete, name="correspondence_delete"),
     path("correspondences/<int:correspondence_id>/view/", views.correspondence_view_file, name="correspondence_view_file"),
+    path("teams/<int:team_id>/correspondences/", views.team_correspondences, name="team_correspondences"),
+    path("choose-team-for-correspondences/", views.choose_team_for_correspondences, name="choose_team_for_correspondences"),
+    path("teams/<int:team_id>/correspondences/create/", views.team_correspondence_create, name="team_correspondence_create"),
 
 
 
@@ -88,6 +98,23 @@ urlpatterns = [
     path('simulation/<int:pk>/download_zip/', views.download_simulation_zip, name='download_simulation_zip'),
     path('simulation/<int:pk>/download_file/<str:filename>/', views.download_specific_file, name='download_specific_file'),
     path('simulation/<int:pk>/update_gel/', views.update_simulation_gel, name='update_simulation_gel'),
+    path(
+    "teams/<int:team_id>/simulations/",
+    views.team_simulations,
+    name="team_simulations"
+    ),
+    path(
+    "correspondences/<int:correspondence_id>/attach/",
+    views.correspondence_attach_file,
+    name="correspondence_attach_file"
+    ),
+
+    path(
+    "correspondences/<int:correspondence_id>/remove-file/",
+    views.correspondence_remove_file,
+    name="correspondence_remove_file"
+    ),
+
 
     # équipes
     path('teams/', views.team_list, name='teams'),
@@ -113,7 +140,30 @@ urlpatterns = [
         'teams/<int:team_id>/change_leader/<int:user_id>/',
         views.team_change_leader,
         name='team_change_leader'
-    )
+    ),
+    # Collections d’équipe
+    path(
+        "teams/<int:team_id>/collections/",
+        views.team_collections,
+        name="team_collections"
+    ),
+
+    path(
+        "teams/<int:team_id>/collections/create/",
+        views.team_collection_create,
+        name="team_collection_create"
+    ),
+
+    path(
+        "teams/<int:team_id>/collections/<int:collection_id>/",
+        views.team_collection_detail,
+        name="team_collection_detail"
+    ),
+    path(
+    "plasmids/teams/",
+    views.choose_team_for_plasmids,
+    name="choose_team_for_plasmids"
+    ),
 ]
 
 
