@@ -5,16 +5,13 @@ from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
 
-from django.conf import settings
-from django.conf.urls.static import static
-
-
 urlpatterns = [
     # administration
     path('admin/', admin.site.urls),
 
     # pages principales
     path('', views.home, name='home'),
+    path('search/', views.search_view, name='search'), # <--- NOUVELLE ROUTE RECHERCHE
 
     # menu templates
     path('template/', views.template, name='template'),
@@ -33,13 +30,13 @@ urlpatterns = [
     # template details
     path('template/<int:pk>/details/', views.template_detail, name='template_detail'),
 
-    # 
+    # suppression template
     path('template/<int:pk>/delete/', views.delete_template, name='delete_template'),
 
     path(
-    "teams/<int:team_id>/templates/",
-    views.team_templates,
-    name="team_templates"
+        "teams/<int:team_id>/templates/",
+        views.team_templates,
+        name="team_templates"
     ),
 
     # -----------------------------------------------
@@ -140,8 +137,6 @@ urlpatterns = [
     path("teams/<int:team_id>/correspondences/<int:correspondence_id>/delete/", views.team_correspondence_delete, name="team_correspondence_delete"),
 
 ]
-
-
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
