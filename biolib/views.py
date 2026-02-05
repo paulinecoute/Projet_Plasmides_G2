@@ -133,11 +133,10 @@ def search_view(request):
         # Plasmides (Nom, ID, OU SÉQUENCE ADN)
         # On ne cherche que dans les collections accessibles
         accessible_col_ids = PlasmidCollection.objects.filter(col_access).values_list('id', flat=True)
-
-        plasmids = Plasmid.objects.filter(collection__id__in=accessible_col_ids).filter(
+        plasmids = Plasmid.objects.filter(collections__id__in=accessible_col_ids).filter(
             Q(name__icontains=query) |
             Q(identifier__icontains=query) |
-            Q(sequence__icontains=query) # Recherche dans l'ADN !
+            Q(sequence__icontains=query)
         ).distinct()[:20]
 
     return render(request, 'biolib/search_results.html', {
