@@ -1,0 +1,124 @@
+{% extends "biolib/base.html" %}
+
+{% block title %}Tables · {{ team.name }}{% endblock %}
+
+{% block content %}
+<style>
+  :root { --bg-main: #fcfcfc; --border-color: #eee; }
+  .content-wrapper { max-width: 850px; margin: 0 auto; padding-bottom: 100px; }
+
+  .btn-back-square {
+    width: 42px; height: 42px; background: #fff; border: 1px solid var(--border-color);
+    border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    color: #000; transition: 0.2s; text-decoration: none; margin-bottom: 25px;
+  }
+  .btn-back-square:hover { border-color: #000; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+
+  .page-header { margin-bottom: 40px; }
+  .page-title { font-weight: 900; font-size: 2.8rem; letter-spacing: -0.06em; color: #000; }
+  .team-tag {
+    font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #2563eb;
+    background: #eff6ff; padding: 4px 12px; border-radius: 20px;
+    display: inline-block; margin-bottom: 10px;
+  }
+
+  .btn-create-list {
+    background: #000; color: #fff; border-radius: 14px; padding: 10px 20px;
+    font-weight: 700; font-size: 0.9rem; text-decoration: none; transition: 0.2s;
+    display: inline-flex; align-items: center; gap: 8px; border: none;
+    cursor: pointer;
+  }
+  .btn-create-list:hover { background: #333; color: #fff; }
+
+  .table-list-container { display: flex; flex-direction: column; gap: 12px; }
+
+  .table-row {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    padding: 20px 25px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-decoration: none;
+    color: inherit;
+    transition: 0.2s;
+  }
+  .table-row:hover {
+    border-color: #000;
+    transform: translateX(5px);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.03);
+  }
+
+  .t-info-box { display: flex; align-items: center; gap: 20px; }
+  .t-icon-circle {
+    width: 45px; height: 45px; background: #f8f8f8; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; color: #000; border: 1px solid #eee;
+  }
+
+  .t-text-main { display: flex; flex-direction: column; }
+  .t-name { font-weight: 800; font-size: 1.15rem; color: #000; margin-bottom: 2px; }
+  .t-owner-email { font-size: 0.85rem; color: #888; font-weight: 500; }
+
+  .arrow-indicator { color: #ddd; font-size: 1.2rem; transition: 0.2s; }
+  .table-row:hover .arrow-indicator { color: #000; transform: translateX(3px); }
+</style>
+
+<div class="container mt-5">
+  <div class="content-wrapper">
+
+    <a href="{% url 'team_detail' team.id %}" class="btn-back-square shadow-sm">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+
+    <div class="page-header d-flex justify-content-between align-items-center">
+      <div>
+        <span class="team-tag">{{ team.name }}</span>
+        <h1 class="page-title">Tables</h1>
+      </div>
+
+      {% if is_leader %}
+        <a href="{% url 'team_correspondence_create' team.id %}" class="btn-create-list shadow-sm">
+          <i class="bi bi-plus-lg"></i> Ajouter
+        </a>
+      {% endif %}
+
+    </div>
+
+    <div class="table-list-container">
+      {% for table in correspondences %}
+      <a href="{% url 'team_correspondence_detail' team.id table.id %}"
+              class="table-row shadow-sm">
+          <div class="t-info-box">
+            <div class="t-icon-circle">
+              <i class="bi bi-table"></i>
+            </div>
+
+            <div class="t-text-main">
+              <span class="t-name">{{ table.name }}</span>
+              <span class="t-owner-email">
+                {{ table.owner.email }}
+                {% if not table.file %}
+                  · <em>vide</em>
+                {% endif %}
+              </span>
+            </div>
+          </div>
+
+          <div class="arrow-indicator">
+            <i class="bi bi-chevron-right"></i>
+          </div>
+        </a>
+      {% empty %}
+        <div class="text-center py-5"
+             style="border: 2px dashed #eee; border-radius: 20px; background: #fff;">
+          <i class="bi bi-inbox text-muted fs-2 mb-2 d-block"></i>
+          <p class="text-muted small mb-0">Aucune table dans cette équipe.</p>
+        </div>
+      {% endfor %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

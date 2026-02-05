@@ -10,7 +10,11 @@
     --accent-dark: #111;
   }
 
-  body { background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #111; }
+  body {
+    background-color: var(--bg-main);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #111;
+  }
 
   .content-wrapper {
     max-width: 850px;
@@ -21,10 +25,18 @@
   .nav-header { padding: 20px 0; }
 
   .hero-section { margin-bottom: 40px; }
-  .page-title { font-weight: 900; font-size: 3rem; letter-spacing: -0.06em; margin-bottom: 5px; }
-  .page-subtitle { color: #888; font-size: 1.1rem; font-weight: 500; }
+  .page-title {
+    font-weight: 900;
+    font-size: 3rem;
+    letter-spacing: -0.06em;
+    margin-bottom: 5px;
+  }
+  .page-subtitle {
+    color: #888;
+    font-size: 1.1rem;
+    font-weight: 500;
+  }
 
-  /* Bloc Profil */
   .profile-box {
     background: #fff;
     border: 1px solid var(--border-color);
@@ -36,16 +48,19 @@
   }
 
   .user-avatar {
-    width: 70px; height: 70px;
+    width: 70px;
+    height: 70px;
     background: var(--accent-dark);
     color: #fff;
     border-radius: 20px;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 1.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.8rem;
     box-shadow: 0 10px 20px rgba(0,0,0,0.1);
   }
 
-  /* Section Labels */
   .section-label {
     font-size: 0.7rem;
     font-weight: 900;
@@ -56,29 +71,41 @@
     display: block;
   }
 
-  /* Stats Grid */
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 15px;
     margin-bottom: 50px;
   }
+
   .stat-card {
     background: #fff;
     border: 1px solid var(--border-color);
     border-radius: 22px;
     padding: 25px;
-    transition: 0.2s;
   }
-  .stat-card h3 { font-weight: 900; font-size: 2rem; margin: 5px 0 0 0; letter-spacing: -0.04em; }
-  .stat-card span { font-size: 0.65rem; font-weight: 800; color: #999; text-transform: uppercase; letter-spacing: 0.1em; }
 
-  /* Liste Verticale Outils */
+  .stat-card h3 {
+    font-weight: 900;
+    font-size: 2rem;
+    margin: 5px 0 0 0;
+    letter-spacing: -0.04em;
+  }
+
+  .stat-card span {
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
   .menu-list {
     display: flex;
     flex-direction: column;
     gap: 12px;
   }
+
   .menu-item-row {
     background: #fff;
     border: 1px solid var(--border-color);
@@ -89,25 +116,41 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: 0.2s;
   }
+
   .menu-item-row:hover {
     border-color: #000;
     transform: translateX(10px);
     box-shadow: 0 10px 30px rgba(0,0,0,0.04);
   }
-  .menu-content h5 { font-weight: 800; font-size: 1.1rem; margin-bottom: 4px; }
-  .menu-content p { color: #888; font-size: 0.9rem; margin-bottom: 0; }
-  
-  .chevron-icon { font-size: 1.2rem; color: #eee; transition: 0.2s; }
-  .menu-item-row:hover .chevron-icon { color: #000; transform: translateX(5px); }
 
+  .menu-content h5 {
+    font-weight: 800;
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+  }
+
+  .menu-content p {
+    color: #888;
+    font-size: 0.9rem;
+    margin-bottom: 0;
+  }
+
+  .chevron-icon {
+    font-size: 1.2rem;
+    color: #eee;
+    transition: 0.2s;
+  }
+
+  .menu-item-row:hover .chevron-icon {
+    color: #000;
+    transform: translateX(5px);
+  }
 </style>
 
 <div class="container">
   <div class="content-wrapper">
-    
-    <div class="nav-header"></div>
 
     <div class="hero-section">
       <h1 class="page-title">Espace personnel</h1>
@@ -119,49 +162,21 @@
         <div class="d-flex align-items-center gap-4">
           <div class="user-avatar">{{ user.username|first|upper }}</div>
           <div>
-            <h3 class="mb-0 fw-bold" style="letter-spacing: -0.02em;">{{ user.username }}</h3>
-            <span class="text-muted fw-medium">{{ user.email|default:"no-email@biolib.com" }}</span>
+            <h3 class="mb-0 fw-bold">{{ user.username }}</h3>
+            <span class="text-muted fw-medium">
+              {{ user.email|default:"no-email@biolib.com" }}
+            </span>
           </div>
         </div>
-        <div class="text-end d-none d-md-block border-start ps-5">
-          <div class="section-label" style="margin-bottom: 5px; color: #bbb;">Dernière session</div>
-          <div class="fw-bold fs-5">{{ user.last_login|date:"d M Y" }}</div>
-        </div>
-      </div>
-    </div>
-
-    <span class="section-label">Statistiques</span>
-    <div class="stats-grid">
-      <div class="stat-card shadow-sm">
-        <span>Collections</span>
-        <h3>{{ collections_count|default:"0" }}</h3>
-      </div>
-      <div class="stat-card shadow-sm">
-        <span>Équipes</span>
-        <h3>{{ teams_count|default:"0" }}</h3>
-      </div>
-      <div class="stat-card shadow-sm">
-        <span>Correspondances</span>
-        <h3>{{ correspondences_count|default:"0" }}</h3>
-      </div>
-      <div class="stat-card shadow-sm">
-        <span>Productions</span>
-        <h3>{{ productions_count|default:"0" }}</h3>
-      </div>
-      <div class="stat-card shadow-sm">
-        <span>Templates</span>
-        <h3>0</h3>
-      </div>
-      <div class="stat-card shadow-sm">
-        <span>Campagnes</span>
-        <h3>0</h3>
       </div>
     </div>
 
     <span class="section-label">Outils & Données</span>
-    
+
     <div class="menu-list">
-      <a href="{% url 'collections' %}" class="menu-item-row shadow-sm">
+
+      <!-- ✅ LIEN CORRIGÉ -->
+      <a href="{% url 'plasmid_collection_list' %}" class="menu-item-row shadow-sm">
         <div class="menu-content">
           <h5>Collections</h5>
           <p>Organisez vos bibliothèques de plasmides et ressources partagées.</p>
@@ -185,31 +200,9 @@
         <i class="bi bi-chevron-right chevron-icon"></i>
       </a>
 
-      <a href="#" class="menu-item-row shadow-sm">
-        <div class="menu-content">
-          <h5>Templates</h5>
-          <p>Modèles de construction de plasmides réutilisables.</p>
-        </div>
-        <i class="bi bi-chevron-right chevron-icon"></i>
-      </a>
-
-      <a href="#" class="menu-item-row shadow-sm">
-        <div class="menu-content">
-          <h5>Campagnes</h5>
-          <p>Historique des résultats de simulations.</p>
-        </div>
-        <i class="bi bi-chevron-right chevron-icon"></i>
-      </a>
-
-      <a href="#" class="menu-item-row shadow-sm">
-        <div class="menu-content">
-          <h5>Productions</h5>
-          <p>Inventaire des plasmides physiques générés.</p>
-        </div>
-        <i class="bi bi-chevron-right chevron-icon"></i>
-      </a>
     </div>
 
   </div>
 </div>
 {% endblock %}
+
