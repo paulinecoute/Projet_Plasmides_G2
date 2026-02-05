@@ -138,6 +138,14 @@ class SimulationForm(forms.ModelForm):
             'placeholder': 'Ex: Ma Campagne Vaccin'
         })
     )
+    template_save_name = forms.CharField(
+        required=False,
+        label="Nom pour sauvegarder le fichier modèle",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Ex: Modèle Vaccin'
+        })
+    )
 
     class Meta:
         model = Simulation
