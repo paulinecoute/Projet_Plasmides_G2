@@ -754,22 +754,10 @@ def create_simulation(request):
             updated_plasmids = []
             new_plasmids = []
 
-            # A. Récupération depuis les collections existantes (BDD)
-            selected_collections = simulation.collections.all()
-            for collection in selected_collections:
-                for p in collection.plasmids.all():
-                    if p.genbank_file:
-                        try:
-                            if os.path.exists(p.genbank_file.path):
-                                raw_paths_list.append(p.genbank_file.path)
-                        except Exception:
-                            pass
-
-            # B. Traitement du ZIP (Import & Update)
+            # --- 1. CRÉATION DE LA COLLECTION CIBLE (DÉPLACÉ ICI) ---
+            # On la crée AVANT de traiter les fichiers pour pouvoir tout y mettre (BDD + ZIP)
             target_collection = None
-
-            # Création de la collection cible SI nécessaire
-            if should_save and request.user.is_authenticated and simulation.zip_file:
+            if should_save and request.user.is_authenticated:
                 final_col_name = col_name_input if col_name_input else f"Import Simu #{simulation.id}"
                 target_collection = PlasmidCollection.objects.create(
                     name=final_col_name,
@@ -777,6 +765,23 @@ def create_simulation(request):
                     description=f"Import complet depuis la simulation {simulation.name}"
                 )
 
+            # --- A. Récupération depuis les collections existantes (BDD) ---
+            selected_collections = simulation.collections.all()
+            for collection in selected_collections:
+                for p in collection.plasmids.all():
+                    if p.genbank_file:
+                        try:
+                            if os.path.exists(p.genbank_file.path):
+                                raw_paths_list.append(p.genbank_file.path)
+
+                                # [NOUVEAU] : Si une collection cible existe, on y ajoute aussi ces plasmides !
+                                if target_collection:
+                                    p.collections.add(target_collection)
+
+                        except Exception:
+                            pass
+
+            # --- B. Traitement du ZIP (Import & Update) ---
             if simulation.zip_file:
                 try:
                     zip_path = simulation.zip_file.path
@@ -797,24 +802,23 @@ def create_simulation(request):
                                 # 2. Gestion Base de Données (Upsert Many-to-Many)
                                 if target_collection:
                                     try:
-                                        # On cherche si le plasmide existe DÉJÀ (via n'importe quelle collection)
+                                        # On cherche si le plasmide existe DÉJÀ
                                         existing_plasmid = Plasmid.objects.filter(
                                             collections__owner=request.user,
                                             name=file_name
                                         ).distinct().first()
 
                                         with open(full_path, 'rb') as f_io:
-                                            file_content = ContentFile(f_io.read())
+                                            # Nom obligatoire pour ContentFile
+                                            file_content = ContentFile(f_io.read(), name=file_name)
 
                                         if existing_plasmid:
                                             # --- CAS A : IL EXISTE (Mise à jour + Lien) ---
-                                            # Mise à jour du contenu physique
                                             existing_plasmid.genbank_file.save(file_name, file_content, save=False)
                                             existing_plasmid.save()
 
-                                            # Ajout du lien vers la nouvelle collection (Many-to-Many)
+                                            # Ajout à la nouvelle collection
                                             existing_plasmid.collections.add(target_collection)
-
                                             updated_plasmids.append(file_name)
 
                                         else:
@@ -838,7 +842,7 @@ def create_simulation(request):
 
             if target_collection:
                 if len(new_plasmids) > 0:
-                    messages.success(request, f"✅ {len(new_plasmids)} nouveaux plasmides ajoutés à '{target_collection.name}'.")
+                    messages.success(request, f"✅ {len(new_plasmids)} nouveaux plasmides importés dans '{target_collection.name}'.")
 
                 if len(updated_plasmids) > 0:
                     details = "<br>".join(updated_plasmids[:5])
@@ -846,10 +850,14 @@ def create_simulation(request):
                     msg_text = (
                         f"<strong>ℹ️ Mise à jour de {len(updated_plasmids)} plasmides existants :</strong><br>"
                         f"Ils ont été mis à jour et <strong>ajoutés</strong> à la collection '{target_collection.name}'.<br>"
-                        "<em>(Leur contenu a été actualisé dans toutes vos collections).</em>"
                         f"<div class='mt-2 small text-muted border-start border-3 ps-2'>{details}</div>"
                     )
                     messages.info(request, mark_safe(msg_text))
+
+                # Petit message bonus pour confirmer que les plasmides des collections sélectionnées sont inclus
+                if not simulation.zip_file and len(raw_paths_list) > 0:
+                     messages.success(request, f"Collection créée par fusion des {len(raw_paths_list)} plasmides sélectionnés.")
+
 
             # ==============================================================================
             # STAGING : PRÉPARATION FINALE POUR LE SIMULATEUR
@@ -866,20 +874,22 @@ def create_simulation(request):
             # On traite la liste complète (BDD + ZIP)
             for original_path in raw_paths_list:
                 try:
-                    record = SeqIO.read(original_path, "genbank")
-
-                    internal_name = record.description.split(",")[0].strip()
-                    if not internal_name or internal_name == "<unknown description>":
-                        internal_name = record.name
-                    if not internal_name:
-                         internal_name = os.path.splitext(os.path.basename(original_path))[0]
-
-                    safe_name = clean_filename(internal_name)[:60]
+                    # Logique de nommage basée sur le NOM DE FICHIER (plus sûr)
+                    filename_brut = os.path.basename(original_path)
+                    name_without_ext = os.path.splitext(filename_brut)[0]
+                    safe_name = clean_filename(name_without_ext)[:60]
 
                     if safe_name in seen_names:
                         continue
 
                     seen_names.add(safe_name)
+
+                    # Vérification rapide Genbank
+                    try:
+                         with open(original_path, "r") as f:
+                            if not "LOCUS" in f.readline(): pass
+                    except:
+                        continue
 
                     new_filename = f"{safe_name}.gb"
                     new_full_path = os.path.join(staging_dir, new_filename)
@@ -896,7 +906,6 @@ def create_simulation(request):
             # SÉCURITÉ & LANCEMENT
             # ==============================================================================
 
-            # Sécurité anti-crash
             if len(final_gb_paths_for_simulation) == 0:
                 print("ERREUR CRITIQUE: Aucun plasmide valide trouvé.")
                 simulation.status = 'FAILED'
@@ -904,14 +913,13 @@ def create_simulation(request):
                 messages.error(request, "Erreur : Aucun fichier GenBank trouvé. Vérifiez votre ZIP ou sélectionnez une collection.")
                 return redirect('simulation_list')
 
-            # --- GESTION CONCENTRATION (Votre code inchangé) ---
+            # --- GESTION CONCENTRATION ---
             def_conc = form.cleaned_data.get('default_concentration') or 200.0
             path_conc = form.cleaned_data.get('concentration_file')
             if simulation.concentration_file:
                 path_conc = simulation.concentration_file.path
 
-            # (Insérez ici votre bloc de traitement CSV concentration si nécessaire)
-            # ...
+            # (Bloc CSV concentration ...)
 
             # --- LANCEMENT SIMULATION ---
             try:
@@ -921,7 +929,7 @@ def create_simulation(request):
                     settings=None,
                     input_template_filled=path_xlsx,
                     input_parts_files=path_csv_list,
-                    gb_plasmids=final_gb_paths_for_simulation, # Utilisation de la liste propre
+                    gb_plasmids=final_gb_paths_for_simulation,
                     output_dir=output_folder,
                     data_source="Django",
                     assembly_enzyme=simulation.enzyme,
@@ -931,7 +939,6 @@ def create_simulation(request):
                     concentration_file=path_conc
                 )
 
-                # Post-traitement CSV
                 tous_les_csv = glob.glob(os.path.join(output_folder, "*.csv"))
                 for csv_path in tous_les_csv:
                     try:
@@ -944,7 +951,6 @@ def create_simulation(request):
 
                 simulation.status = 'COMPLETED'
 
-                # Gestion image résultat
                 path_png = os.path.join(output_folder, 'digestion.png')
                 path_svg = os.path.join(output_folder, 'digestion.svg')
                 if os.path.exists(path_png):
