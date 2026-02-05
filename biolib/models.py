@@ -124,12 +124,12 @@ class Plasmid(models.Model):
         return f"{self.identifier} - {self.name}"
 
 # ==============================================================================
-# 3. MAPPING & CORRESPONDANCE 
+# 3. MAPPING & CORRESPONDANCE
 # ==============================================================================
 
 class Correspondence(models.Model):
     name = models.CharField(max_length=200, default="Table de correspondance")
-    description = models.TextField(blank=True, default="")  
+    description = models.TextField(blank=True, default="")
     file = models.FileField(upload_to="correspondences/")
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
