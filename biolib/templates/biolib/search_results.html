@@ -19,9 +19,9 @@
             </p>
         </div>
     {% else %}
-        
+
         <div class="row g-4">
-            
+
             {% if templates %}
             <div class="col-12">
                 <div class="card border-0 shadow-sm">
@@ -81,7 +81,7 @@
                         <h5 class="mb-0"><i class="bi bi-journals me-2"></i> Collections & Plasmides</h5>
                     </div>
                     <div class="card-body p-0">
-                        
+
                         {% if collections %}
                             <div class="p-3 bg-light border-bottom">
                                 <h6 class="fw-bold text-muted text-uppercase small mb-3">Collections</h6>
@@ -118,10 +118,16 @@
                                             <tr>
                                                 <td class="fw-bold text-primary">{{ p.identifier }}</td>
                                                 <td>{{ p.name }}</td>
+
                                                 <td>
-                                                    <a href="{% url 'collection_detail' p.collection.id %}" class="text-decoration-none text-secondary">
-                                                        <i class="bi bi-folder me-1"></i> {{ p.collection.name }}
-                                                    </a>
+                                                    {% for col in p.collections.all %}
+                                                        <a href="{% url 'plasmid_collection_detail' col.id %}" class="badge bg-light text-secondary text-decoration-none border mb-1">
+                                                            <i class="bi bi-folder me-1"></i> {{ col.name }}
+                                                        </a>
+                                                        {% if not forloop.last %}<br>{% endif %}
+                                                    {% empty %}
+                                                        <span class="text-muted fst-italic small">Aucune</span>
+                                                    {% endfor %}
                                                 </td>
                                                 <td class="text-center">
                                                     {% if query|lower in p.sequence|lower %}
