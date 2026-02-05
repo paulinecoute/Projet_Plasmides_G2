@@ -83,7 +83,6 @@
     border: 1px solid var(--border-color);
     border-radius: 22px;
     padding: 25px;
-    transition: 0.2s;
   }
 
   .stat-card h3 {
@@ -117,7 +116,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: 0.2s;
   }
 
   .menu-item-row:hover {
@@ -153,8 +152,6 @@
 <div class="container">
   <div class="content-wrapper">
 
-    <div class="nav-header"></div>
-
     <div class="hero-section">
       <h1 class="page-title">Espace personnel</h1>
       <p class="page-subtitle">Exploration et gestion de vos actifs biologiques</p>
@@ -165,51 +162,21 @@
         <div class="d-flex align-items-center gap-4">
           <div class="user-avatar">{{ user.username|first|upper }}</div>
           <div>
-            <h3 class="mb-0 fw-bold" style="letter-spacing: -0.02em;">{{ user.username }}</h3>
+            <h3 class="mb-0 fw-bold">{{ user.username }}</h3>
             <span class="text-muted fw-medium">
               {{ user.email|default:"no-email@biolib.com" }}
             </span>
           </div>
         </div>
-        <div class="text-end d-none d-md-block border-start ps-5">
-          <div class="section-label" style="margin-bottom: 5px;">Dernière session</div>
-          <div class="fw-bold fs-5">{{ user.last_login|date:"d M Y" }}</div>
-        </div>
-      </div>
-    </div>
-
-    <span class="section-label">Statistiques</span>
-    <div class="stats-grid">
-      <div class="stat-card shadow-sm">
-        <span>Collections</span>
-        <h3>{{ collections_count|default:"0" }}</h3>
-      </div>
-      <div class="stat-card shadow-sm">
-        <span>Équipes</span>
-        <h3>{{ teams_count|default:"0" }}</h3>
-      </div>
-      <div class="stat-card shadow-sm">
-        <span>Correspondances</span>
-        <h3>{{ correspondences_count|default:"0" }}</h3>
-      </div>
-      <div class="stat-card shadow-sm">
-        <span>Productions</span>
-        <h3>{{ productions_count|default:"0" }}</h3>
-      </div>
-      <div class="stat-card shadow-sm">
-        <span>Templates</span>
-        <h3>0</h3>
-      </div>
-      <div class="stat-card shadow-sm">
-        <span>Campagnes</span>
-        <h3>0</h3>
       </div>
     </div>
 
     <span class="section-label">Outils & Données</span>
 
     <div class="menu-list">
-      <a href="{% url 'collections' %}" class="menu-item-row shadow-sm">
+
+      <!-- ✅ LIEN CORRIGÉ -->
+      <a href="{% url 'plasmid_collection_list' %}" class="menu-item-row shadow-sm">
         <div class="menu-content">
           <h5>Collections</h5>
           <p>Organisez vos bibliothèques de plasmides et ressources partagées.</p>
@@ -232,8 +199,10 @@
         </div>
         <i class="bi bi-chevron-right chevron-icon"></i>
       </a>
+
     </div>
 
   </div>
 </div>
 {% endblock %}
+

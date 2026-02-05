@@ -1044,7 +1044,7 @@ def collection_create(request):
             owner=request.user
         )
 
-        return redirect("collection_detail", collection.id)
+        return redirect("plasmid_collection_detail", pk=collection.id)
 
     return render(request, "biolib/collection_create.html")
 
@@ -1076,15 +1076,13 @@ def plasmid_upload(request, collection_id):
         next_url = request.POST.get("next")
 
         for f in request.FILES.getlist("files"):
-            # Extraction séquence
             seq_str = ""
             try:
                 content = f.read().decode('utf-8', errors='ignore')
                 f.seek(0)
                 record = SeqIO.read(StringIO(content), "genbank")
                 seq_str = str(record.seq).upper()
-            except Exception as e:
-                print(f"Erreur lecture séquence {f.name}: {e}")
+            except Exception:
                 f.seek(0)
 
             Plasmid.objects.create(
@@ -1095,16 +1093,10 @@ def plasmid_upload(request, collection_id):
                 sequence=seq_str
             )
 
-        if next_url:
+        if next_url and next_url != "None":
             return redirect(next_url)
 
-        if collection.team:
-            return redirect(
-                "team_collection_detail",
-                team_id=collection.team.id,
-                collection_id=collection.id
-            )
-        return redirect("collection_detail", collection.id)
+        return redirect("plasmid_collection_detail", pk=collection.id)
 
     return render(request, "biolib/plasmid_upload.html", {
         "collection": collection,
@@ -1125,18 +1117,13 @@ def plasmid_delete(request, plasmid_id):
     if request.method == "POST":
         next_url = request.POST.get("next")
         plasmid.delete()
-
-        if next_url:
+        if next_url and next_url != "None":
             return redirect(next_url)
 
-        
-        if collection.team:
-            return redirect(
-                "team_collection_detail",
-                team_id=collection.team.id,
-                collection_id=collection.id
-            )
-        return redirect("collection_detail", collection.id)
+        return redirect("plasmid_collection_detail", pk=collection.id)
+
+    return redirect("plasmid_collection_detail", pk=collection.id)
+
 
 
 @login_required
@@ -1158,6 +1145,21 @@ def collection_delete(request, collection_id):
         if team:
             return redirect("team_collections", team_id=team.id)
         return redirect("collections")
+    
+@login_required
+def plasmid_collection_delete(request, pk):
+    collection = get_object_or_404(
+        PlasmidCollection,
+        pk=pk,
+        owner=request.user
+    )
+
+    if request.method == "POST":
+        collection.delete()
+        return redirect("plasmid_collection_list")
+
+    return redirect("plasmid_collection_detail", pk=pk)
+
         
 # ============================================================
 # CORRESPONDENCES UTILISATEUR (hors équipe)
@@ -1454,21 +1456,36 @@ def choose_team_for_correspondences(request):
 # VISUALISATION DE PLASMIDES
 
 def plasmid_collection_list(request):
-    """
-    Affiche toutes les collections de plasmides (personnelles et d'équipe)
-    sous forme de cartes, similaire à la page templates.
-    """
     view_type = request.GET.get('view', 'my')
-    title = "Mes Collections"
-    
-    # Récupération des collections
+
+    # CAS INVITÉ (non connecté)
+    if not request.user.is_authenticated:
+        collections = PlasmidCollection.objects.filter(
+            is_public=True,
+            team__isnull=True
+        ).order_by('-id')
+
+        return render(request, 'biolib/plasmid_collection_list.html', {
+            'collections': collections,
+            'current_view': 'public',
+            'page_title': "Collections publiques"
+        })
+
+    # CAS UTILISATEUR CONNECTÉ
     if view_type == 'team':
-        # Collections appartenant aux équipes dont l'utilisateur est membre
-        collections = PlasmidCollection.objects.filter(team__members=request.user).distinct().order_by('-id')
-        title = "Collections d'équipe"
+        # 🔵 Collections d’équipe uniquement
+        collections = PlasmidCollection.objects.filter(
+            team__members=request.user
+        ).distinct().order_by('-id')
+
+        title = "Collections d’équipe"
+
     else:
-        # Collections personnelles (sans équipe ou dont je suis propriétaire)
-        collections = PlasmidCollection.objects.filter(owner=request.user).order_by('-id')
+        collections = PlasmidCollection.objects.filter(
+            Q(owner=request.user, team__isnull=True) |
+            Q(is_public=True, team__isnull=True)
+        ).distinct().order_by('-id')
+
         title = "Mes Collections"
 
     return render(request, 'biolib/plasmid_collection_list.html', {
@@ -1476,6 +1493,8 @@ def plasmid_collection_list(request):
         'current_view': view_type,
         'page_title': title
     })
+
+
 
 def plasmid_collection_detail(request, pk):
     """

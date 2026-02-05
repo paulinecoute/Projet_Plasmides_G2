@@ -101,6 +101,12 @@ urlpatterns = [
     path("collections/<int:collection_id>/upload/", views.plasmid_upload, name="plasmid_upload"),
     path("collections/<int:collection_id>/delete/", views.collection_delete, name="collection_delete"),
     path("plasmids/<int:plasmid_id>/delete/", views.plasmid_delete, name="plasmid_delete"),
+    path(
+    "library/<int:pk>/delete/",
+    views.plasmid_collection_delete,
+    name="plasmid_collection_delete"
+    ),
+
 
     # ============================================================
     # COLLECTIONS (ÉQUIPE)
