@@ -76,7 +76,7 @@ urlpatterns = [
     # ============================================================
 
     path('dashboard/', views.dashboard, name='dashboard'),
-    
+
     # ============================================================
     # ÉQUIPES
     # ============================================================
@@ -116,6 +116,7 @@ urlpatterns = [
     path("teams/<int:team_id>/collections/create/", views.team_collection_create, name="team_collection_create"),
     path("teams/<int:team_id>/collections/<int:collection_id>/", views.team_collection_detail, name="team_collection_detail"),
     path("plasmids/teams/", views.choose_team_for_plasmids, name="choose_team_for_plasmids"),
+    path('collections/<int:collection_id>/remove/<int:plasmid_id>/', views.remove_plasmid_from_collection, name='remove_plasmid_from_collection'),
 
     # ============================================================
     # CORRESPONDANCES (UTILISATEUR)

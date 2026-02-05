@@ -21,7 +21,7 @@ import shutil
 from django.contrib import messages
 from django.utils.safestring import mark_safe
 from Bio import SeqIO
-from io import StringIO  # <--- AJOUT POUR LIRE LE FICHIER EN MÉMOIRE
+from io import StringIO
 
 
 # Import Insillyclo
@@ -886,14 +886,14 @@ def download_simulation_csv(request, pk):
 # 5. GESTION DES ÉQUIPES ET COLLECTIONS
 # ==============================================================================
 
-@login_required
-def team_list(request):
-    teams = Team.objects.filter(Q(leader=request.user) | Q(members=request.user)).distinct()
-    for team in teams:
-        team.tables_count = Correspondence.objects.filter(team=team).count()
-        team.campaigns_count = Simulation.objects.filter(team=team).count()
-        team.plasmids_count = Plasmid.objects.filter(collection__team=team).count()
-    return render(request, 'biolib/teams.html', {'teams': teams})
+#@login_required
+#def team_list(request):
+#    teams = Team.objects.filter(Q(leader=request.user) | Q(members=request.user)).distinct()
+#    for team in teams:
+#        team.tables_count = Correspondence.objects.filter(team=team).count()
+#        team.campaigns_count = Simulation.objects.filter(team=team).count()
+#        team.plasmids_count = Plasmid.objects.filter(collections__team=team).distinct().count()
+#    return render(request, 'biolib/teams.html', {'teams': teams})
 
 @login_required
 def team_create(request):
@@ -914,7 +914,7 @@ def team_detail(request, team_id):
         'collections_count': team.plasmidcollection_set.count(),
         'tables_count': team.correspondence_set.count(),
         'campaigns_count': team.simulations.count(),
-        'plasmids_count': Plasmid.objects.filter(collection__team=team).count(),
+        'plasmids_count': Plasmid.objects.filter(collections__team=team).distinct().count(),
     })
 
 @login_required
@@ -964,6 +964,31 @@ def team_delete(request, team_id):
             return redirect('teams')
         return render(request, 'biolib/team_confirm_delete.html', {'team': team})
     return HttpResponse("Accès refusé", status=403)
+
+@login_required
+def team_list(request):
+    # 1. Récupérer toutes les équipes dont l'utilisateur est membre
+    teams = Team.objects.filter(members=request.user)
+
+    # 2. Calculer les statistiques pour chaque équipe
+    for team in teams:
+        team.members_count = team.members.count()
+
+        # Compte le nombre de collections
+        team.collections_count = team.plasmidcollection_set.count()
+
+        # Compte le nombre de plasmides uniques (Correction Many-to-Many)
+        team.plasmids_count = Plasmid.objects.filter(collections__team=team).distinct().count()
+
+        # Compte le nombre de simulations
+        # CORRECTION ICI : On utilise directement le nom qui marche dans votre team_detail
+        team.simulations_count = team.simulations.count()
+
+    context = {
+        'teams': teams,
+    }
+
+    return render(request, 'biolib/teams.html', context)
 
 # ============================================================
 # COLLECTIONS UTILISATEUR (équipe)
@@ -1088,20 +1113,37 @@ def plasmid_upload(request, collection_id):
         for f in request.FILES.getlist("files"):
             seq_str = ""
             try:
+                # On lit le contenu pour SeqIO
                 content = f.read().decode('utf-8', errors='ignore')
-                f.seek(0)
+                f.seek(0) # Important : on rembobine le fichier après lecture
+
                 record = SeqIO.read(StringIO(content), "genbank")
                 seq_str = str(record.seq).upper()
+
+                f.seek(0)
             except Exception:
                 f.seek(0)
 
-            Plasmid.objects.create(
-                collection=collection,
-                identifier=f.name,
-                name="",
-                genbank_file=f,
-                sequence=seq_str
-            )
+            identifier = f.name
+
+            existing_plasmid = Plasmid.objects.filter(identifier=identifier).first()
+
+            if existing_plasmid:
+                # MISE À JOUR (Update)
+                existing_plasmid.genbank_file.save(f.name, f, save=False)
+                if seq_str:
+                    existing_plasmid.sequence = seq_str
+                existing_plasmid.save()
+                plasmid = existing_plasmid
+            else:
+                plasmid = Plasmid.objects.create(
+                    identifier=identifier,
+                    name=identifier,
+                    genbank_file=f,
+                    sequence=seq_str
+                )
+
+            plasmid.collections.add(collection)
 
         if next_url and next_url != "None":
             return redirect(next_url)
@@ -1119,10 +1161,10 @@ def plasmid_delete(request, plasmid_id):
     plasmid = get_object_or_404(
         Plasmid,
         id=plasmid_id,
-        collection__owner=request.user
+        collections__owner=request.user
     )
 
-    collection = plasmid.collection
+    collection = plasmid.collections
 
     if request.method == "POST":
         next_url = request.POST.get("next")
@@ -1134,7 +1176,20 @@ def plasmid_delete(request, plasmid_id):
 
     return redirect("plasmid_collection_detail", pk=collection.id)
 
+@login_required
+def remove_plasmid_from_collection(request, collection_id, plasmid_id):
+    # 1. On récupère la collection (sécurisée par owner)
+    collection = get_object_or_404(PlasmidCollection, id=collection_id, owner=request.user)
 
+    # 2. On récupère le plasmide
+    plasmid = get_object_or_404(Plasmid, id=plasmid_id)
+
+    # 3. ON LE DÉTACHE (On coupe le lien sans supprimer l'objet)
+    collection.plasmids.remove(plasmid)
+
+    # 4. Feedback et redirection
+    messages.success(request, f"Le plasmide '{plasmid.name}' a été retiré de la collection.")
+    return redirect('plasmid_collection_detail', pk=collection.id)
 
 @login_required
 def collection_delete(request, collection_id):
