@@ -5,172 +5,222 @@
 {% block content %}
 <style>
   :root {
-    --bg-main: #fcfcfc;
-    --border-color: #eee;
+    --bg-main: #f0f7ff; 
+    --app-primary: #007bff;
+    --border-color: rgba(0, 123, 255, 0.1);
   }
 
-  body { background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body { background-color: var(--bg-main); }
 
   .content-wrapper {
     max-width: 850px;
-    margin: 0 auto;
+    margin: 40px auto;
     padding-bottom: 50px;
   }
 
-  .nav-header { padding: 20px 0; margin-bottom: 10px; }
-  
-  .btn-back {
+  .btn-back-circle {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 45px;
+    height: 45px;
     background: #fff;
     border: 1px solid var(--border-color);
-    border-radius: 12px;
-    color: #666;
-    transition: 0.2s;
+    border-radius: 15px;
+    color: var(--app-primary);
+    transition: all 0.2s;
     text-decoration: none;
+    margin-bottom: 25px;
   }
-  .btn-back:hover { border-color: #000; color: #000; }
+  .btn-back-circle:hover { 
+    background: var(--app-primary); 
+    color: #fff;
+    transform: translateX(-3px);
+  }
 
-  .hero-section { margin-bottom: 40px; }
-  .page-title { font-weight: 850; font-size: 2.8rem; letter-spacing: -0.05em; margin-bottom: 5px; }
+  .hero-section { margin-bottom: 35px; }
+  .page-title { 
+    font-weight: 800; 
+    font-size: 2.5rem; 
+    color: #004085;
+    letter-spacing: -0.05em; 
+  }
   
   .section-label {
     font-size: 0.75rem;
-    font-weight: 800;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: #444;
-    margin-bottom: 20px;
+    color: var(--app-primary);
+    margin-bottom: 15px;
     display: block;
   }
 
-  /* Box Info Chef */
   .info-banner {
-    background: #000;
+    background: linear-gradient(135deg, #004085, #007bff);
     color: #fff;
-    padding: 20px 25px;
-    border-radius: 20px;
+    padding: 22px 28px;
+    border-radius: 24px;
     margin-bottom: 40px;
+    box-shadow: 0 10px 25px rgba(0, 64, 133, 0.15);
   }
 
-  /* Cartes de formulaires et listes */
   .admin-card {
     background: #fff;
     border: 1px solid var(--border-color);
-    border-radius: 20px;
+    border-radius: 24px;
     padding: 30px;
-    margin-bottom: 30px;
+    margin-bottom: 25px;
+    box-shadow: 0 10px 30px rgba(0, 123, 255, 0.05);
   }
 
   .form-control {
-    border: 1px solid #f0f0f0;
-    background: #fbfbfb;
-    border-radius: 12px;
-    padding: 10px 15px;
+    border: 1px solid #e1e8ed;
+    background: #fdfdfd;
+    border-radius: 14px;
+    padding: 12px 18px;
+    transition: all 0.2s;
   }
   .form-control:focus {
-    border-color: #000;
+    border-color: var(--app-primary);
     background: #fff;
-    box-shadow: none;
+    box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.1);
   }
 
-  /* Liste des membres */
   .member-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 0;
-    border-bottom: 1px solid #f8f8f8;
+    padding: 18px 0;
+    border-bottom: 1px solid #f8f9fa;
   }
   .member-row:last-child { border-bottom: none; }
 
+  .btn-add-member { 
+    background: var(--app-primary); 
+    color: #fff; 
+    border-radius: 14px; 
+    padding: 12px 28px; 
+    font-weight: 700; 
+    border: none; 
+    transition: all 0.2s; 
+  }
+  .btn-add-member:hover { 
+    background: #0056b3; 
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 123, 255, 0.2);
+  }
 
-  .btn-add { background: #000; color: #fff; border-radius: 12px; padding: 10px 25px; font-weight: 600; border: none; transition: 0.2s; }
-  .btn-add:hover { background: #333; }
-
-  .btn-action-outline {
-    font-size: 0.75rem;
+  .btn-action-soft {
+    font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
-    padding: 6px 14px;
-    border-radius: 8px;
+    padding: 8px 16px;
+    border-radius: 10px;
     border: 1px solid #eee;
     background: #fff;
-    color: #666;
-    transition: 0.2s;
+    color: #6c757d;
+    transition: all 0.2s;
   }
-  .btn-action-outline:hover { border-color: #000; color: #000; }
-  .btn-danger-outline { color: #dc3545; }
-  .btn-danger-outline:hover { border-color: #dc3545; background: #dc3545; color: #fff; }
+  .btn-action-soft:hover { 
+    border-color: var(--app-primary); 
+    color: var(--app-primary); 
+    background: #f0f7ff;
+  }
+  
+  .btn-remove-soft { 
+    color: #dc3545; 
+  }
+  .btn-remove-soft:hover { 
+    border-color: #dc3545; 
+    background: #fff5f5; 
+    color: #dc3545; 
+  }
 
-  .danger-zone {
+  .danger-zone-box {
     margin-top: 50px;
     padding: 30px;
-    border: 1px solid #fee2e2;
-    background: #fff5f5;
-    border-radius: 20px;
+    background: #fff;
+    border: 1px solid rgba(220, 53, 69, 0.2);
+    border-radius: 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
   }
 </style>
 
-<div class="container pb-5">
+<div class="container">
   <div class="content-wrapper">
     
-    <div class="nav-header">
-      <a href="{% url 'team_detail' team.id %}" class="btn-back shadow-sm">
-        <i class="bi bi-arrow-left"></i>
+    <div class="mb-4">
+      <a href="{% url 'team_detail' team.id %}" class="btn-back-circle shadow-sm">
+        <i class="bi bi-arrow-left fs-5"></i>
       </a>
     </div>
 
     <div class="hero-section">
       <h1 class="page-title">Gestion d'équipe</h1>
-      <p class="text-muted fs-5">{{ team.name }}</p>
+      <p class="text-muted fs-5"><i class="bi bi-people me-2"></i>{{ team.name }}</p>
     </div>
 
-    <div class="info-banner shadow-sm">
-      <div class="fw-bold"><i class="bi bi-shield-check me-2"></i>Responsable d'équipe</div>
-      <div class="small opacity-75">Vous pouvez gérer les accès et nommer un nouveau responsable.</div>
+    <div class="info-banner shadow-sm d-flex align-items-center">
+      <div class="me-4 fs-2"><i class="bi bi-shield-lock-fill"></i></div>
+      <div>
+        <div class="fw-bold fs-5">Contrôle Administrateur</div>
+        <div class="small opacity-75">En tant que responsable, vous gérez les invitations et la passation de pouvoir.</div>
+      </div>
     </div>
 
-    <span class="section-label">Inviter un nouveau membre</span>
-    <div class="admin-card shadow-sm">
-      <form method="post" class="d-flex gap-3 align-items-end">
+    <span class="section-label">Inviter un nouveau collaborateur</span>
+    <div class="admin-card border-0">
+      <form method="post" class="row g-3 align-items-end">
         {% csrf_token %}
-        <div class="flex-grow-1">
-          <label class="form-label small fw-bold text-muted text-uppercase">Email du collaborateur</label>
-          <input type="email" name="email" class="form-control" placeholder="utilisateur@exemple.com" required>
+        <div class="col-md-9">
+          <label class="form-label small fw-bold text-muted">Adresse Email</label>
+          <input type="email" name="email" class="form-control" placeholder="nom@laboratoire.fr" required>
         </div>
-        <button type="submit" class="btn-add">Ajouter</button>
+        <div class="col-md-3">
+          <button type="submit" class="btn-add-member w-100">Ajouter</button>
+        </div>
       </form>
     </div>
 
-    <div class="d-flex justify-content-between align-items-center mb-3 mt-5">
-      <span class="section-label mb-0">Liste des membres</span>
-      <span class="text-muted small fw-bold">{{ team.members.count }} TOTAL</span>
+    <div class="d-flex justify-content-between align-items-center mb-3 mt-5 px-2">
+      <span class="section-label mb-0">Effectif de l'équipe</span>
+      <span class="badge rounded-pill bg-white border text-dark px-3 py-2 shadow-sm" style="font-size: 0.7rem;">
+        {{ team.members.count }} MEMBRES
+      </span>
     </div>
 
-    <div class="admin-card shadow-sm">
+    <div class="admin-card border-0">
       {% for member in team.members.all reversed %}
       <div class="member-row">
-        <div class="fw-bold">{{ member.email }}</div>
+        <div class="d-flex align-items-center">
+          <div class="bg-light rounded-circle p-2 me-3">
+             <i class="bi bi-person text-secondary"></i>
+          </div>
+          <div>
+            <div class="fw-bold text-dark">{{ member.username|default:member.email }}</div>
+            <div class="small text-muted" style="font-size: 0.8rem;">{{ member.email }}</div>
+          </div>
+        </div>
         
         <div class="d-flex align-items-center gap-2">
           {% if member == team.leader %}
-            <span class="text-warning fs-5">★</span>
+            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2" style="font-size: 0.65rem;">
+               <i class="bi bi-star-fill me-1"></i> CHEF D'ÉQUIPE
+            </span>
           {% else %}
-            <form method="post" action="{% url 'team_change_leader' team.id member.id %}">
+            <form method="post" action="{% url 'team_change_leader' team.id member.id %}" onsubmit="return confirm('Transférer la responsabilité à ce membre ?');">
               {% csrf_token %}
-              <button type="submit" class="btn-action-outline">Nommer chef</button>
+              <button type="submit" class="btn-action-soft">Promouvoir</button>
             </form>
 
-            <form method="post" action="{% url 'team_remove_member' team.id member.id %}">
+            <form method="post" action="{% url 'team_remove_member' team.id member.id %}" onsubmit="return confirm('Retirer ce membre de l\'équipe ?');">
               {% csrf_token %}
-              <button type="submit" class="btn-action-outline btn-danger-outline">Retirer</button>
+              <button type="submit" class="btn-action-soft btn-remove-soft">Retirer</button>
             </form>
           {% endif %}
         </div>
@@ -178,12 +228,12 @@
       {% endfor %}
     </div>
 
-    <div class="danger-zone">
+    <div class="danger-zone-box">
       <div>
-        <h6 class="fw-bold text-danger mb-1">Zone critique</h6>
-        <p class="text-muted small mb-0">La suppression de l'équipe est irréversible.</p>
+        <h6 class="fw-bold text-danger mb-1"><i class="bi bi-exclamation-octagon-fill me-2"></i>Zone critique</h6>
+        <p class="text-muted small mb-0">Toutes les données partagées seront archivées. Action irréversible.</p>
       </div>
-      <a href="{% url 'team_delete' team.id %}" class="btn btn-danger rounded-pill px-4 fw-bold">
+      <a href="{% url 'team_delete' team.id %}" class="btn btn-outline-danger rounded-pill px-4 fw-bold shadow-sm">
         Supprimer l’équipe
       </a>
     </div>

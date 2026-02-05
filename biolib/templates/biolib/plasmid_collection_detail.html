@@ -1,119 +1,219 @@
 {% extends 'biolib/base.html' %}
 
 {% block content %}
+<style>
+  :root {
+    --bg-main: #f0f7ff;
+    --app-primary: #007bff;
+    --border-color: rgba(0, 123, 255, 0.1);
+  }
+
+  body { background-color: var(--bg-main); }
+
+  .btn-back-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 15px;
+    color: var(--app-primary);
+    transition: all 0.2s;
+    text-decoration: none;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.05);
+  }
+  .btn-back-circle:hover { 
+    background: var(--app-primary); 
+    color: #fff;
+    transform: translateX(-3px);
+  }
+
+  .collection-header-card {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 35px;
+    margin-bottom: 35px;
+    box-shadow: 0 10px 30px rgba(0, 123, 255, 0.05);
+  }
+
+  .collection-badge {
+    display: inline-block;
+    background: #eef6ff;
+    color: var(--app-primary);
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 5px 15px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    margin-bottom: 15px;
+  }
+
+  .collection-title {
+    font-weight: 800;
+    font-size: 2.2rem;
+    color: #004085;
+    letter-spacing: -0.04em;
+  }
+
+  .plasmid-table-container {
+    background: #fff;
+    border-radius: 24px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+  }
+
+  .table thead th {
+    background: #f8fbff;
+    border-bottom: 1px solid var(--border-color);
+    color: #004085;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 18px 25px;
+  }
+
+  .table tbody td {
+    padding: 18px 25px;
+    border-bottom: 1px solid #f8f9fa;
+    vertical-align: middle;
+  }
+
+  .plasmid-id {
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-weight: 700;
+    color: var(--app-primary);
+    background: #f0f7ff;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+  }
+
+  .btn-action-sm {
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    transition: 0.2s;
+    background: transparent;
+  }
+
+  .badge-gb {
+    background: #d1e7dd;
+    color: #0f5132;
+    font-weight: 700;
+    border-radius: 6px;
+    padding: 5px 10px;
+  }
+</style>
+
 <div class="container py-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item">
-                <a href="{% url 'plasmid_collection_list' %}">Collections</a>
-            </li>
-            <li class="breadcrumb-item active" aria-current="page">
-                {{ collection.name }}
-            </li>
-        </ol>
-    </nav>
+    
+    <a href="{% url 'plasmid_collection_list' %}" class="btn-back-circle">
+        <i class="bi bi-arrow-left fs-5"></i>
+    </a>
 
-    <div class="card mb-4 border-0 shadow-sm bg-light">
-        <div class="card-body">
-            <h2 class="card-title">{{ collection.name }}</h2>
-            <p class="card-text">{{ collection.description }}</p>
+    <div class="collection-header-card">
+        <div class="row align-items-center">
+            <div class="col-lg-7">
+                <span class="collection-badge"><i class="bi bi-folder2-open me-1"></i> Bibliothèque</span>
+                <h2 class="collection-title">{{ collection.name }}</h2>
+                <p class="text-muted fs-6 mb-lg-0">{{ collection.description|default:"Pas de description pour cette collection." }}</p>
+            </div>
+            <div class="col-lg-5 text-lg-end">
+                <div class="d-flex flex-column gap-2 align-items-lg-end">
+                    <a href="{% url 'plasmid_upload' collection.id %}?next={{ request.path }}" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                        <i class="bi bi-plus-circle-fill me-2"></i> Ajouter des plasmides
+                    </a>
 
-            <div class="d-flex gap-2">
-                <a href="{% url 'plasmid_upload' collection.id %}?next={{ request.path }}"
-                   class="btn btn-success btn-sm">
-                    <i class="bi bi-cloud-upload"></i> Ajouter des plasmides
-                </a>
-
-                {% if collection.owner == user %}
-                <form method="post"
-                      action="{% url 'plasmid_collection_delete' collection.id %}"
-                      onsubmit="return confirm('Êtes-vous sûr ?');">
-                    {% csrf_token %}
-                    <input type="hidden" name="next" value="{{ request.path }}">
-                    <button type="submit" class="btn btn-danger btn-sm">
-                        <i class="bi bi-trash"></i> Supprimer la collection
-                    </button>
-                </form>
-                {% endif %}
+                    {% if collection.owner == user %}
+                    <form method="post" action="{% url 'plasmid_collection_delete' collection.id %}" onsubmit="return confirm('Supprimer définitivement cette collection et ses plasmides ?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{% url 'plasmid_collection_list' %}">
+                        <button type="submit" class="btn btn-link text-danger text-decoration-none small fw-bold">
+                            <i class="bi bi-trash3 me-1"></i> Supprimer la collection
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
 
-    <h3 class="mb-3">Plasmides contenus ({{ plasmids.count }})</h3>
+    <div class="d-flex justify-content-between align-items-end mb-3 px-2">
+        <h3 class="fw-bold text-dark mb-0" style="font-size: 1.2rem;">Séquences ({{ plasmids.count }})</h3>
+        <span class="text-muted small">Mise à jour : {{ collection.updated_at|date:"d/m/Y" }}</span>
+    </div>
 
     {% if plasmids %}
-    <div class="table-responsive shadow-sm rounded">
-        <table class="table table-hover align-middle mb-0 bg-white">
-            <thead class="table-light">
-                <tr>
-                    <th>Identifiant</th>
-                    <th>Nom</th>
-                    <th>Fichier</th>
-                    <th class="text-end">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for plasmid in plasmids %}
-                <tr>
-                    <td class="fw-bold text-primary">
-                        <a href="{% url 'plasmid_visualize' plasmid.id %}"
-                           class="text-decoration-none">
-                            {{ plasmid.identifier }}
-                        </a>
-                    </td>
-
-                    <td>{{ plasmid.name|default:"-" }}</td>
-
-                    <td>
-                        {% if plasmid.genbank_file %}
-                            <span class="badge bg-success">GenBank (.gb)</span>
-                        {% else %}
-                            <span class="badge bg-warning text-dark">Séquence brute</span>
-                        {% endif %}
-                    </td>
-
-                    <td class="text-end">
-                        <div class="btn-group">
-
-                            <a href="{% url 'plasmid_visualize' plasmid.id %}"
-                               class="btn btn-sm btn-outline-info"
-                               title="Visualiser avec SeqViz">
-                                <i class="bi bi-eye"></i>
+    <div class="plasmid-table-container">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Identifiant</th>
+                        <th>Nom du plasmide</th>
+                        <th>Fichier</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for plasmid in plasmids %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'plasmid_visualize' plasmid.id %}" class="text-decoration-none">
+                                <span class="plasmid-id">{{ plasmid.identifier }}</span>
                             </a>
-
+                        </td>
+                        <td>
+                            <span class="fw-bold text-dark">{{ plasmid.name|default:"-" }}</span>
+                        </td>
+                        <td>
                             {% if plasmid.genbank_file %}
-                            <a href="{{ plasmid.genbank_file.url }}"
-                               class="btn btn-sm btn-outline-secondary"
-                               download
-                               title="Télécharger">
-                                <i class="bi bi-download"></i>
-                            </a>
+                                <span class="badge-gb small"><i class="bi bi-file-code-fill me-1"></i> GenBank</span>
+                            {% else %}
+                                <span class="badge bg-light text-muted border small"><i class="bi bi-text-left me-1"></i> RAW</span>
                             {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{% url 'plasmid_visualize' plasmid.id %}" class="btn btn-action-sm btn-outline-primary" title="Ouvrir dans SeqViz">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                
+                                {% if plasmid.genbank_file %}
+                                <a href="{{ plasmid.genbank_file.url }}" class="btn btn-action-sm btn-outline-secondary" download>
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                {% endif %}
 
-                            {% if collection.owner == user %}
-                            <form method="post"
-                                  action="{% url 'plasmid_delete' plasmid.id %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="next" value="{{ request.path }}">
-                                <button type="submit"
-                                        class="btn btn-sm btn-outline-danger"
-                                        title="Supprimer"
-                                        onclick="return confirm('Supprimer ce plasmide ?');">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </form>
-                            {% endif %}
-
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                                {% if collection.owner == user %}
+                                <form method="post" action="{% url 'plasmid_delete' plasmid.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.path }}">
+                                    <button type="submit" class="btn btn-action-sm btn-outline-danger" title="Supprimer" onclick="return confirm('Supprimer ce plasmide ?');">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
     {% else %}
-    <div class="alert alert-warning">
-        Cette collection est vide. Commencez par ajouter des plasmides !
+    <div class="p-5 text-center bg-white rounded-4 border border-dashed border-2">
+        <i class="bi bi-search fs-1 text-muted opacity-25 mb-3 d-block"></i>
+        <h5 class="fw-bold text-dark">Cette collection est vide</h5>
+        <p class="text-muted small mb-4">Téléversez vos fichiers .gb ou vos séquences brutes pour commencer.</p>
+        <a href="{% url 'plasmid_upload' collection.id %}?next={{ request.path }}" class="btn btn-primary rounded-pill px-4">Importer mes premiers plasmides</a>
     </div>
     {% endif %}
 </div>

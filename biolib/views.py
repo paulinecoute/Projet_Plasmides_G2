@@ -158,15 +158,52 @@ def signup(request):
 
 @login_required
 def dashboard(request):
-    collections_count = PlasmidCollection.objects.filter(owner=request.user).count()
-    correspondences_count = Correspondence.objects.filter(owner=request.user).count()
-    teams_count = request.user.teams.count()
+    user = request.user
+
+    # Collections
+    collections_qs = PlasmidCollection.objects.filter(
+        Q(owner=user) |
+        Q(team__members=user)
+    ).distinct()
+
+    collections_count = collections_qs.count()
+    collections_team_count = collections_qs.filter(team__isnull=False).count()
+
+    # Correspondences
+    correspondences_qs = Correspondence.objects.filter(
+        Q(owner=user) |
+        Q(team__members=user)
+    ).distinct()
+
+    correspondences_count = correspondences_qs.count()
+    correspondences_team_count = correspondences_qs.filter(team__isnull=False).count()
+
+    # Teams
+    teams_count = user.teams.count()
+
+    # Simulations
+    productions_qs = Simulation.objects.filter(
+        Q(user=user) |
+        Q(team__members=user)
+    ).distinct()
+
+    productions_count = productions_qs.count()
+    productions_team_count = productions_qs.filter(team__isnull=False).count()
 
     return render(request, "biolib/dashboard.html", {
         "collections_count": collections_count,
+        "collections_team_count": collections_team_count,
+
         "correspondences_count": correspondences_count,
+        "correspondences_team_count": correspondences_team_count,
+
         "teams_count": teams_count,
+
+        "productions_count": productions_count,
+        "productions_team_count": productions_team_count,
     })
+
+
 
 # ==============================================================================
 # 2. GESTION DES TEMPLATES

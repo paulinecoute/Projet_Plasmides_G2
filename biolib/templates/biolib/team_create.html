@@ -5,138 +5,161 @@
 {% block content %}
 <style>
   :root {
-    --bg-main: #fcfcfc;
-    --border-color: #eee;
+    --bg-main: #f0f7ff; 
+    --app-primary: #007bff;
+    --border-color: rgba(0, 123, 255, 0.1);
   }
 
-  body { background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body { background-color: var(--bg-main); }
 
   .content-wrapper {
-    max-width: 800px;
-    margin: 0 auto;
+    max-width: 700px; 
+    margin: 40px auto;
     padding-bottom: 50px;
   }
 
-  .nav-header { padding: 20px 0; margin-bottom: 10px; }
-  
-  .btn-back {
+  .btn-back-circle {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 45px;
+    height: 45px;
     background: #fff;
     border: 1px solid var(--border-color);
-    border-radius: 12px;
-    color: #666;
-    transition: 0.2s;
+    border-radius: 15px;
+    color: var(--app-primary);
+    transition: all 0.2s;
     text-decoration: none;
+    margin-bottom: 25px;
   }
-  .btn-back:hover { border-color: #000; color: #000; }
+  .btn-back-circle:hover { 
+    background: var(--app-primary); 
+    color: #fff;
+    transform: translateX(-3px);
+  }
 
-  .hero-section { margin-bottom: 40px; }
-  .page-title { font-weight: 850; font-size: 2.8rem; letter-spacing: -0.05em; margin-bottom: 10px; }
+  .hero-section { margin-bottom: 30px; }
+  .page-title { 
+    font-weight: 800; 
+    font-size: 2.6rem; 
+    color: #004085;
+    letter-spacing: -0.04em; 
+  }
   
   .form-container {
     background: #fff;
     border: 1px solid var(--border-color);
-    border-radius: 20px;
-    padding: 40px;
+    border-radius: 30px;
+    padding: 45px;
+    box-shadow: 0 15px 35px rgba(0, 123, 255, 0.05);
   }
 
   .form-label {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #aaa;
-    margin-bottom: 8px;
+    color: #007bff;
+    margin-bottom: 10px;
   }
 
   .form-control, .form-select {
-    border: 1px solid #f0f0f0;
-    background: #fbfbfb;
-    border-radius: 12px;
-    padding: 12px 16px;
+    border: 1px solid #e1e8ed;
+    background: #fdfdfd;
+    border-radius: 15px;
+    padding: 14px 18px;
     font-size: 1rem;
     transition: all 0.2s;
   }
 
   .form-control:focus, .form-select:focus {
     background: #fff;
-    border-color: #000;
-    box-shadow: 0 0 0 4px rgba(0,0,0,0.02);
+    border-color: var(--app-primary);
+    box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.1);
     outline: none;
   }
 
-  .btn-submit {
-    background: #000;
+  .btn-submit-team {
+    background: var(--app-primary);
     color: #fff;
-    padding: 12px 30px;
-    border-radius: 12px;
-    font-weight: 600;
+    padding: 14px 35px;
+    border-radius: 15px;
+    font-weight: 700;
     border: none;
-    transition: 0.2s;
+    transition: all 0.2s;
+    box-shadow: 0 8px 20px rgba(0, 123, 255, 0.2);
   }
-  .btn-submit:hover { background: #333; }
+  .btn-submit-team:hover { 
+    background: #0056b3; 
+    transform: translateY(-2px);
+    box-shadow: 0 12px 25px rgba(0, 123, 255, 0.3);
+  }
 
-  .btn-cancel {
-    color: #999;
+  .btn-cancel-soft {
+    color: #adb5bd;
     text-decoration: none;
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     transition: 0.2s;
+    padding: 10px 20px;
   }
-  .btn-cancel:hover { color: #000; }
+  .btn-cancel-soft:hover { color: #495057; }
 
-  .form-text { font-size: 0.8rem; color: #bbb; margin-top: 6px; }
+  .form-text { font-size: 0.85rem; color: #999; margin-top: 8px; }
+
+  /* Icône décorative */
+  .header-icon {
+    font-size: 2.5rem;
+    color: var(--app-primary);
+    margin-bottom: 15px;
+    display: inline-block;
+  }
 </style>
 
-<div class="container pb-5">
+<div class="container">
   <div class="content-wrapper">
     
-    <div class="nav-header">
-      <a href="{% url 'teams' %}" class="btn-back shadow-sm">
-        <i class="bi bi-arrow-left"></i>
-      </a>
-    </div>
+    <a href="{% url 'teams' %}" class="btn-back-circle shadow-sm">
+      <i class="bi bi-arrow-left fs-5"></i>
+    </a>
 
     <div class="hero-section">
+      <div class="header-icon"><i class="bi bi-people-fill"></i></div>
       <h1 class="page-title">Nouvelle équipe</h1>
-      <p class="text-muted">Partagez vos ressources et collaborez sur vos projets.</p>
+      <p class="text-muted fs-5">Initialisez un espace de travail collaboratif pour vos projets de recherche.</p>
     </div>
 
-    <div class="form-container shadow-sm">
+    <div class="form-container">
       <form method="post">
         {% csrf_token %}
 
         <div class="mb-4">
           <label class="form-label">Nom de l’équipe</label>
-          <input type="text" name="name" class="form-control" placeholder="Ex: Projet Plasmides 2026" required>
-          <div class="form-text">Choisissez un nom clair pour vos collaborateurs.</div>
+          <input type="text" name="name" class="form-control" placeholder="Ex: Laboratoire Génétique Alpha" required>
+          <div class="form-text">Ce nom sera visible par tous les membres invités.</div>
         </div>
 
         <div class="mb-4">
-          <label class="form-label">Description <span style="font-weight: normal; text-transform: none;">(optionnel)</span></label>
-          <textarea name="description" class="form-control" rows="3" placeholder="Objectif ou contexte scientifique..."></textarea>
+          <label class="form-label">Description <span class="fw-normal text-muted" style="text-transform: none;">(optionnel)</span></label>
+          <textarea name="description" class="form-control" rows="4" placeholder="Décrivez brièvement les objectifs du groupe..."></textarea>
         </div>
 
         <div class="mb-5">
           <label class="form-label">Objectif principal</label>
           <select name="purpose" class="form-select">
-            <option value="">— Sélectionner un objectif —</option>
-            <option value="research">Recherche & développement</option>
-            <option value="experiments">Expérimentations & campagnes</option>
-            <option value="collaboration">Projet collaboratif / enseignement</option>
+            <option value="" disabled selected>— Pourquoi créez-vous cette équipe ? —</option>
+            <option value="research">🔬 Recherche & Développement</option>
+            <option value="experiments">🧪 Campagnes de simulation</option>
+            <option value="collaboration">🤝 Partage de collections</option>
           </select>
         </div>
 
-        <div class="d-flex align-items-center justify-content-end gap-4 mt-2">
-          <a href="{% url 'teams' %}" class="btn-cancel">
+        <div class="d-flex align-items-center justify-content-end gap-3 mt-2">
+          <a href="{% url 'teams' %}" class="btn-cancel-soft">
             Annuler
           </a>
-          <button type="submit" class="btn-submit">
-            Créer
+          <button type="submit" class="btn-submit-team">
+            Créer l'espace équipe
           </button>
         </div>
 

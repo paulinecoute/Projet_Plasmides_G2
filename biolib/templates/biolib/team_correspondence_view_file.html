@@ -3,69 +3,90 @@
 
 {% block content %}
 <style>
-  :root { --bg-main: #fcfcfc; --border-color: #eee; }
-  body { background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  
-  .content-wrapper { max-width: 900px; margin: 0 auto; padding-bottom: 60px; }
-
-  /* Bouton retour carré cohérent */
-  .btn-back-square {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 42px; height: 42px; background: #fff;
-    border: 1px solid var(--border-color); border-radius: 12px;
-    color: #000; transition: 0.2s; text-decoration: none; margin-bottom: 20px;
+  :root {
+    --bg-main: #f0f7ff;
+    --app-primary: #007bff;
+    --border-color: rgba(0, 123, 255, 0.1);
+    --text-dark: #004085;
+    --code-bg: #f8fbff;
   }
-  .btn-back-square:hover { border-color: #000; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
 
-  .hero-section { margin-bottom: 35px; margin-top: 10px; }
-  .page-title { font-weight: 900; font-size: 3rem; letter-spacing: -0.06em; color: #000; line-height: 1.1; margin-bottom: 8px; }
-  .page-subtitle { color: #888; font-size: 1.1rem; font-weight: 500; }
+  body { background-color: var(--bg-main); }
+  
+  .content-wrapper { max-width: 1000px; margin: 40px auto; padding-bottom: 60px; }
 
-  /* Carte d'aperçu du contenu */
+  .btn-back-circle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 45px; height: 45px; background: #fff;
+    border: 1px solid var(--border-color); border-radius: 15px;
+    color: var(--app-primary); transition: 0.2s; text-decoration: none; margin-bottom: 25px;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.05);
+  }
+  .btn-back-circle:hover { background: var(--app-primary); color: #fff; transform: translateX(-3px); }
+
+  .hero-section { margin-bottom: 35px; }
+  .page-title { font-weight: 800; font-size: 2.8rem; letter-spacing: -0.04em; color: var(--text-dark); line-height: 1.1; margin-bottom: 8px; }
+  .page-subtitle { color: #6c757d; font-size: 1.1rem; font-weight: 500; }
+
   .preview-card {
     background: #fff;
     border: 1px solid var(--border-color);
-    border-radius: 28px;
-    padding: 30px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+    border-radius: 30px;
+    padding: 10px; 
+    box-shadow: 0 10px 40px rgba(0, 123, 255, 0.06);
+    overflow: hidden;
   }
 
-  /* Zone de texte brute / code */
+  .code-container {
+    background: var(--code-bg);
+    border-radius: 22px;
+    padding: 30px;
+    border: 1px solid rgba(0, 123, 255, 0.05);
+  }
+
   .code-area {
-    font-family: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-    font-size: 0.85rem;
-    line-height: 1.6;
-    color: #333;
-    white-space: pre; /* Garde le formatage exact des colonnes CSV/TSV */
+    font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: #475569;
+    white-space: pre;
     max-height: 65vh;
     overflow: auto;
     margin: 0;
-    padding-right: 10px;
   }
 
-  /* Personnalisation de la scrollbar pour rester discret */
-  .code-area::-webkit-scrollbar { width: 6px; height: 6px; }
+  .code-area::-webkit-scrollbar { width: 8px; height: 8px; }
   .code-area::-webkit-scrollbar-track { background: transparent; }
-  .code-area::-webkit-scrollbar-thumb { background: #eee; border-radius: 10px; }
-  .code-area::-webkit-scrollbar-thumb:hover { background: #ddd; }
+  .code-area::-webkit-scrollbar-thumb { background: rgba(0, 123, 255, 0.1); border-radius: 20px; }
+  .code-area::-webkit-scrollbar-thumb:hover { background: rgba(0, 123, 255, 0.2); }
 </style>
 
-<div class="container mt-4">
+<div class="container">
   <div class="content-wrapper">
     
-    <div class="nav-header">
-      <a href="{% url 'team_correspondence_detail' team.id table.id %}" class="btn-back-square shadow-sm">
-        <i class="bi bi-arrow-left"></i>
-      </a>
-    </div>
+    <a href="{% url 'team_correspondence_detail' team.id table.id %}" class="btn-back-circle shadow-sm">
+      <i class="bi bi-arrow-left fs-5"></i>
+    </a>
 
     <div class="hero-section">
+      <span class="badge bg-primary bg-opacity-10 text-primary mb-2 px-3 py-2 rounded-pill fw-bold" style="font-size: 0.7rem;">
+        <i class="bi bi-eye-fill me-1"></i> MODE LECTURE
+      </span>
       <h1 class="page-title">{{ table.name }}</h1>
-      <p class="page-subtitle">Aperçu du contenu du fichier</p>
+      <p class="page-subtitle">Exploration des données brutes du fichier</p>
     </div>
 
-    <div class="preview-card shadow-sm">
-      <pre class="code-area">{{ content }}</pre>
+    <div class="preview-card">
+      <div class="code-container">
+        <pre class="code-area">{{ content }}</pre>
+      </div>
+    </div>
+    
+    <div class="mt-4 text-center">
+        <p class="text-muted small">
+            <i class="bi bi-info-circle me-1"></i> 
+            Cet aperçu affiche le contenu textuel brut. Pour modifier ces données, téléchargez le fichier original.
+        </p>
     </div>
 
   </div>

@@ -1,92 +1,166 @@
 {% extends "biolib/base.html" %}
 
 {% block content %}
-<div class="container mt-5">
-    
+<style>
+    /* Barre latérale et menu de navigation */
+    .list-group-item {
+        border: none;
+        border-radius: 12px !important;
+        margin-bottom: 5px;
+        background: transparent;
+        color: #495057;
+        transition: all 0.2s;
+    }
+
+    .list-group-item.active {
+        background-color: #007bff !important;
+        color: #fff !important;
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+    }
+
+    .list-group-item:hover:not(.active) {
+        background-color: rgba(0, 123, 255, 0.05);
+        color: #007bff;
+    }
+
+    /* Cartes des simulations */
+    .simu-card {
+        background: #fff;
+        border: 1px solid rgba(0, 123, 255, 0.1);
+        border-radius: 20px;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .simu-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.03) !important;
+        border-color: #007bff;
+    }
+
+    /* Bouton d'action principal (Bleu) */
+    .btn-create-simu {
+        background: #007bff;
+        color: white;
+        border-radius: 15px;
+        font-weight: 600;
+        padding: 12px;
+        border: none;
+        transition: opacity 0.2s;
+    }
+
+    .btn-create-simu:hover {
+        color: white;
+        opacity: 0.9;
+    }
+
+    /* Badges pour les statuts (Terminé, Erreur, etc.) */
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.75rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .status-completed { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .status-failed { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .status-running { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+
+    /* Petites étiquettes d'information (Enzyme, Fichier) */
+    .tag-info {
+        font-size: 0.75rem;
+        background: #f8f9fa;
+        color: #6c757d;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        padding: 4px 10px;
+    }
+</style>
+
+<div class="container mt-4">
     <div class="row g-4">
         
         <div class="col-md-4 col-lg-3">
-            
             <div class="d-grid mb-4">
-                <a href="{% url 'create_simulation' %}" class="btn btn-success btn-lg shadow-sm">
+                <a href="{% url 'create_simulation' %}" class="btn-create-simu shadow-sm text-center text-decoration-none">
                     <i class="bi bi-plus-lg me-2"></i> Nouvelle simulation
                 </a>
             </div>
 
-            <div class="list-group shadow-sm mb-4">
-                
+            <div class="list-group">
                 <a href="?view=recent" 
-                   class="list-group-item list-group-item-action py-3 d-flex align-items-center {% if current_view == 'recent' %}active fw-bold{% endif %}">
+                   class="list-group-item list-group-item-action py-3 d-flex align-items-center {% if current_view == 'recent' %}active{% endif %}">
                     <i class="bi bi-clock-history fs-5 me-3"></i>
-                    <div>Récents</div>
+                    <span>Récents</span>
                 </a>
 
                 <a href="?view=mine" 
-                   class="list-group-item list-group-item-action py-3 d-flex align-items-center {% if current_view == 'mine' %}active fw-bold{% endif %}">
-                    <i class="bi bi-lock fs-5 me-3"></i>
-                    <div>Mes simulations</div>
+                   class="list-group-item list-group-item-action py-3 d-flex align-items-center {% if current_view == 'mine' %}active{% endif %}">
+                    <i class="bi bi-person-workspace fs-5 me-3"></i>
+                    <span>Mes simulations</span>
                 </a>
 
                 <a href="?view=team" 
-                   class="list-group-item list-group-item-action py-3 d-flex align-items-center {% if current_view == 'team' %}active fw-bold{% endif %}">
+                   class="list-group-item list-group-item-action py-3 d-flex align-items-center {% if current_view == 'team' %}active{% endif %}">
                     <i class="bi bi-people fs-5 me-3"></i>
-                    <div>Simulations d'équipe</div>
+                    <span>Équipe</span>
                 </a>
             </div>
         </div>
 
         <div class="col-md-8 col-lg-9">
-            
-            <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
-                <h2 class="fw-bold m-0">{{ page_title }}</h2>
-                <span class="badge bg-secondary rounded-pill">{{ simulations.count }}</span>
+            <div class="d-flex justify-content-between align-items-center mb-4 pb-2">
+                <h2 class="fw-bold m-0" style="color: #004085;">{{ page_title }}</h2>
+                <span class="badge rounded-pill bg-white border text-dark px-3 py-2 shadow-sm">{{ simulations.count }} lancements</span>
             </div>
 
             <div class="row">
                 {% for simu in simulations %}
                     <div class="col-12 mb-3">
-                        <div class="card shadow-sm border h-100 hover-shadow transition-all">
-                            <div class="card-body">
+                        <div class="card simu-card shadow-sm border-0">
+                            <div class="card-body p-4">
                                 <div class="d-flex justify-content-between align-items-start">
                                     
-                                    <div>
-                                        <h5 class="fw-bold text-primary mb-1">
-                                            <a href="{% url 'simulation_result' pk=simu.id %}" class="text-decoration-none text-primary stretched-link">
+                                    <div class="flex-grow-1">
+                                        <h5 class="fw-bold mb-1">
+                                            <a href="{% url 'simulation_result' pk=simu.id %}" class="text-decoration-none text-dark stretched-link">
                                                 {% if simu.name %}{{ simu.name }}{% else %}Simulation #{{ simu.id }}{% endif %}
                                             </a>
                                         </h5>
                                         
-                                        <div class="text-muted small mb-2">
-                                            <i class="bi bi-calendar3 me-1"></i> {{ simu.date_run|date:"d M Y à H:i" }} 
-                                            <span class="mx-2">•</span>
-                                            <i class="bi bi-person me-1"></i> {{ simu.user.username|default:"Invité" }}
+                                        <div class="text-muted small mb-3 d-flex align-items-center flex-wrap gap-2">
+                                            <span><i class="bi bi-calendar3 me-1"></i> {{ simu.date_run|date:"d M Y à H:i" }}</span>
+                                            <span class="opacity-25">|</span>
+                                            <span><i class="bi bi-person me-1"></i> {{ simu.user.username|default:"Invité" }}</span>
                                             
                                             {% if simu.team %}
-                                                <span class="ms-2 badge bg-info text-dark">
+                                                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2" style="font-size: 0.65rem;">
                                                     {{ simu.team.name }}
                                                 </span>
                                             {% else %}
-                                                <span class="ms-2 badge bg-warning text-dark">
-                                                    Privé
+                                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2" style="font-size: 0.65rem;">
+                                                    PRIVÉ
                                                 </span>
                                             {% endif %}
                                         </div>
                                         
-                                        <div class="mt-1">
-                                            <span class="badge bg-light text-dark border fw-normal">Enzyme : {{ simu.enzyme }}</span>
+                                        <div class="d-flex gap-2">
+                                            <span class="tag-info"><i class="bi bi-scissors me-1"></i> {{ simu.enzyme }}</span>
                                             {% if simu.template_file %}
-                                                <span class="badge bg-light text-dark border fw-normal">Template : {{ simu.template_file.name|truncatechars:25 }}</span>
+                                                <span class="tag-info"><i class="bi bi-file-earmark-code me-1"></i> {{ simu.template_file.name|truncatechars:20 }}</span>
                                             {% endif %}
                                         </div>
                                     </div>
 
-                                    <div>
+                                    <div style="position: relative; z-index: 2;">
                                         {% if simu.status == 'COMPLETED' %}
-                                            <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Terminé</span>
+                                            <span class="status-badge status-completed"><i class="bi bi-check-circle"></i> Terminé</span>
                                         {% elif simu.status == 'FAILED' %}
-                                            <span class="badge bg-danger"><i class="bi bi-exclamation-triangle me-1"></i> Échec</span>
+                                            <span class="status-badge status-failed"><i class="bi bi-exclamation-triangle"></i> Échec</span>
                                         {% else %}
-                                            <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> En cours</span>
+                                            <span class="status-badge status-running"><i class="bi bi-hourglass-split"></i> En cours</span>
                                         {% endif %}
                                     </div>
 
@@ -96,31 +170,15 @@
                     </div>
                 {% empty %}
                     <div class="col-12">
-                        <div class="text-center py-5 bg-light rounded border border-dashed">
-                            <i class="bi bi-inbox fs-1 text-muted mb-3"></i>
-                            <h4>Aucune simulation trouvée</h4>
-                            <p class="text-muted">Il n'y a rien à afficher dans cette catégorie pour le moment.</p>
-                            {% if current_view == 'mine' or current_view == 'recent' %}
-                                <a href="{% url 'create_simulation' %}" class="btn btn-primary mt-2">Lancer une simulation</a>
-                            {% endif %}
+                        <div class="text-center py-5 bg-white shadow-sm rounded-4 border border-dashed">
+                            <i class="bi bi-inbox fs-1 text-muted opacity-25 mb-3 d-block"></i>
+                            <h4 class="fw-bold">Aucune simulation</h4>
+                            <p class="text-muted small">Vous n'avez pas encore lancé d'analyse.</p>
                         </div>
                     </div>
                 {% endfor %}
             </div>
-
         </div>
     </div>
 </div>
-
-<style>
-    /* Style harmonisé */
-    .hover-shadow:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
-        transition: all 0.2s ease-in-out;
-    }
-    .transition-all {
-        transition: all 0.2s ease-in-out;
-    }
-</style>
 {% endblock %}

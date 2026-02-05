@@ -1,7 +1,34 @@
 {% extends 'biolib/base.html' %}
 
 {% block content %}
-<div class="container">
+<style>
+  /* Notre style de bouton retour cohérent avec le reste de l'app */
+  .btn-back-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    background: #fff;
+    border: 1px solid rgba(0, 123, 255, 0.1);
+    border-radius: 15px;
+    color: #007bff;
+    transition: all 0.2s;
+    text-decoration: none;
+    margin-bottom: 20px;
+  }
+  .btn-back-circle:hover { 
+    background: #007bff; 
+    color: #fff;
+    transform: translateX(-3px);
+  }
+</style>
+
+<div class="container py-4">
+    <a href="{% url 'plasmid_collection_detail' plasmid.collection.id %}" class="btn-back-circle shadow-sm">
+        <i class="bi bi-arrow-left fs-5"></i>
+    </a>
+
     <h2>Visualisation : {{ plasmid.name }}</h2>
 
     <div id="seqviz-root" style="height: 600px; width: 100%; border: 1px solid #ccc; margin-top: 20px;"></div>
@@ -17,28 +44,22 @@
     document.addEventListener("DOMContentLoaded", function() {
         
         // On récupère les données envoyées par Django via le tag 'escapejs'
-        // Cela transforme le contenu Python en chaîne de caractères JS sécurisée
         const plasmidName = "{{ plasmid.identifier|escapejs }}";
         const fileContent = "{{ genbank_content|escapejs }}";
 
-        // Définition des options
         const viewerOptions = {
             name: plasmidName,
-            // SeqViz est capable de lire le contenu GenBank directement via la prop 'file' (même si dépréciée, c'est le plus simple ici)
-            // ou via 'seq' si c'est juste une séquence brute.
             file: fileContent, 
             style: { height: "100%", width: "100%" },
-            viewer: "both", // Affiche linéaire et circulaire
+            viewer: "both", 
             showComplement: true,
             zoom: { linear: 50 }
         };
 
-        // 3. Rendu "Without React" comme indiqué dans le README
         const element = document.getElementById("root");
         
-        // SeqViz expose un objet global window.seqviz
         window.seqviz
-            .Viewer("seqviz-root", viewerOptions) // On cible l'ID de la div
+            .Viewer("seqviz-root", viewerOptions) 
             .render();
     });
 </script>

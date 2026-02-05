@@ -3,120 +3,200 @@
 
 {% block content %}
 <style>
-  :root { --bg-main: #fcfcfc; --border-color: #eee; }
-
-  body { background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-
-  .content-wrapper { max-width: 800px; margin: 0 auto; }
-
-  .nav-header { padding: 20px 0; margin-bottom: 20px; }
-
-  .btn-back {
-    width: 40px; height: 40px;
-    background: #fff;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  :root {
+    --bg-main: #f0f7ff;
+    --app-primary: #007bff;
+    --border-color: rgba(0, 123, 255, 0.1);
+    --text-dark: #004085;
   }
 
-  .hero-section { margin-bottom: 40px; }
+  body { background-color: var(--bg-main); }
+
+  .content-wrapper { 
+    max-width: 850px; 
+    margin: 40px auto; 
+    padding-bottom: 80px;
+  }
+
+  /* Le fameux bouton retour circulaire */
+  .btn-back-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 15px;
+    color: var(--app-primary);
+    transition: all 0.2s;
+    text-decoration: none;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.05);
+  }
+  .btn-back-circle:hover { 
+    background: var(--app-primary); 
+    color: #fff;
+    transform: translateX(-3px);
+  }
+
+  /* Header de la collection */
+  .collection-hero {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 35px;
+    margin-bottom: 35px;
+    box-shadow: 0 10px 30px rgba(0, 123, 255, 0.05);
+  }
 
   .collection-title {
     font-weight: 800;
-    font-size: 2.2rem;
-    margin-bottom: 8px;
+    font-size: 2.4rem;
+    color: var(--text-dark);
+    letter-spacing: -0.04em;
+    margin-bottom: 10px;
   }
 
+  /* Liste des Plasmides */
   .list-container {
     background: #fff;
     border: 1px solid var(--border-color);
-    border-radius: 20px;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
   }
 
   .plasmid-row {
     display: flex;
     align-items: center;
-    padding: 16px 24px;
-    border-bottom: 1px solid var(--border-color);
+    padding: 20px 30px;
+    border-bottom: 1px solid #f8fbff;
+    transition: all 0.2s;
+  }
+
+  .plasmid-row:hover {
+    background: #fcfdff;
   }
 
   .plasmid-row:last-child { border-bottom: none; }
 
-  .id-prefix {
-    font-family: monospace;
-    font-size: 0.7rem;
-    background: #f1f1f1;
-    padding: 4px 8px;
-    border-radius: 6px;
-    margin-right: 16px;
+  .id-badge {
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: #eef6ff;
+    color: var(--app-primary);
+    padding: 6px 12px;
+    border-radius: 10px;
+    margin-right: 20px;
   }
 
-  .file-name { font-weight: 600; }
+  .file-name { 
+    font-weight: 700; 
+    color: #444; 
+    font-size: 1.05rem;
+  }
 
-  .btn-delete-min {
+  /* Actions */
+  .btn-upload-biolib {
+    background: var(--app-primary);
+    color: #fff;
+    padding: 12px 25px;
+    border-radius: 14px;
+    font-weight: 700;
+    border: none;
+    transition: all 0.2s;
+    box-shadow: 0 8px 20px rgba(0, 123, 255, 0.15);
+  }
+  .btn-upload-biolib:hover {
+    background: #0056b3;
+    color: #fff;
+    transform: translateY(-2px);
+  }
+
+  .btn-delete-action {
     background: none;
     border: none;
-    color: #ccc;
+    color: #ced4da;
     padding: 8px;
+    border-radius: 10px;
+    transition: all 0.2s;
   }
-  .btn-delete-min:hover { color: #ff4d4d; }
+  .btn-delete-action:hover { 
+    color: #dc3545; 
+    background: #fff5f5;
+  }
+
+  .empty-msg {
+    padding: 60px;
+    text-align: center;
+    color: #adb5bd;
+  }
 </style>
 
-<div class="container pb-5">
+<div class="container">
   <div class="content-wrapper">
 
-    <div class="nav-header">
-      <a href="{% url 'team_collections' team.id %}" class="btn-back shadow-sm">
-        <i class="bi bi-arrow-left"></i>
-      </a>
-    </div>
+    <a href="{% url 'team_collections' team.id %}" class="btn-back-circle shadow-sm">
+      <i class="bi bi-arrow-left fs-5"></i>
+    </a>
 
-    <div class="hero-section">
+    <div class="collection-hero">
       <div class="row align-items-center">
-        <div class="col">
+        <div class="col-lg-8">
+          <span class="badge bg-primary bg-opacity-10 text-primary mb-2 px-3 py-2 rounded-pill fw-bold" style="font-size: 0.7rem;">
+            <i class="bi bi-collection-play-fill me-1"></i> COLLECTION D'ÉQUIPE
+          </span>
           <h1 class="collection-title">{{ collection.name }}</h1>
           {% if collection.description %}
-            <p class="text-muted">{{ collection.description }}</p>
+            <p class="text-muted mb-0">{{ collection.description }}</p>
           {% endif %}
         </div>
 
         {% if is_owner %}
-        <div class="col-auto">
+        <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
           <a href="{% url 'plasmid_upload' collection.id %}?next={{ request.path }}"
-             class="btn btn-dark rounded-pill px-4 fw-bold shadow-sm">
-            Ajouter
+             class="btn-upload-biolib text-decoration-none">
+            <i class="bi bi-plus-circle-fill me-2"></i> Ajouter
           </a>
         </div>
         {% endif %}
       </div>
     </div>
 
-    <div class="list-container shadow-sm">
+    <div class="mb-3 px-2 d-flex justify-content-between">
+        <h5 class="fw-bold text-dark small text-uppercase" style="letter-spacing: 0.05em;">Séquences enregistrées</h5>
+        <span class="text-muted small">{{ collection.plasmids.count }} élément(s)</span>
+    </div>
+
+    <div class="list-container">
       {% for plasmid in collection.plasmids.all %}
       <div class="plasmid-row">
-        <div class="id-prefix">GB</div>
+        <div class="id-badge">GB</div>
 
         <div class="flex-grow-1">
           <span class="file-name">{{ plasmid.identifier }}</span>
         </div>
 
-        {% if is_owner %}
-        <form method="post" action="{% url 'plasmid_delete' plasmid.id %}">
-          {% csrf_token %}
-          <input type="hidden" name="next" value="{{ request.path }}">
-          <button type="submit"
-                  class="btn-delete-min"
-                  onclick="return confirm('Supprimer ce plasmide ?');">
-            <i class="bi bi-trash3"></i>
-          </button>
-        </form>
-        {% endif %}
+        <div class="d-flex align-items-center gap-2">
+            {% if is_owner %}
+            <form method="post" action="{% url 'plasmid_delete' plasmid.id %}">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.path }}">
+              <button type="submit"
+                      class="btn-delete-action"
+                      onclick="return confirm('Supprimer ce plasmide de la collection ?');">
+                <i class="bi bi-trash3"></i>
+              </button>
+            </form>
+            {% endif %}
+        </div>
       </div>
       {% empty %}
-      <div class="p-5 text-center text-muted">
-        Aucun plasmide dans cette collection.
+      <div class="empty-msg">
+        <i class="bi bi-folder2 text-light fs-1 d-block mb-3"></i>
+        Aucun plasmide dans cette collection pour le moment.
       </div>
       {% endfor %}
     </div>

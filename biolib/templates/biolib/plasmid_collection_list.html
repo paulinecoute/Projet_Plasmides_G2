@@ -1,99 +1,203 @@
-{% extends 'biolib/base.html' %}
+{% extends "biolib/base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<style>
+  :root {
+    --bg-main: #f0f7ff;
+    --app-primary: #007bff;
+    --border-color: rgba(0, 123, 255, 0.1);
+    --text-dark: #004085;
+  }
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>{{ page_title }}</h1>
+  body { background-color: var(--bg-main); }
 
-        {% if user.is_authenticated %}
-        <a href="{% url 'collection_create' %}" class="btn btn-primary">
-            <i class="bi bi-plus-lg"></i> Nouvelle Collection
-        </a>
-        {% endif %}
+  .content-wrapper {
+    max-width: 1100px;
+    margin: 40px auto;
+    padding-bottom: 80px;
+  }
+
+  /* Header & Title */
+  .hero-section { margin-bottom: 35px; }
+  .page-title {
+    font-weight: 800;
+    font-size: 2.5rem;
+    color: var(--text-dark);
+    letter-spacing: -0.04em;
+  }
+
+  /* Tabs Design */
+  .nav-tabs {
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 30px;
+    gap: 10px;
+  }
+  .nav-tabs .nav-link {
+    border: none;
+    color: #6c757d;
+    font-weight: 700;
+    padding: 10px 20px;
+    border-radius: 12px 12px 0 0;
+    transition: 0.2s;
+  }
+  .nav-tabs .nav-link:hover {
+    color: var(--app-primary);
+    background: rgba(0, 123, 255, 0.05);
+  }
+  .nav-tabs .nav-link.active {
+    color: var(--app-primary);
+    background: transparent;
+    border-bottom: 3px solid var(--app-primary);
+  }
+
+  /* Card Design */
+  .collection-card {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 25px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    position: relative;
+  }
+  .collection-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 123, 255, 0.1);
+    border-color: var(--app-primary);
+  }
+
+  .card-name {
+    font-weight: 800;
+    color: var(--text-dark);
+    font-size: 1.25rem;
+    margin-bottom: 8px;
+  }
+
+  .badge-status {
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .btn-create-biolib {
+    background: var(--app-primary);
+    color: #fff;
+    padding: 10px 25px;
+    border-radius: 15px;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: 0 8px 20px rgba(0, 123, 255, 0.2);
+    transition: 0.2s;
+  }
+  .btn-create-biolib:hover {
+    background: #0056b3;
+    color: #fff;
+    transform: translateY(-2px);
+  }
+
+  .btn-open-card {
+    color: var(--app-primary);
+    border: 1px solid var(--app-primary);
+    border-radius: 12px;
+    font-weight: 700;
+    padding: 6px 15px;
+    font-size: 0.9rem;
+    transition: 0.2s;
+  }
+  .collection-card:hover .btn-open-card {
+    background: var(--app-primary);
+    color: #fff;
+  }
+</style>
+
+<div class="container">
+  <div class="content-wrapper">
+
+    <div class="hero-section d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h1 class="page-title">{{ page_title }}</h1>
+        <p class="text-muted mb-0">Accédez à vos ressources biologiques partagées ou privées.</p>
+      </div>
+      {% if user.is_authenticated %}
+      <a href="{% url 'collection_create' %}" class="btn-create-biolib">
+        <i class="bi bi-plus-lg me-2"></i>Nouvelle Collection
+      </a>
+      {% endif %}
     </div>
 
     {% if user.is_authenticated %}
-    <ul class="nav nav-tabs mb-4">
-        <li class="nav-item">
-            <a class="nav-link {% if current_view == 'my' %}active{% endif %}" 
-               href="?view=my">
-                Personnelles
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link {% if current_view == 'team' %}active{% endif %}" 
-               href="?view=team">
-                Équipes
-            </a>
-        </li>
+    <ul class="nav nav-tabs">
+      <li class="nav-item">
+        <a class="nav-link {% if current_view == 'my' %}active{% endif %}" href="?view=my">
+          <i class="bi bi-person me-2"></i>Personnelles
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {% if current_view == 'team' %}active{% endif %}" href="?view=team">
+          <i class="bi bi-people me-2"></i>Équipes
+        </a>
+      </li>
     </ul>
     {% endif %}
 
     {% if collections %}
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        {% for col in collections %}
-        <div class="col">
-            <div class="card h-100 shadow-sm hover-shadow">
-                <div class="card-body">
+    <div class="row g-4">
+      {% for col in collections %}
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="collection-card">
+          
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <h5 class="card-name text-truncate" title="{{ col.name }}">{{ col.name }}</h5>
+            
+            {% if col.team %}
+              <span class="badge bg-info text-dark badge-status">{{ col.team.name }}</span>
+            {% elif col.is_public %}
+              <span class="badge bg-success badge-status">Public</span>
+            {% else %}
+              <span class="badge bg-secondary badge-status">Privé</span>
+            {% endif %}
+          </div>
 
-                    <div class="d-flex justify-content-between align-items-start">
-                        <h5 class="card-title text-truncate" title="{{ col.name }}">
-                            {{ col.name }}
-                        </h5>
+          <p class="text-muted small flex-grow-1">
+            {{ col.description|default:"Pas de description fournie."|truncatechars:100 }}
+          </p>
 
-                        {% if col.team %}
-                            <span class="badge bg-info text-dark">{{ col.team.name }}</span>
-                        {% elif col.is_public %}
-                            <span class="badge bg-success">Public</span>
-                        {% else %}
-                            <span class="badge bg-secondary">Privé</span>
-                        {% endif %}
-                    </div>
+          <div class="d-flex justify-content-between align-items-center mt-4">
+            <span class="fw-bold text-primary" style="font-size: 0.85rem;">
+              {{ col.plasmids.count }} plasmides
+            </span>
+            <a href="{% url 'plasmid_collection_detail' col.id %}" class="btn btn-open-card stretched-link">
+              Ouvrir
+            </a>
+          </div>
 
-                    <p class="card-text text-muted small mt-2">
-                        {{ col.description|default:"Pas de description."|truncatechars:100 }}
-                    </p>
-
-                    <div class="d-flex justify-content-between align-items-center mt-3">
-                        <small class="text-muted">
-                            {{ col.plasmids.count }} plasmides
-                        </small>
-
-                        <a href="{% url 'plasmid_collection_detail' col.id %}"
-                           class="btn btn-outline-primary btn-sm stretched-link">
-                            Ouvrir
-                        </a>
-                    </div>
-
-                </div>
-
-                <div class="card-footer bg-transparent border-top-0 text-end">
-                    <small class="text-muted" style="font-size: 0.75rem;">
-                        {% if col.owner %}
-                            Propriétaire : {{ col.owner.username }}
-                        {% else %}
-                            Collection publique
-                        {% endif %}
-                    </small>
-                </div>
-            </div>
+          <div class="mt-3 pt-3 border-top">
+            <small class="text-muted" style="font-size: 0.75rem;">
+              {% if col.owner %}
+                <i class="bi bi-person-circle"></i> Propriétaire : {{ col.owner.username }}
+              {% else %}
+                <i class="bi bi-globe"></i> Collection publique
+              {% endif %}
+            </small>
+          </div>
         </div>
-        {% endfor %}
+      </div>
+      {% endfor %}
     </div>
-
     {% else %}
-    <div class="alert alert-info text-center">
-        Aucune collection trouvée.
+    <div class="alert shadow-sm border-0 text-center py-5" style="background: #fff; border-radius: 24px;">
+      <i class="bi bi-folder-x fs-1 text-muted opacity-25 mb-3 d-block"></i>
+      <h5 class="text-muted">Aucune collection trouvée.</h5>
+      <p class="text-muted small">Commencez par en créer une pour organiser vos actifs.</p>
     </div>
     {% endif %}
-</div>
 
-<style>
-    .hover-shadow:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
-        transition: 0.3s;
-    }
-</style>
+  </div>
+</div>
 {% endblock %}

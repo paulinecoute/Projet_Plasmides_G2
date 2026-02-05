@@ -3,58 +3,80 @@
 
 {% block content %}
 <style>
-  :root { --bg-main: #fcfcfc; --border-color: #eee; }
-  body { background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  .content-wrapper { max-width: 900px; margin: 0 auto; padding-bottom: 60px; }
-
-  /* Bouton retour carré */
-  .btn-back-square {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 42px; height: 42px; background: #fff;
-    border: 1px solid var(--border-color); border-radius: 12px;
-    color: #000; transition: 0.2s; text-decoration: none; margin-bottom: 20px;
+  :root {
+    --bg-main: #f0f7ff;
+    --app-primary: #007bff;
+    --border-color: rgba(0, 123, 255, 0.1);
+    --text-dark: #004085;
   }
-  .btn-back-square:hover { border-color: #000; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
 
-  .hero-section { margin-bottom: 40px; margin-top: 10px; }
-  .table-title { font-weight: 900; font-size: 3.2rem; letter-spacing: -0.06em; color: #000; line-height: 1.1; margin-bottom: 12px; }
-  .table-desc { font-size: 1.15rem; color: #666; font-weight: 500; max-width: 650px; line-height: 1.5; }
+  body { background-color: var(--bg-main); }
+  .content-wrapper { max-width: 900px; margin: 40px auto; padding-bottom: 60px; }
 
-  /* Card de fichier */
+  /* Bouton retour circulaire BioLib */
+  .btn-back-circle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 45px; height: 45px; background: #fff;
+    border: 1px solid var(--border-color); border-radius: 15px;
+    color: var(--app-primary); transition: 0.2s; text-decoration: none; margin-bottom: 25px;
+  }
+  .btn-back-circle:hover { background: var(--app-primary); color: #fff; transform: translateX(-3px); }
+
+  .hero-section { margin-bottom: 40px; }
+  .table-title { font-weight: 800; font-size: 2.8rem; letter-spacing: -0.04em; color: var(--text-dark); line-height: 1.1; margin-bottom: 12px; }
+  .table-desc { font-size: 1.1rem; color: #6c757d; font-weight: 500; max-width: 650px; line-height: 1.5; }
+
+  /* Card de fichier BioLib */
   .card-box {
     background: #fff; border: 1px solid var(--border-color);
-    border-radius: 24px; padding: 25px; margin-bottom: 30px;
+    border-radius: 28px; padding: 30px; margin-bottom: 30px;
+    box-shadow: 0 10px 30px rgba(0, 123, 255, 0.05);
   }
 
-  .file-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .file-left { display: flex; align-items: center; gap: 15px; font-weight: 700; color: #111; }
+  .file-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+  .file-left { display: flex; align-items: center; gap: 18px; }
 
-  /* Boutons Pilules */
-  .btn-pill {
-    border-radius: 999px; padding: 10px 22px; font-weight: 800; font-size: 0.85rem;
-    transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border-color);
-    text-decoration: none; cursor: pointer;
+  .file-icon-box {
+    width: 56px; height: 56px; background: #f0f7ff; border-radius: 18px; 
+    display: flex; align-items: center; justify-content: center; 
+    color: var(--app-primary); font-size: 1.5rem;
   }
-  .btn-pill-dark { background: #000; color: #fff; border: none; }
-  .btn-pill-dark:hover { background: #333; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); color: #fff; }
+
+  /* Boutons Pilules BioLib */
+  .btn-pill-biolib {
+    border-radius: 15px; padding: 10px 20px; font-weight: 700; font-size: 0.85rem;
+    transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; 
+    text-decoration: none !important; border: 1px solid transparent;
+  }
   
-  .btn-pill-outline { background: #fff; color: #666; }
-  .btn-pill-outline:hover { border-color: #000; color: #000; }
+  .btn-pill-primary { background: var(--app-primary); color: #fff; border: none; }
+  .btn-pill-primary:hover { background: #0056b3; transform: translateY(-2px); color: #fff; box-shadow: 0 5px 15px rgba(0, 123, 255, 0.2); }
+  
+  .btn-pill-outline { background: #fff; color: var(--app-primary); border-color: var(--border-color); }
+  .btn-pill-outline:hover { background: #f8fbff; border-color: var(--app-primary); }
 
-  .btn-pill-danger { background: #fff; color: #ef4444; border-color: #fee2e2; }
-  .btn-pill-danger:hover { background: #ef4444; color: #fff; border-color: #ef4444; }
+  .btn-pill-danger-outline { background: #fff; color: #dc3545; border-color: #f8d7da; }
+  .btn-pill-danger-outline:hover { background: #dc3545; color: #fff; border-color: #dc3545; }
+
+  .custom-file-input {
+    border-radius: 12px; border: 1px solid var(--border-color);
+    padding: 8px 12px; font-size: 0.85rem; background: #fdfdfd;
+  }
 </style>
 
-<div class="container mt-4">
+<div class="container">
   <div class="content-wrapper">
 
-    <a href="{% url 'team_correspondences' team.id %}" class="btn-back-square shadow-sm">
-      <i class="bi bi-arrow-left"></i>
+    <a href="{% url 'team_correspondences' team.id %}" class="btn-back-circle shadow-sm">
+      <i class="bi bi-arrow-left fs-5"></i>
     </a>
 
     <div class="hero-section">
-      <div class="row align-items-end">
-        <div class="col">
+      <div class="row align-items-end g-4">
+        <div class="col-md">
+          <span class="badge bg-primary bg-opacity-10 text-primary mb-2 px-3 py-2 rounded-pill fw-bold" style="font-size: 0.7rem;">
+            <i class="bi bi-table me-1"></i> TABLE DE CORRESPONDANCE
+          </span>
           <h1 class="table-title">{{ table.name }}</h1>
           {% if table.description %}
             <p class="table-desc">{{ table.description }}</p>
@@ -62,10 +84,10 @@
         </div>
         
         {% if is_owner %}
-        <div class="col-auto">
-          <form method="post" action="{% url 'team_correspondence_delete' team.id table.id %}" onsubmit="return confirm('Supprimer définitivement ?');">
+        <div class="col-md-auto">
+          <form method="post" action="{% url 'team_correspondence_delete' team.id table.id %}" onsubmit="return confirm('Supprimer définitivement cette table ?');">
             {% csrf_token %}
-            <button type="submit" class="btn-pill btn-pill-danger shadow-sm">
+            <button type="submit" class="btn-pill-biolib btn-pill-danger-outline">
               <i class="bi bi-trash3"></i> Supprimer la table
             </button>
           </form>
@@ -74,50 +96,52 @@
       </div>
     </div>
 
-    <div class="card-box shadow-sm">
+    <div class="card-box">
       <div class="file-row">
         <div class="file-left">
-          <div style="width: 48px; height: 48px; background: #f8f8f8; border-radius: 14px; display: flex; align-items: center; justify-content: center; border: 1px solid #eee;">
-            <i class="bi bi-file-earmark-spreadsheet text-dark fs-4"></i>
+          <div class="file-icon-box">
+            <i class="bi bi-file-earmark-spreadsheet-fill"></i>
           </div>
           <div class="d-flex flex-column">
-            <span class="fw-bold" style="font-size: 1.05rem;">
-              {% if table.file %}{{ table.file.name|cut:"correspondences/" }}{% else %}Aucun fichier associé{% endif %}
+            <span class="fw-bold text-dark" style="font-size: 1.1rem;">
+              {% if table.file %}{{ table.file.name|cut:"correspondences/" }}{% else %}En attente de données...{% endif %}
             </span>
-            <span class="text-muted small fw-medium">Feuille de calcul (.xlsx, .csv)</span>
+            <span class="text-muted small fw-bold text-uppercase" style="letter-spacing: 0.05em; font-size: 0.7rem;">
+                Format CSV ou Excel requis
+            </span>
           </div>
         </div>
 
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap">
           {% if table.file %}
-            {# ACTIONS SI FICHIER EXISTE #}
-            <a href="{% url 'team_correspondence_view_file' team.id table.id %}" class="btn-pill btn-pill-outline">
-              <i class="bi bi-eye"></i> Voir
+            <a href="{% url 'team_correspondence_view_file' team.id table.id %}" class="btn-pill-biolib btn-pill-outline">
+              <i class="bi bi-eye"></i> Aperçu
             </a>
             
-            <a href="{{ table.file.url }}" download class="btn-pill btn-pill-outline">
+            <a href="{{ table.file.url }}" download class="btn-pill-biolib btn-pill-outline">
               <i class="bi bi-download"></i>
             </a>
 
             {% if is_owner %}
-              <button type="button" class="btn-pill btn-pill-dark shadow-sm" id="btn-replace-file">
-                <i class="bi bi-pencil-square"></i> Modifier
+              <button type="button" class="btn-pill-biolib btn-pill-primary" id="btn-replace-file">
+                <i class="bi bi-arrow-repeat"></i> Remplacer
               </button>
 
               <form id="replace-file-form" method="post" enctype="multipart/form-data" 
                     action="{% url 'team_correspondence_attach_file' team.id table.id %}" style="display:none;">
                 {% csrf_token %}
-                <input type="file" name="file" id="replace-file-input" required>
+                <input type="file" name="file" id="replace-file-input" accept=".csv, .xlsx, .xls">
               </form>
             {% endif %}
 
           {% else %}
-            {# ACTION SI PAS DE FICHIER #}
             {% if is_owner %}
               <form method="post" enctype="multipart/form-data" action="{% url 'team_correspondence_attach_file' team.id table.id %}" class="d-flex gap-2 align-items-center">
                 {% csrf_token %}
-                <input type="file" name="file" required class="form-control form-control-sm rounded-3" style="max-width: 200px;">
-                <button class="btn-pill btn-pill-dark shadow-sm">Ajouter</button>
+                <input type="file" name="file" required class="custom-file-input" accept=".csv, .xlsx, .xls">
+                <button class="btn-pill-biolib btn-pill-primary">
+                    Importer
+                </button>
               </form>
             {% endif %}
           {% endif %}
@@ -128,9 +152,10 @@
   </div>
 </div>
 
-{# SCRIPT LOGIQUE MODIFIER #}
+{# Script pour le déclenchement de l'input caché #}
 {% if table.file and is_owner %}
 <script>
+  /* Commentaire : Gestion du remplacement de fichier sans rafraîchissement manuel */
   (function () {
     const btn = document.getElementById("btn-replace-file");
     const input = document.getElementById("replace-file-input");

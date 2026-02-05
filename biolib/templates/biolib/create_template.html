@@ -1,64 +1,158 @@
 {% extends "biolib/base.html" %}
 
 {% block content %}
-<div class="container mt-5">
-    <h2>Créer un nouveau template</h2>
+<style>
+    :root {
+        --app-primary: #007bff;
+        --app-bg-light: #f0f7ff;
+    }
+
+    .form-card {
+        background: #fff;
+        border: 1px solid rgba(0, 123, 255, 0.1);
+        border-radius: 24px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+        overflow: hidden;
+    }
+
+    .card-header-custom {
+        background: white;
+        padding: 20px 30px;
+        border-bottom: 1px solid rgba(0, 123, 255, 0.05);
+    }
+
+    .card-header-custom h5 {
+        font-weight: 700;
+        color: #004085;
+    }
+
+    .form-control, .form-select {
+        border-radius: 12px;
+        border: 1px solid #e1e8ed;
+        padding: 10px 15px;
+        transition: all 0.2s;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: var(--app-primary);
+        box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.1);
+    }
+
+    .table-parts thead th {
+        background: var(--app-bg-light);
+        color: #004085;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border: none;
+        padding: 15px;
+    }
+
+    .table-parts tbody td {
+        padding: 15px;
+        border-bottom: 1px solid #f8f9fa;
+    }
+
+    .part-form-row {
+        transition: background 0.2s;
+    }
+
+    .part-form-row:hover {
+        background-color: #fafcfe;
+    }
+
+    .btn-save {
+        background: var(--app-primary);
+        color: white;
+        border-radius: 15px;
+        padding: 12px 30px;
+        font-weight: 600;
+        border: none;
+    }
+
+    .btn-add-part {
+        background: white;
+        color: #198754;
+        border: 2px dashed #198754;
+        border-radius: 15px;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+
+    .btn-add-part:hover {
+        background: #f1fcf7;
+        color: #146c43;
+    }
+
+    .guest-alert {
+        background: #eef6ff;
+        border-radius: 20px;
+        border: 1px solid #d1e7ff;
+        color: #004085;
+    }
+</style>
+
+<div class="container mt-4 mb-5">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{% url 'template' %}" class="btn btn-light rounded-circle me-3 p-2 shadow-sm">
+            <i class="bi bi-arrow-left fs-5"></i>
+        </a>
+        <h2 class="fw-bold m-0" style="color: #004085;">Créer un nouveau template</h2>
+    </div>
     
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         
-        <div class="card mb-4 shadow-sm">
-            <div class="card-header bg-light">
-                <h5 class="mb-0">Informations générales</h5>
+        <div class="form-card mb-4">
+            <div class="card-header-custom">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Informations générales</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
                 <div class="row">
                     <div class="col-md-4 mb-3">
-                        <label class="form-label">Nom du template</label>
+                        <label class="form-label fw-semibold">Nom du template</label>
                         {{ form.name }}
                         {% if form.name.errors %}
-                            <div class="text-danger small">{{ form.name.errors }}</div>
+                            <div class="text-danger small mt-1">{{ form.name.errors }}</div>
                         {% endif %}
                     </div>
                     
                     <div class="col-md-4 mb-3">
-                        <label class="form-label">Enzyme de restriction</label>
+                        <label class="form-label fw-semibold">Enzyme de restriction</label>
                         {{ form.enzyme }}
                     </div>
 
                     <div class="col-md-4 mb-3">
-                        <label class="form-label">Séparateur (Output separator)</label>
+                        <label class="form-label fw-semibold">Séparateur (Output)</label>
                         {{ form.output_separator }}
-                        <div class="form-text small">Ex: - ou _ (Sépare les parties dans le nom final)</div>
+                        <div class="form-text small">Ex: - ou _</div>
                     </div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Description</label>
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Description</label>
                     {{ form.description }}
                 </div>
                 
                 {% if user.is_authenticated %}
-                    <div class="row">
+                    <div class="row align-items-end">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Qui peut voir ce template ?</label>
+                            <label class="form-label fw-semibold">Visibilité</label>
                             {{ form.visibility }}
                         </div>
 
                         <div class="col-md-6 mb-3" id="team-selector-div" style="display:none;">
                             <label class="form-label fw-bold text-primary">{{ form.team.label }}</label>
                             {{ form.team }}
-                            <div class="form-text">Sélectionnez l'équipe avec laquelle partager ce template.</div>
                         </div>
                     </div>
                 {% else %}
-                    <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-3">
-                        <i class="bi bi-incognito fs-1 me-3"></i>
+                    <div class="alert guest-alert d-flex align-items-center mb-3 p-4">
+                        <i class="bi bi-incognito fs-2 me-3"></i>
                         <div>
-                            <h5 class="alert-heading fw-bold mb-1">Mode Invité</h5>
-                            <p class="mb-0 small text-muted">
-                                Vous n'êtes pas connecté. Ce template sera <strong>privé</strong> et stocké temporairement.
-                                <br>Il disparaîtra à la fermeture de votre navigateur.
+                            <h6 class="fw-bold mb-1">Mode Invité</h6>
+                            <p class="mb-0 small opacity-75">
+                                Ce template sera <strong>privé</strong> et stocké temporairement dans votre session.
                             </p>
                         </div>
                         <input type="hidden" name="visibility" value="private">
@@ -67,28 +161,28 @@
             </div>
         </div>
 
-        <div class="card mb-4 shadow-sm">
-            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <div class="form-card mb-4">
+            <div class="card-header-custom d-flex justify-content-between align-items-center">
                 <div>
-                    <h5 class="mb-0">Structure de l'assemblage (Input Parts)</h5>
-                    <small class="text-muted">Définissez vos "Input Plasmids" dans l'ordre d'assemblage.</small>
+                    <h5 class="mb-0"><i class="bi bi-puzzle me-2"></i>Structure de l'assemblage</h5>
+                    <p class="text-muted small mb-0">Définissez vos "Input Plasmids" dans l'ordre.</p>
                 </div>
             </div>
             
-            <div class="card-body">
+            <div class="card-body p-0">
                 {{ formset.management_form }}
                 
                 <div class="table-responsive">
-                    <table class="table table-bordered table-hover align-middle" id="parts-table">
-                        <thead class="table-secondary">
+                    <table class="table table-parts align-middle mb-0" id="parts-table">
+                        <thead>
                             <tr>
-                                <th style="width: 25%">Part name<br><small class="fw-normal text-muted">(ex: Input Plasmid 1)</small></th>
-                                <th style="width: 15%">Part types<br><small class="fw-normal text-muted">(Overhangs)</small></th>
-                                <th style="width: 8%">Order</th>
-                                <th style="width: 12%" class="text-center">Is Mandatory ?<br><small class="fw-normal text-muted">(Obligatoire)</small></th>
-                                <th style="width: 15%" class="text-center">In output name ?<br><small class="fw-normal text-muted">(Nom final)</small></th>
-                                <th style="width: 10%" class="text-center">Part separator ?<br><small class="fw-normal text-muted">(Couper ici)</small></th>
-                                <th style="width: 5%" class="text-center"><i class="bi bi-trash"></i></th>
+                                <th style="width: 25%">Part name</th>
+                                <th style="width: 15%">Overhangs</th>
+                                <th style="width: 10%">Ordre</th>
+                                <th style="width: 12%" class="text-center">Obligatoire</th>
+                                <th style="width: 15%" class="text-center">Nom Final</th>
+                                <th style="width: 10%" class="text-center">Séparable</th>
+                                <th style="width: 5%" class="text-center"></th>
                             </tr>
                         </thead>
                         <tbody id="form-set-body">
@@ -97,39 +191,30 @@
                                     <td>
                                         {{ part_form.id }} {{ part_form.name }}
                                         {% if part_form.name.errors %}
-                                            <div class="text-danger small">{{ part_form.name.errors }}</div>
+                                            <div class="text-danger small mt-1">{{ part_form.name.errors }}</div>
                                         {% endif %}
                                     </td>
                                     <td>{{ part_form.type_id }}</td>
                                     <td>{{ part_form.order }}</td>
                                     
                                     <td class="text-center">
-                                        <div class="form-check d-flex justify-content-center">
-                                            {{ part_form.is_mandatory }}
-                                        </div>
+                                        <div class="form-check d-inline-block">{{ part_form.is_mandatory }}</div>
                                     </td>
                                     
                                     <td class="text-center">
-                                        <div class="form-check d-flex justify-content-center">
-                                            {{ part_form.include_in_output }}
-                                        </div>
+                                        <div class="form-check d-inline-block">{{ part_form.include_in_output }}</div>
                                     </td>
 
                                     <td class="text-center">
-                                        <div class="form-check d-flex justify-content-center">
-                                            {{ part_form.is_separable }}
-                                        </div>
+                                        <div class="form-check d-inline-block">{{ part_form.is_separable }}</div>
                                     </td>
 
-                                    <td class="text-center align-middle">
+                                    <td class="text-center">
                                         {% if formset.can_delete %}
                                             <div style="display:none;">{{ part_form.DELETE }}</div>
-                                            
-                                            {% if forloop.first %}
-                                                <span class="text-muted" title="Impossible de supprimer la première ligne">🚫</span>
-                                            {% else %}
-                                                <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn" title="Supprimer cette ligne">
-                                                    <i class="bi bi-trash"></i>
+                                            {% if not forloop.first %}
+                                                <button type="button" class="btn btn-link text-danger p-0 delete-row-btn">
+                                                    <i class="bi bi-trash fs-5"></i>
                                                 </button>
                                             {% endif %}
                                         {% endif %}
@@ -142,16 +227,21 @@
                         </tbody>
                     </table>
                 </div>
-
-                <button type="button" id="add-form" class="btn btn-success btn-sm mt-2">
-                    <i class="bi bi-plus-circle"></i> Ajout d'un nouvel Input Plasmid
-                </button>
+                <div class="p-4 bg-light border-top">
+                    <button type="button" id="add-form" class="btn btn-add-part w-100 py-3">
+                        <i class="bi bi-plus-circle me-2"></i> Ajouter un nouvel Input Plasmid
+                    </button>
+                </div>
             </div>
         </div>
 
-        <div class="d-flex gap-2 mb-5">
-            <button type="submit" class="btn btn-primary btn-lg">Enregistrer le template</button>
-            <a href="{% url 'template' %}" class="btn btn-outline-secondary btn-lg">Annuler</a>
+        <div class="d-flex gap-3 mb-5">
+            <button type="submit" class="btn-save shadow-sm">
+                Enregistrer le template
+            </button>
+            <a href="{% url 'template' %}" class="btn btn-outline-secondary rounded-pill px-4 d-flex align-items-center">
+                Annuler
+            </a>
         </div>
     </form>
 </div>
@@ -162,13 +252,13 @@
             <td>{{ formset.empty_form.name }}</td>
             <td>{{ formset.empty_form.type_id }}</td>
             <td>{{ formset.empty_form.order }}</td>
-            <td class="text-center"><div class="form-check d-flex justify-content-center">{{ formset.empty_form.is_mandatory }}</div></td>
-            <td class="text-center"><div class="form-check d-flex justify-content-center">{{ formset.empty_form.include_in_output }}</div></td>
-            <td class="text-center"><div class="form-check d-flex justify-content-center">{{ formset.empty_form.is_separable }}</div></td>
-            <td class="text-center align-middle">
+            <td class="text-center"><div class="form-check d-inline-block">{{ formset.empty_form.is_mandatory }}</div></td>
+            <td class="text-center"><div class="form-check d-inline-block">{{ formset.empty_form.include_in_output }}</div></td>
+            <td class="text-center"><div class="form-check d-inline-block">{{ formset.empty_form.is_separable }}</div></td>
+            <td class="text-center">
                 <div style="display:none;">{{ formset.empty_form.DELETE }}</div>
-                <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn">
-                    <i class="bi bi-trash"></i>
+                <button type="button" class="btn btn-link text-danger p-0 delete-row-btn">
+                    <i class="bi bi-trash fs-5"></i>
                 </button>
             </td>
         </tr>
@@ -181,30 +271,16 @@
         const totalForms = document.getElementById('id_parts-TOTAL_FORMS');
         const tbody = document.getElementById('form-set-body');
         
-        let firstRowName = document.querySelector('input[name$="-0-name"]');
-        let firstRowOrder = document.querySelector('input[name$="-0-order"]');
-        
-        if (firstRowName && !firstRowName.value) {
-            firstRowName.value = "Input Plasmid 1";
-        }
-        if (firstRowOrder && !firstRowOrder.value) {
-            firstRowOrder.value = "1";
-        }
-        
         tbody.addEventListener('click', function(e) {
             const btn = e.target.closest('.delete-row-btn');
-            
             if (btn) {
-                if (confirm("Souhaitez-vous supprimer cette ligne ?")) {
+                if (confirm("Supprimer cette ligne ?")) {
                     const row = btn.closest('tr');
                     const deleteCheckbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
-                    
                     if (deleteCheckbox) {
                         deleteCheckbox.checked = true;
                         row.style.display = 'none';
-                    } else {
-                        row.remove();
-                    }
+                    } else { row.remove(); }
                 }
             }
         });
@@ -213,47 +289,28 @@
 
         addBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            
             let formIdx = parseInt(totalForms.value);
-            
             let newRow = document.createElement('tr');
             newRow.className = 'part-form-row';
             newRow.innerHTML = emptyFormHtml.replace(/__prefix__/g, formIdx);
-            
             tbody.appendChild(newRow);
-            
             totalForms.value = formIdx + 1;
-
+            
             let nameInput = newRow.querySelector('input[name$="-name"]');
             let orderInput = newRow.querySelector('input[name$="-order"]');
-            
-            if (nameInput) {
-                nameInput.value = "Input Plasmid " + (formIdx + 1);
-            }
-            if (orderInput) {
-                orderInput.value = formIdx + 1;
-            }
+            if (nameInput) nameInput.value = "Input Plasmid " + (formIdx + 1);
+            if (orderInput) orderInput.value = formIdx + 1;
         });
-    });
-</script>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
         const visibilitySelect = document.getElementById('id_visibility');
         const teamDiv = document.getElementById('team-selector-div');
-
         function toggleTeamField() {
             if (visibilitySelect && visibilitySelect.value === 'team') {
                 teamDiv.style.display = 'block';
-            } else if (teamDiv) {
-                teamDiv.style.display = 'none';
-            }
+            } else if (teamDiv) { teamDiv.style.display = 'none'; }
         }
-
         if (visibilitySelect) {
-            // Vérifier au chargement
             toggleTeamField();
-            // Vérifier au changement
             visibilitySelect.addEventListener('change', toggleTeamField);
         }
     });

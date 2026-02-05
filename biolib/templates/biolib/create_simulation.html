@@ -1,204 +1,268 @@
 {% extends "biolib/base.html" %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow border-0">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0"><i class="bi bi-cpu-fill me-2"></i> Nouvelle Simulation</h4>
-                </div>
-                <div class="card-body p-4">
-                    <p class="text-muted mb-4">Importez vos fichiers pour lancer l'assemblage et la simulation.</p>
+<style>
+    .simu-container {
+        max-width: 850px;
+        margin: 40px auto;
+    }
 
-                    <form method="post" enctype="multipart/form-data">
-                        {% csrf_token %}
+    .form-section-card {
+        background: #fff;
+        border: 1px solid rgba(0, 123, 255, 0.1);
+        border-radius: 24px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+        margin-bottom: 25px;
+        overflow: hidden;
+    }
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Nom de la simulation</label>
-                            {{ form.name }}
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Template (Excel/CSV)</label>
-                            {{ form.template_file }}
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Enzyme principale</label>
-                            {{ form.enzyme }}
-                        </div>
-                        <div class="mb-4">
-                            <label class="form-label fw-bold">Campagne (Liste des parties - CSV)</label>
-                            {{ form.campaign_file }}
-                        </div>
-                        <div class="mb-4">
-                            <label class="form-label fw-bold">
-                                <i class="bi bi-collection-fill text-primary me-1"></i> Utiliser des collections existantes
-                            </label>
-                            {{ form.collections }}
-                            <div class="form-text">Maintenez Ctrl (ou Cmd) pour sélectionner plusieurs collections.</div>
-                        </div>
-                        <div class="mb-4">
-                            <label class="form-label fw-bold">
-                                <i class="bi bi-file-earmark-zip-fill text-warning me-1"></i> Fichiers GenBank (.zip)
-                            </label>
-                            {{ form.zip_file }}
-                            <div class="form-text">
-                                <small>Compressez vos fichiers <strong>.gb</strong> dans une archive ZIP et déposez-la ici.</small>
-                            </div>
-                        </div>
-                        {% if user.is_authenticated %}
-                        <div class="card border-success mb-4 shadow-sm">
-                            <div class="card-header bg-success text-white bg-opacity-75">
-                                <h6 class="mb-0"><i class="bi bi-save-fill me-2"></i> Sauvegarde (Optionnel)</h6>
-                            </div>
-                            <div class="card-body bg-success bg-opacity-10">
-                                <div class="form-check form-switch mb-3">
-                                    {{ form.save_to_library }}
-                                    <label class="form-check-label fw-bold" for="{{ form.save_to_library.id_for_label }}">
-                                        Enregistrer les fichiers d'entrée dans ma bibliothèque
-                                    </label>
-                                </div>
+    .section-header {
+        padding: 20px 30px;
+        background: white;
+        border-bottom: 1px solid rgba(0, 123, 255, 0.05);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
 
-                                <div id="collection-name-field" style="display:none;">
-                                    <div class="mb-3">
-                                        <label class="form-label small text-muted">Nommer la nouvelle collection de plasmides :</label>
-                                        {{ form.new_collection_name }}
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label small text-muted">Nommer le fichier de campagne (Correspondance) :</label>
-                                        {{ form.campaign_save_name }}
-                                        <div class="form-text x-small">Laissez vide pour utiliser le nom par défaut.</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <script>
-                            document.addEventListener('DOMContentLoaded', function() {
-                                const checkSave = document.getElementById('{{ form.save_to_library.id_for_label }}');
-                                const nameField = document.getElementById('collection-name-field');
+    .section-header h5 {
+        margin: 0;
+        font-weight: 700;
+        color: #004085;
+    }
 
-                                function toggleName() {
-                                    nameField.style.display = checkSave.checked ? 'block' : 'none';
-                                }
+    .section-header i {
+        color: #007bff;
+        font-size: 1.2rem;
+    }
 
-                                if(checkSave) {
-                                    checkSave.addEventListener('change', toggleName);
-                                    toggleName();
-                                }
-                            });
-                        </script>
-                            {%else%}
-                            <input type="hidden" name="visibility" value="private">
-                        {% endif %}  <button type="submit" class="btn btn-primary w-100 btn-lg py-3 shadow-sm hover-scale">
-                            <i class="bi bi-play-circle-fill me-2"></i> Lancer la simulation
-                        </button>
-                    </form>
-                        <div class="accordion mb-4" id="accordionOptions">
-                            <div class="accordion-item border-0 shadow-sm">
-                                <h2 class="accordion-header" id="headingOptions">
-                                    <button class="accordion-button collapsed bg-light text-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOptions">
-                                        <i class="bi bi-sliders me-2"></i> Options Avancées (Gels & PCR)
-                                    </button>
-                                </h2>
-                                <div id="collapseOptions" class="accordion-collapse collapse" data-bs-parent="#accordionOptions">
-                                    <div class="accordion-body bg-light bg-opacity-25">
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">Enzymes pour le gel</label>
-                                            <div class="text-muted small mb-2">Cochez les enzymes pour la digestion virtuelle.</div>
-                                            {{ form.custom_enzymes }}
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">Amorces PCR</label>
-                                            {{ form.pcr_primers }}
-                                            <div class="form-text">Entrez les séquences (ex: ATCG...) pour simuler une PCR.</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="accordion-body bg-light bg-opacity-25">
-                                    <hr class="my-3"> <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-droplet-half me-2"></i> Paramètres de Dilution</h6>
+    .form-control, .form-select {
+        border-radius: 12px;
+        border: 1px solid #e1e8ed;
+        padding: 10px 15px;
+        transition: all 0.2s;
+    }
 
-                                    <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label fw-bold small">Concentration par défaut (ng/µL)</label>
-                                            {{ form.default_concentration }}
-                                            <div class="form-text">Valeur utilisée si inconnue (défaut : 200).</div>
-                                        </div>
+    .form-control:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.1);
+    }
 
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label fw-bold small">Fichier de concentrations (.csv)</label>
-                                            {{ form.concentration_file }}
-                                            <div class="form-text">CSV avec colonnes : <code>part_id, concentration</code></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+    .save-option-box {
+        background: #f0fff4;
+        border: 1px solid #c6f6d5;
+        border-radius: 18px;
+        padding: 20px;
+    }
 
-                        {% if user.is_authenticated %}
-                            <div class="card bg-light border-0 mb-4 p-3">
-                                <h6 class="fw-bold mb-3"><i class="bi bi-share-fill me-2"></i> Partage et Visibilité</h6>
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Qui peut voir ce résultat ?</label>
-                                        {{ form.visibility }}
-                                    </div>
-                                    <div class="col-md-6 mb-3" id="sim-team-selector-div" style="display:none;">
-                                        <label class="form-label text-primary">{{ form.team.label }}</label>
-                                        {{ form.team }}
-                                        <div class="form-text">Sélectionnez l'équipe.</div>
-                                    </div>
-                                </div>
-                            </div>
-                        {% else %}
-                            <div class="alert alert-info border-0 shadow-sm mb-4 d-flex align-items-center">
-                                <i class="bi bi-incognito fs-1 me-3"></i>
-                                <div>
-                                    <h5 class="alert-heading fw-bold mb-1">Mode Invité</h5>
-                                    <p class="mb-0 small text-muted">
-                                        Vous n'êtes pas connecté. Cette simulation sera <strong>privée</strong> et stockée temporairement.
-                                        <br>Elle disparaîtra à la fermeture de votre navigateur.
-                                    </p>
-                                </div>
-                                <input type="hidden" name="visibility" value="private">
-                            </div>
-                        {% endif %}
+    .accordion-button-custom {
+        background: #f8f9fa !important;
+        color: #6c757d !important;
+        font-weight: 600;
+        border-radius: 15px !important;
+        border: 1px solid #eee !important;
+    }
 
-                        <button type="submit" class="btn btn-primary w-100 btn-lg py-3 shadow-sm hover-scale">
-                            <i class="bi bi-play-circle-fill me-2"></i> Lancer la simulation
-                        </button>
-                    </form>
+    /* Bouton Lancer (Bleu BioLib) */
+    .btn-launch {
+        background: #007bff;
+        color: white;
+        border-radius: 18px;
+        font-weight: 700;
+        padding: 18px;
+        border: none;
+        box-shadow: 0 10px 20px rgba(0, 123, 255, 0.2);
+        transition: all 0.3s;
+    }
+
+    .btn-launch:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 25px rgba(0, 123, 255, 0.3);
+        color: white;
+    }
+
+    .mode-invite {
+        background: #eef6ff;
+        border: 1px solid #d1e7ff;
+        border-radius: 20px;
+        color: #004085;
+    }
+</style>
+
+<div class="container simu-container">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{% url 'simulation_list' %}" class="btn btn-light rounded-circle me-3 p-2 shadow-sm">
+            <i class="bi bi-arrow-left fs-5"></i>
+        </a>
+        <h2 class="fw-bold m-0" style="color: #004085;">Nouvelle Simulation</h2>
+    </div>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="form-section-card">
+            <div class="section-header">
+                <i class="bi bi-gear-fill"></i>
+                <h5>Configuration de l'analyse</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-12 mb-2">
+                        <label class="form-label fw-semibold">Nom de la simulation</label>
+                        {{ form.name }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Template (Excel/CSV)</label>
+                        {{ form.template_file }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Enzyme principale</label>
+                        {{ form.enzyme }}
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+
+        <div class="form-section-card">
+            <div class="section-header">
+                <i class="bi bi-database-fill-add"></i>
+                <h5>Sources et Fichiers</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Campagne (Correspondance CSV)</label>
+                    {{ form.campaign_file }}
+                </div>
+                
+                <div class="mb-4">
+                    <label class="form-label fw-semibold text-primary">
+                        <i class="bi bi-collection-play-fill me-1"></i> Utiliser vos collections
+                    </label>
+                    {{ form.collections }}
+                    <div class="form-text small">Ctrl + Clic pour plusieurs sélections.</div>
+                </div>
+
+                <div class="p-3 bg-light rounded-4 border border-dashed text-center">
+                    <label class="form-label fw-semibold mb-2">
+                        <i class="bi bi-file-earmark-zip-fill text-warning me-1"></i> Archive GenBank (.zip)
+                    </label>
+                    {{ form.zip_file }}
+                    <div class="form-text x-small">Déposez votre ZIP contenant les fichiers .gb</div>
+                </div>
+            </div>
+        </div>
+
+        {% if user.is_authenticated %}
+        <div class="form-section-card border-success" style="background: #fafffb;">
+            <div class="card-body p-4">
+                <div class="form-check form-switch mb-0">
+                    {{ form.save_to_library }}
+                    <label class="form-check-label fw-bold text-success" for="{{ form.save_to_library.id_for_label }}">
+                        Enregistrer les nouveaux fichiers dans ma bibliothèque
+                    </label>
+                </div>
+
+                <div id="collection-name-field" class="mt-4 pt-3 border-top" style="display:none; border-color: #d1e7dd !important;">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Nom de la nouvelle collection :</label>
+                            {{ form.new_collection_name }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Nom du fichier campagne :</label>
+                            {{ form.campaign_save_name }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="accordion mb-4" id="accordionAdvanced">
+            <div class="accordion-item border-0 bg-transparent">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed accordion-button-custom shadow-sm" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAdv">
+                        <i class="bi bi-sliders2-vertical me-2"></i> Options Avancées (Gels, PCR, Dilutions)
+                    </button>
+                </h2>
+                <div id="collapseAdv" class="accordion-collapse collapse" data-bs-parent="#accordionAdvanced">
+                    <div class="p-4 bg-white border rounded-4 mt-2 shadow-sm">
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-bold small text-uppercase opacity-75">Digestion Virtuelle</label>
+                                <div class="p-3 border rounded-3 bg-light" style="max-height: 200px; overflow-y: auto;">
+                                    {{ form.custom_enzymes }}
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-bold small text-uppercase opacity-75">Séquences PCR</label>
+                                {{ form.pcr_primers }}
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Concentration par défaut (ng/µL)</label>
+                                {{ form.default_concentration }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Fichier concentrations (.csv)</label>
+                                {{ form.concentration_file }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section-card bg-light border-0">
+            <div class="card-body p-4">
+                {% if user.is_authenticated %}
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Visibilité du résultat</label>
+                            {{ form.visibility }}
+                        </div>
+                        <div class="col-md-6" id="sim-team-selector-div" style="display:none;">
+                            <label class="form-label fw-bold text-primary">Équipe cible</label>
+                            {{ form.team }}
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="mode-invite d-flex align-items-center p-3">
+                        <i class="bi bi-incognito fs-2 me-3"></i>
+                        <div>
+                            <h6 class="fw-bold mb-1">Mode Invité</h6>
+                            <p class="mb-0 small opacity-75">Résultat privé et temporaire (session actuelle).</p>
+                        </div>
+                        <input type="hidden" name="visibility" value="private">
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-launch w-100 mb-5">
+            <i class="bi bi-play-circle-fill me-2"></i> LANCER LA SIMULATION
+        </button>
+    </form>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const visibilitySelect = document.getElementById('id_visibility'); // Assure-toi que c'est le bon ID généré par Django
-        const teamDiv = document.getElementById('sim-team-selector-div');
-
-        function toggleTeamField() {
-            if (visibilitySelect && teamDiv) {
-                if (visibilitySelect.value === 'team') {
-                    teamDiv.style.display = 'block';
-                } else {
-                    teamDiv.style.display = 'none';
-                }
-            }
+        const checkSave = document.getElementById('{{ form.save_to_library.id_for_label }}');
+        const nameField = document.getElementById('collection-name-field');
+        if(checkSave) {
+            checkSave.addEventListener('change', () => nameField.style.display = checkSave.checked ? 'block' : 'none');
+            if(checkSave.checked) nameField.style.display = 'block';
         }
 
+        const visibilitySelect = document.getElementById('id_visibility');
+        const teamDiv = document.getElementById('sim-team-selector-div');
         if (visibilitySelect) {
-            toggleTeamField();
-            visibilitySelect.addEventListener('change', toggleTeamField);
+            const toggleTeam = () => teamDiv.style.display = visibilitySelect.value === 'team' ? 'block' : 'none';
+            visibilitySelect.addEventListener('change', toggleTeam);
+            toggleTeam();
         }
     });
 </script>
-
-<style>
-    .hover-scale:hover {
-        transform: translateY(-2px);
-        transition: transform 0.2s;
-    }
-</style>
 {% endblock %}
