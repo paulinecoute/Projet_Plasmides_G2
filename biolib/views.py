@@ -1801,9 +1801,15 @@ def admin_publication_list(request):
         publication_status='pending'
     ).order_by('-id')
 
+    # --- AJOUT : Les Templates ---
+    pending_templates = CampaignTemplate.objects.filter(
+        publication_requested=True
+    ).order_by('-created_at')
+
     return render(request, 'biolib/admin_publication_list.html', {
         'pending_collections': pending_collections,
-        'pending_tables': pending_tables
+        'pending_tables': pending_tables,
+        'pending_templates': pending_templates, # <--- On passe ça au template HTML
     })
 
 @staff_member_required
@@ -1993,3 +1999,33 @@ def correspondence_create(request):
         form = CorrespondenceForm()
 
     return render(request, 'biolib/correspondence_form.html', {'form': form})
+
+# --- AJOUTS POUR LA GESTION ADMIN DES TEMPLATES ---
+
+@staff_member_required
+def admin_approve_template(request, pk):
+    template = get_object_or_404(CampaignTemplate, pk=pk)
+    if request.method == 'POST':
+        # On valide : ça devient Public
+        template.visibility = 'public'
+        template.is_public = True # Pour compatibilité avec l'ancien champ si utilisé
+        template.publication_requested = False # La demande est traitée
+        template.admin_feedback = "" # On nettoie les vieux messages
+        template.save()
+        messages.success(request, f"Le template '{template.name}' est maintenant PUBLIC.")
+    return redirect('admin_publication_list')
+
+@staff_member_required
+def admin_reject_template(request, pk):
+    template = get_object_or_404(CampaignTemplate, pk=pk)
+    if request.method == 'POST':
+        reason = request.POST.get('reason')
+        if reason:
+            # On refuse : ça reste Privé, mais on note pourquoi
+            template.publication_requested = False # La demande est traitée (rejetée)
+            template.admin_feedback = reason
+            template.save()
+            messages.warning(request, f"Le template '{template.name}' a été refusé.")
+        else:
+            messages.error(request, "Motif de refus obligatoire.")
+    return redirect('admin_publication_list')
