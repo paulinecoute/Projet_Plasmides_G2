@@ -68,7 +68,9 @@
 <div class="container mt-5">
   <div class="content-wrapper">
 
-    <a href="{% url 'team_detail' team.id %}" class="btn-back-square shadow-sm">
+    <!-- 🔙 Bouton retour (page pivot) -->
+    <a href="{% if next %}{{ next }}{% else %}{% url 'team_detail' team.id %}{% endif %}"
+       class="btn-back-square shadow-sm">
       <i class="bi bi-arrow-left"></i>
     </a>
 
@@ -79,17 +81,19 @@
       </div>
 
       {% if is_leader %}
-        <a href="{% url 'team_correspondence_create' team.id %}" class="btn-create-list shadow-sm">
+        <a href="{% url 'team_correspondence_create' team.id %}"
+           class="btn-create-list shadow-sm">
           <i class="bi bi-plus-lg"></i> Ajouter
         </a>
       {% endif %}
-
     </div>
 
     <div class="table-list-container">
       {% for table in correspondences %}
-      <a href="{% url 'team_correspondence_detail' team.id table.id %}"
-              class="table-row shadow-sm">
+        <!-- ❌ PAS de next ici -->
+        <a href="{% url 'team_correspondence_detail' team.id table.id %}"
+           class="table-row shadow-sm">
+
           <div class="t-info-box">
             <div class="t-icon-circle">
               <i class="bi bi-table"></i>

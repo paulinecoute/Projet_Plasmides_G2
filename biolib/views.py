@@ -22,6 +22,7 @@ from django.contrib import messages
 from django.utils.safestring import mark_safe
 from Bio import SeqIO
 from io import StringIO
+from django.urls import reverse
 
 
 # Import Insillyclo
@@ -998,11 +999,26 @@ def team_collections(request, team_id):
     team = get_object_or_404(Team, id=team_id, members=request.user)
     collections = PlasmidCollection.objects.filter(team=team)
 
+    next_url = request.GET.get("next")
+
+    forbidden = [
+        request.path,
+        "/plasmids/teams/",
+    ]
+
+    if next_url in forbidden:
+        next_url = None
+
+    if not next_url:
+        next_url = reverse("team_detail", args=[team.id])
+
     return render(request, "biolib/team_collections.html", {
         "team": team,
         "collections": collections,
-        "is_leader": team.leader == request.user
+        "is_leader": team.leader == request.user,
+        "next": next_url,
     })
+
 
 
 @login_required
@@ -1049,11 +1065,17 @@ def team_collection_create(request, team_id):
 @login_required
 def choose_team_for_plasmids(request):
     teams = request.user.teams.all()
+    next_url = request.GET.get("next")
+
     return render(
         request,
         "biolib/choose_team_for_plasmids.html",
-        {"teams": teams}
+        {
+            "teams": teams,
+            "next": next_url
+        }
     )
+
 
 # ============================================================
 # COLLECTIONS UTILISATEUR (hors équipe)
@@ -1177,16 +1199,11 @@ def plasmid_delete(request, plasmid_id):
 
 @login_required
 def remove_plasmid_from_collection(request, collection_id, plasmid_id):
-    # 1. On récupère la collection (sécurisée par owner)
     collection = get_object_or_404(PlasmidCollection, id=collection_id, owner=request.user)
 
-    # 2. On récupère le plasmide
     plasmid = get_object_or_404(Plasmid, id=plasmid_id)
 
-    # 3. ON LE DÉTACHE (On coupe le lien sans supprimer l'objet)
     collection.plasmids.remove(plasmid)
-
-    # 4. Feedback et redirection
     messages.success(request, f"Le plasmide '{plasmid.name}' a été retiré de la collection.")
     return redirect('plasmid_collection_detail', pk=collection.id)
 
@@ -1231,14 +1248,26 @@ def plasmid_collection_delete(request, pk):
 
 @login_required
 def correspondences_view(request):
-    correspondences = Correspondence.objects.filter(
-        owner=request.user,
-        team__isnull=True
-    ).order_by("-uploaded_at")
+    view_type = request.GET.get('view', 'my')
+
+    if view_type == 'my':
+        correspondences = Correspondence.objects.filter(
+            owner=request.user,
+            team__isnull=True
+        ).order_by('-uploaded_at')
+        title = "Mes tables de correspondance"
+
+    else:
+        # fallback sécurité
+        correspondences = Correspondence.objects.none()
+        title = "Tables de correspondance"
 
     return render(request, "biolib/correspondences.html", {
-        "correspondences": correspondences
+        "correspondences": correspondences,
+        "current_view": view_type,
+        "page_title": title,
     })
+
 
 
 @login_required
@@ -1369,11 +1398,26 @@ def team_correspondences(request, team_id):
         .order_by("-uploaded_at")
     )
 
+    next_url = request.GET.get("next")
+
+    forbidden = [
+        request.path,
+        "/choose-team-for-correspondences/",
+    ]
+
+    if next_url in forbidden:
+        next_url = None
+
+    if not next_url:
+        next_url = reverse("team_detail", args=[team.id])
+
     return render(request, "biolib/team_correspondences.html", {
         "team": team,
         "correspondences": correspondences,
-        "is_leader": team.leader == request.user
+        "is_leader": team.leader == request.user,
+        "next": next_url,
     })
+
 
 
 @login_required
@@ -1417,6 +1461,7 @@ def team_correspondence_detail(request, team_id, correspondence_id):
         "table": table,
         "is_owner": table.owner == request.user
     })
+
 
 
 @login_required
@@ -1510,19 +1555,26 @@ def team_correspondence_delete(request, team_id, correspondence_id):
 @login_required
 def choose_team_for_correspondences(request):
     teams = request.user.teams.all()
+    next_url = request.GET.get("next")
+
     return render(
         request,
         "biolib/choose_team_for_correspondences.html",
-        {"teams": teams}
+        {
+            "teams": teams,
+            "next": next_url
+        }
     )
+
 
 
 # VISUALISATION DE PLASMIDES
 
+
 def plasmid_collection_list(request):
     view_type = request.GET.get('view', 'my')
 
-    # CAS INVITÉ (non connecté)
+    # CAS INVITÉ
     if not request.user.is_authenticated:
         collections = PlasmidCollection.objects.filter(
             is_public=True,
@@ -1532,12 +1584,11 @@ def plasmid_collection_list(request):
         return render(request, 'biolib/plasmid_collection_list.html', {
             'collections': collections,
             'current_view': 'public',
-            'page_title': "Collections publiques"
+            'page_title': "Collections publiques",
         })
 
     # CAS UTILISATEUR CONNECTÉ
     if view_type == 'team':
-        # 🔵 Collections d’équipe uniquement
         collections = PlasmidCollection.objects.filter(
             team__members=request.user
         ).distinct().order_by('-id')
@@ -1555,9 +1606,8 @@ def plasmid_collection_list(request):
     return render(request, 'biolib/plasmid_collection_list.html', {
         'collections': collections,
         'current_view': view_type,
-        'page_title': title
+        'page_title': title,
     })
-
 
 
 def plasmid_collection_detail(request, pk):

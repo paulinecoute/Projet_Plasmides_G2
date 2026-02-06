@@ -58,10 +58,9 @@
 <div class="container mt-5">
   <div class="content-wrapper">
     
-    <a href="{% url 'team_detail' team.id %}" class="btn-back-square shadow-sm">
+    <a href="{{ next|default:request.META.HTTP_REFERER|default:request.path }}" class="btn-back-square shadow-sm">
       <i class="bi bi-arrow-left"></i>
     </a>
-
     <div class="page-header d-flex justify-content-between align-items-center">
       <div>
         <span class="team-tag">{{ team.name }}</span>

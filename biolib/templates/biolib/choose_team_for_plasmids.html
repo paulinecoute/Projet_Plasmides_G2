@@ -60,7 +60,7 @@
 <div class="container mt-5">
   <div class="content-wrapper">
     
-    <a href="{% url 'dashboard' %}" class="btn-back-square shadow-sm">
+    <a href="{{ next|default:request.META.HTTP_REFERER|default:'/' }}" class="btn-back-square shadow-sm">
       <i class="bi bi-arrow-left"></i>
     </a>
 
@@ -71,7 +71,7 @@
 
     <div class="team-selection-list">
       {% for team in teams %}
-        <a href="{% url 'team_collections' team.id %}" class="team-row shadow-sm">
+      <a href="{% url 'team_collections' team.id %}{% if next %}?next={{ next }}{% endif %}">
           <div class="team-info">
             <div class="team-icon">
               <i class="bi bi-people-fill"></i>
