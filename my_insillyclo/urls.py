@@ -122,13 +122,15 @@ urlpatterns = [
 
     path("correspondences/", views.correspondences_view, name="correspondences"),
     path("correspondences/upload/", views.correspondence_upload, name="correspondence_upload"),
-    path("correspondences/<int:correspondence_id>/", views.correspondence_detail, name="correspondence_detail"),
+    path('correspondences/<int:pk>/', views.correspondence_detail, name='correspondence_detail'),
     path("correspondences/<int:correspondence_id>/view/", views.correspondence_view_file, name="correspondence_view_file"),
     path("correspondences/<int:correspondence_id>/attach/", views.correspondence_attach_file, name="correspondence_attach_file"),
     path("correspondences/<int:correspondence_id>/remove-file/", views.correspondence_remove_file, name="correspondence_remove_file"),
     path("correspondences/<int:correspondence_id>/delete/", views.correspondence_delete, name="correspondence_delete"),
     path("choose-team-for-correspondences/", views.choose_team_for_correspondences, name="choose_team_for_correspondences"),
-
+    path('correspondence/<int:pk>/request-publication/', views.correspondence_request_publication, name='correspondence_request_publication'),
+    path('correspondence/', views.correspondence_list, name='correspondence_list'),
+    path('correspondence/new/', views.correspondence_create, name='correspondence_create'),
     # ============================================================
     # CORRESPONDANCES (ÉQUIPE)
     # ============================================================
@@ -147,7 +149,9 @@ urlpatterns = [
     path('admin-panel/requests/', views.admin_publication_list, name='admin_publication_list'),
     path('admin-panel/requests/<int:pk>/approve/', views.admin_approve_collection, name='admin_approve_collection'),
     path('admin-panel/requests/<int:pk>/reject/', views.admin_reject_collection, name='admin_reject_collection'),
-]
+    path('admin-panel/correspondence/<int:pk>/review/', views.admin_correspondence_review, name='admin_correspondence_review'),
+    path('admin-panel/correspondence/<int:pk>/approve/', views.admin_approve_correspondence, name='admin_approve_correspondence'),
+    path('admin-panel/correspondence/<int:pk>/reject/', views.admin_reject_correspondence, name='admin_reject_correspondence'),]
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

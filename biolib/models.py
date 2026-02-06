@@ -99,7 +99,8 @@ class PlasmidCollection(models.Model):
     description = models.TextField(blank=True) # Vient de Main
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True)
     team = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, blank=True)
-
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Dernière modification")
     PUBLICATION_STATUS = [
         ('draft', 'Privé'),
         ('pending', 'En attente de validation'),
@@ -167,11 +168,26 @@ class Correspondence(models.Model):
         null=True,
         blank=True
     )
+    PUBLICATION_STATUS = [
+        ('draft', 'Privé'),
+        ('pending', 'En attente de validation'),
+        ('approved', 'Public (Validé)'),
+        ('rejected', 'Refusé'),
+    ]
 
-    is_public = models.BooleanField(default=False)
+    publication_status = models.CharField(
+        max_length=20,
+        choices=PUBLICATION_STATUS,
+        default='draft',
+        verbose_name="Statut de publication"
+    )
 
+    admin_feedback = models.TextField(blank=True, null=True, verbose_name="Raison du refus")
     def __str__(self):
         return self.name
+    @property
+    def is_public(self):
+        return self.publication_status == 'approved'
 
 
 class CorrespondenceEntry(models.Model):

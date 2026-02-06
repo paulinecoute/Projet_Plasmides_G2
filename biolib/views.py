@@ -5,7 +5,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.http import FileResponse, HttpResponse, Http404,HttpResponseForbidden
 from django.conf import settings
 from django.db.models import Q
-from .forms import CustomUserCreationForm, SimulationForm, CampaignTemplateForm, TemplatePartFormSet
+from .forms import CustomUserCreationForm, SimulationForm, CampaignTemplateForm, TemplatePartFormSet, CorrespondenceForm
 from .models import Simulation, CampaignTemplate, Plasmid, Team, User, Correspondence, PlasmidCollection
 import traceback
 import pathlib
@@ -1381,10 +1381,10 @@ def correspondence_upload(request):
 
 
 @login_required
-def correspondence_detail(request, correspondence_id):
+def correspondence_detail(request, pk):
     table = get_object_or_404(
         Correspondence,
-        id=correspondence_id,
+        id=pk,
         owner=request.user
     )
 
@@ -1771,13 +1771,22 @@ def request_publication(request, pk):
     return redirect('plasmid_collection_detail', pk=pk)
 
 # Vue ADMIN
-@staff_member_required # Seul un admin peut voir ça
+@staff_member_required
 def admin_publication_list(request):
-    # Liste toutes les collections en attente
-    pending_collections = PlasmidCollection.objects.filter(publication_status='pending').order_by('-id')
+    # 1. Les collections
+    pending_collections = PlasmidCollection.objects.filter(
+        publication_status='pending'
+    ).order_by('-id')
 
+    # 2. Les tables (NOUVEAU)
+    pending_tables = Correspondence.objects.filter(
+        publication_status='pending'
+    ).order_by('-id')
+
+    # On envoie les deux au template
     return render(request, 'biolib/admin_publication_list.html', {
-        'pending_collections': pending_collections
+        'pending_collections': pending_collections,
+        'pending_tables': pending_tables
     })
 
 @staff_member_required
@@ -1807,3 +1816,113 @@ def admin_reject_collection(request, pk):
             messages.error(request, "Vous devez fournir une raison pour le refus.")
 
     return redirect('admin_publication_list')
+
+def correspondence_list(request):
+
+    # 1. Onglet "Personnelles"
+    my_tables = Correspondence.objects.filter(
+        owner=request.user
+    ).order_by('-id')
+
+    # 2. Onglet "Équipes"
+    # (Récupère les tables des équipes dont je suis membre, sauf les miennes)
+    team_tables = Correspondence.objects.filter(
+        team__members=request.user
+    ).exclude(owner=request.user).distinct().order_by('-id')
+
+    # 3. Onglet "Publiques"
+    public_tables = Correspondence.objects.filter(
+        publication_status='approved'
+    ).order_by('-id')
+
+    context = {
+        'my_tables': my_tables,
+        'team_tables': team_tables,
+        'public_tables': public_tables,
+    }
+    return render(request, 'biolib/correspondence_list.html', context)
+
+@login_required
+def correspondence_request_publication(request, pk):
+    table = get_object_or_404(Correspondence, pk=pk)
+
+    if request.user != table.owner:
+        return HttpResponseForbidden("Non autorisé")
+
+    if table.publication_status in ['draft', 'rejected']:
+        table.publication_status = 'pending'
+        table.save()
+        # Redirection vers la page de détail de la table
+        return redirect('correspondence_detail', pk=pk)
+
+    return redirect('correspondence_list')
+
+
+# VUE 2 : L'Admin clique sur "Examiner" dans le tableau de bord
+#@staff_member_required
+#def admin_correspondence_review(request, pk):
+#    table = get_object_or_404(Correspondence, pk=pk)
+#
+#    if request.method == 'POST':
+#        action = request.POST.get('action')
+#        feedback = request.POST.get('feedback', '')
+#
+#        if action == 'approve':
+#            table.publication_status = 'approved'
+#            table.admin_feedback = ""
+#            table.save()
+#            return redirect('admin_publication_list') # Retour à la liste admin
+#
+#        elif action == 'reject':
+#            if not feedback.strip():
+#                return render(request, 'biolib/admin_table_review.html', {
+#                    'table': table,
+#                    'error': "Justification obligatoire."
+#                })
+#            table.publication_status = 'rejected'
+#            table.admin_feedback = feedback
+#            table.save()
+#            return redirect('admin_publication_list') # Retour à la liste admin
+#
+#    return render(request, 'biolib/admin_table_review.html', {
+#        'table': table
+#    })
+@staff_member_required
+def admin_correspondence_review(request, pk):
+    # Récupère la table
+    table = get_object_or_404(Correspondence, pk=pk)
+
+    # Affiche le template de révision (que nous avons créé plus tôt)
+    return render(request, 'biolib/admin_table_review.html', {
+        'table': table
+    })
+@staff_member_required
+def admin_approve_correspondence(request, pk):
+    if request.method == 'POST':
+        table = get_object_or_404(Correspondence, pk=pk)
+        table.publication_status = 'approved'
+        table.admin_feedback = "" # On nettoie le feedback
+        table.save()
+    return redirect('admin_publication_list')
+
+@staff_member_required
+def admin_reject_correspondence(request, pk):
+    if request.method == 'POST':
+        table = get_object_or_404(Correspondence, pk=pk)
+        reason = request.POST.get('reason', '') # On récupère la raison du formulaire modal
+        table.publication_status = 'rejected'
+        table.admin_feedback = reason
+        table.save()
+    return redirect('admin_publication_list')
+def correspondence_create(request):
+    if request.method == 'POST':
+        form = CorrespondenceForm(request.POST, request.FILES)
+        if form.is_valid():
+            table = form.save(commit=False)
+            table.owner = request.user # On assigne le propriétaire
+            table.save()
+            return redirect('correspondence_list') # Retour à la liste après succès
+    else:
+        form = CorrespondenceForm()
+
+    return render(request, 'biolib/correspondence_form.html', {'form': form})

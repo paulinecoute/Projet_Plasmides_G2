@@ -1,0 +1,163 @@
+{% extends 'biolib/base.html' %}
+
+{% block content %}
+<div class="container py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Mes Tables de Correspondance</h1>
+        <a href="{% url 'correspondence_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Nouvelle Table
+        </a>
+    </div>
+
+    <ul class="nav nav-pills mb-4" id="pills-tab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="pills-personal-tab" data-bs-toggle="pill" data-bs-target="#pills-personal" type="button" role="tab">
+                <i class="bi bi-person"></i> Personnelles
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pills-team-tab" data-bs-toggle="pill" data-bs-target="#pills-team" type="button" role="tab">
+                <i class="bi bi-people"></i> Équipes
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pills-public-tab" data-bs-toggle="pill" data-bs-target="#pills-public" type="button" role="tab">
+                <i class="bi bi-globe"></i> Publiques
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="pills-tabContent">
+
+        <div class="tab-pane fade show active" id="pills-personal" role="tabpanel">
+            {% if my_tables %}
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    {% for table in my_tables %}
+                    <div class="col">
+                        <div class="card h-100 shadow-sm hover-shadow border-0 bg-light">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title text-truncate fw-bold" title="{{ table.name }}">{{ table.name }}</h5>
+
+                                    {% if table.publication_status == 'approved' %}
+                                        <span class="badge bg-success">Public</span>
+                                    {% elif table.publication_status == 'pending' %}
+                                        <span class="badge bg-warning text-dark">En attente</span>
+                                    {% elif table.publication_status == 'rejected' %}
+                                        <span class="badge bg-danger">Refusé</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Privé</span>
+                                    {% endif %}
+                                </div>
+
+                                <p class="card-text text-muted small mb-3">
+                                    <i class="bi bi-file-earmark-spreadsheet-fill text-primary"></i>
+                                    {% if table.file %}
+                                        {{ table.file.name|cut:"correspondences/"|truncatechars:20 }}
+                                    {% else %}Aucun fichier{% endif %}
+                                </p>
+
+                                <div class="d-flex justify-content-between align-items-end mt-auto">
+                                    <small class="text-muted" style="font-size: 0.8rem;">
+                                        Ajouté le {{ table.uploaded_at|date:"d/m/Y" }}
+                                    </small>
+                                    <a href="{% url 'correspondence_detail' table.id %}" class="btn btn-outline-primary btn-sm rounded-pill px-3 stretched-link">Ouvrir</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-light text-center border py-5">
+                    <p>Aucune table personnelle.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="tab-pane fade" id="pills-team" role="tabpanel">
+            {% if team_tables %}
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    {% for table in team_tables %}
+                    <div class="col">
+                        <div class="card h-100 shadow-sm hover-shadow border-0 bg-light">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title text-truncate fw-bold" title="{{ table.name }}">{{ table.name }}</h5>
+                                    <span class="badge bg-info text-dark">Équipe</span>
+                                </div>
+
+                                <p class="card-text text-muted small mb-3">
+                                    <i class="bi bi-file-earmark-spreadsheet-fill text-primary"></i>
+                                    {% if table.file %}
+                                        {{ table.file.name|cut:"correspondences/"|truncatechars:20 }}
+                                    {% else %}Aucun fichier{% endif %}
+                                </p>
+
+                                <div class="d-flex justify-content-between align-items-end mt-auto">
+                                    <small class="text-muted" style="font-size: 0.8rem;">
+                                        De : {{ table.owner.username }}
+                                    </small>
+                                    <a href="{% url 'correspondence_detail' table.id %}" class="btn btn-outline-primary btn-sm rounded-pill px-3 stretched-link">Ouvrir</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-light text-center border py-5">
+                    <p>Aucune table partagée avec vos équipes.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="tab-pane fade" id="pills-public" role="tabpanel">
+            {% if public_tables %}
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    {% for table in public_tables %}
+                    <div class="col">
+                        <div class="card h-100 shadow-sm hover-shadow border-0 bg-light">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title text-truncate fw-bold" title="{{ table.name }}">{{ table.name }}</h5>
+                                    <span class="badge bg-success">Public</span>
+                                </div>
+
+                                <p class="card-text text-muted small mb-3">
+                                    <i class="bi bi-file-earmark-spreadsheet-fill text-primary"></i>
+                                    {% if table.file %}
+                                        {{ table.file.name|cut:"correspondences/"|truncatechars:20 }}
+                                    {% else %}Aucun fichier{% endif %}
+                                </p>
+
+                                <div class="d-flex justify-content-between align-items-end mt-auto">
+                                    <small class="text-muted" style="font-size: 0.8rem;">
+                                        De : {{ table.owner.username }}
+                                    </small>
+                                    <a href="{% url 'correspondence_detail' table.id %}" class="btn btn-outline-primary btn-sm rounded-pill px-3 stretched-link">Ouvrir</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info text-center py-5">
+                    <h5>Aucune table publique disponible.</h5>
+                </div>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+
+<style>
+    .hover-shadow { transition: transform 0.2s, box-shadow 0.2s; }
+    .hover-shadow:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.10)!important;
+    }
+</style>
+{% endblock %}
