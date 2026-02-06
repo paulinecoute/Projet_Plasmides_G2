@@ -1720,9 +1720,9 @@ def plasmid_collection_detail(request, pk):
 
     is_owner = (request.user == collection.owner)
     is_public = (collection.publication_status == 'approved')
+    is_admin = request.user.is_staff
 
-
-    if not is_owner and not is_public:
+    if not is_owner and not is_public and not is_admin:
         return HttpResponseForbidden("Accès refusé : Cette collection est privée.")
 
     plasmids = collection.plasmids.all()
