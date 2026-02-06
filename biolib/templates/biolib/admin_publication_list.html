@@ -7,7 +7,7 @@
     <ul class="nav nav-tabs mb-4" id="adminTab" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="collections-tab" data-bs-toggle="tab" data-bs-target="#collections" type="button" role="tab">
-                <i class="bi bi-collection"></i> Collections de Plasmides
+                <i class="bi bi-collection"></i> Collections
                 {% if pending_collections %}
                     <span class="badge bg-danger rounded-pill ms-2">{{ pending_collections.count }}</span>
                 {% endif %}
@@ -15,9 +15,17 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="tables-tab" data-bs-toggle="tab" data-bs-target="#tables" type="button" role="tab">
-                <i class="bi bi-table"></i> Tables de Correspondance
+                <i class="bi bi-table"></i> Tables
                 {% if pending_tables %}
                     <span class="badge bg-danger rounded-pill ms-2">{{ pending_tables.count }}</span>
+                {% endif %}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="templates-tab" data-bs-toggle="tab" data-bs-target="#templates" type="button" role="tab">
+                <i class="bi bi-grid-3x3-gap"></i> Templates
+                {% if pending_templates %}
+                    <span class="badge bg-danger rounded-pill ms-2">{{ pending_templates.count }}</span>
                 {% endif %}
             </button>
         </li>
@@ -34,7 +42,7 @@
                             <tr>
                                 <th>Collection</th>
                                 <th>Propriétaire</th>
-                                <th>Plasmides</th>
+                                <th>Contenu</th>
                                 <th>Date demande</th>
                                 <th class="text-end">Actions</th>
                             </tr>
@@ -47,42 +55,160 @@
                                     <small class="text-muted">{{ col.description|truncatechars:50 }}</small>
                                 </td>
                                 <td>{{ col.owner.username }}</td>
-                                <td><span class="badge bg-secondary">{{ col.plasmids.count }}</span></td>
-                                <td>{{ col.created_at|date:"d/m/Y" }}</td> <td class="text-end">
-                                    <a href="{% url 'plasmid_collection_detail' col.id %}" target="_blank" class="btn btn-sm btn-outline-primary me-1" title="Inspecter">
-                                        <i class="bi bi-eye"></i> Voir
-                                    </a>
-
+                                <td><span class="badge bg-secondary">{{ col.plasmids.count }} plasmides</span></td>
+                                <td>{{ col.created_at|date:"d/m/Y" }}</td>
+                                <td class="text-end">
+                                    <a href="{% url 'plasmid_collection_detail' col.id %}" target="_blank" class="btn btn-sm btn-outline-primary me-1" title="Inspecter"><i class="bi bi-eye"></i></a>
+                                    
                                     <form action="{% url 'admin_approve_collection' col.id %}" method="POST" class="d-inline">
                                         {% csrf_token %}
-                                        <button type="submit" class="btn btn-sm btn-success me-1" onclick="return confirm('Confirmer la publication ?')">
-                                            <i class="bi bi-check-lg"></i>
-                                        </button>
+                                        <button type="submit" class="btn btn-sm btn-success me-1" onclick="return confirm('Confirmer la publication ?')"><i class="bi bi-check-lg"></i></button>
                                     </form>
 
-                                    <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal-{{ col.id }}">
-                                        <i class="bi bi-x-lg"></i>
-                                    </button>
+                                    <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectCol-{{ col.id }}"><i class="bi bi-x-lg"></i></button>
 
-                                    <div class="modal fade text-start" id="rejectModal-{{ col.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal fade text-start" id="rejectCol-{{ col.id }}" tabindex="-1" aria-hidden="true">
                                         <div class="modal-dialog">
                                             <form action="{% url 'admin_reject_collection' col.id %}" method="POST">
                                                 {% csrf_token %}
                                                 <div class="modal-content">
+                                                    <div class="modal-header bg-danger text-white"><h5 class="modal-title">Refuser la collection</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                                                    <div class="modal-body">
+                                                        <textarea name="reason" class="form-control" rows="3" required placeholder="Pourquoi refusez-vous ?"></textarea>
+                                                    </div>
+                                                    <div class="modal-footer"><button type="submit" class="btn btn-danger">Confirmer</button></div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% else %}
+                <div class="alert alert-success text-center py-4">Rien à signaler ici !</div>
+            {% endif %}
+        </div>
+
+        <div class="tab-pane fade" id="tables" role="tabpanel">
+            {% if pending_tables %}
+            <div class="card shadow-sm border-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Table</th>
+                                <th>Propriétaire</th>
+                                <th>Fichier</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for table in pending_tables %}
+                            <tr>
+                                <td><strong>{{ table.name }}</strong><br><small class="text-muted">{{ table.description|truncatechars:50 }}</small></td>
+                                <td>{{ table.owner.username }}</td>
+                                <td>
+                                    {% if table.file %}
+                                    <i class="bi bi-file-earmark-spreadsheet"></i> {{ table.file.name|truncatechars:20 }}
+                                    {% else %} - {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{% url 'admin_correspondence_review' table.id %}" class="btn btn-sm btn-outline-primary me-1"><i class="bi bi-eye"></i></a>
+                                    
+                                    <form action="{% url 'admin_approve_correspondence' table.id %}" method="POST" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-success me-1" onclick="return confirm('Valider cette table ?')"><i class="bi bi-check-lg"></i></button>
+                                    </form>
+
+                                    <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectTable-{{ table.id }}"><i class="bi bi-x-lg"></i></button>
+
+                                    <div class="modal fade text-start" id="rejectTable-{{ table.id }}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <form action="{% url 'admin_reject_correspondence' table.id %}" method="POST">
+                                                {% csrf_token %}
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-danger text-white"><h5 class="modal-title">Refuser la table</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                                                    <div class="modal-body"><textarea name="reason" class="form-control" rows="3" required placeholder="Motif du refus..."></textarea></div>
+                                                    <div class="modal-footer"><button type="submit" class="btn btn-danger">Refuser</button></div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% else %}
+                <div class="alert alert-success text-center py-4">Aucune table en attente.</div>
+            {% endif %}
+        </div>
+
+        <div class="tab-pane fade" id="templates" role="tabpanel">
+            {% if pending_templates %}
+            <div class="card shadow-sm border-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Template</th>
+                                <th>Propriétaire</th>
+                                <th>Détails Bio</th>
+                                <th>Créé le</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tpl in pending_templates %}
+                            <tr>
+                                <td>
+                                    <strong>{{ tpl.name }}</strong><br>
+                                    <small class="text-muted">{{ tpl.description|truncatechars:50 }}</small>
+                                </td>
+                                <td>{{ tpl.owner.username }}</td>
+                                <td>
+                                    <span class="badge bg-info text-dark">{{ tpl.enzyme }}</span>
+                                    <span class="badge bg-light text-dark border">{{ tpl.parts.count }} pièces</span>
+                                </td>
+                                <td>{{ tpl.created_at|date:"d/m/Y" }}</td>
+                                <td class="text-end">
+                                    <a href="{% url 'template_detail' tpl.id %}" target="_blank" class="btn btn-sm btn-outline-primary me-1" title="Voir">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    
+                                    <form action="{% url 'admin_approve_template' tpl.id %}" method="POST" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-success me-1" onclick="return confirm('Rendre ce template PUBLIC ?')" title="Approuver">
+                                            <i class="bi bi-check-lg"></i>
+                                        </button>
+                                    </form>
+
+                                    <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectTpl-{{ tpl.id }}" title="Refuser">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+
+                                    <div class="modal fade text-start" id="rejectTpl-{{ tpl.id }}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <form action="{% url 'admin_reject_template' tpl.id %}" method="POST">
+                                                {% csrf_token %}
+                                                <div class="modal-content">
                                                     <div class="modal-header bg-danger text-white">
-                                                        <h5 class="modal-title">Refuser la publication</h5>
+                                                        <h5 class="modal-title">Refuser le template</h5>
                                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                     </div>
                                                     <div class="modal-body">
-                                                        <p>Refuser la collection <strong>{{ col.name }}</strong> ?</p>
-                                                        <div class="mb-3">
-                                                            <label class="form-label">Justification :</label>
-                                                            <textarea name="reason" class="form-control" rows="3" required></textarea>
-                                                        </div>
+                                                        <p>Pourquoi refusez-vous le template <strong>{{ tpl.name }}</strong> ?</p>
+                                                        <textarea name="reason" class="form-control" rows="3" required placeholder="Motif du refus..."></textarea>
                                                     </div>
                                                     <div class="modal-footer">
                                                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
-                                                        <button type="submit" class="btn btn-danger">Confirmer le refus</button>
+                                                        <button type="submit" class="btn btn-danger">Refuser</button>
                                                     </div>
                                                 </div>
                                             </form>
@@ -96,98 +222,12 @@
                 </div>
             </div>
             {% else %}
-                <div class="alert alert-success py-4 text-center">
+                <div class="alert alert-success text-center py-4">
                     <i class="bi bi-check-circle fs-3 mb-3"></i><br>
-                    Aucune demande de collection en attente.
+                    Aucune demande de template en attente.
                 </div>
             {% endif %}
         </div>
-
-        <div class="tab-pane fade" id="tables" role="tabpanel">
-        {% if pending_tables %}
-        <div class="card shadow-sm border-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Table</th>
-                            <th>Propriétaire</th>
-                            <th>Fichier</th>
-                            <th>Date demande</th>
-                            <th class="text-end">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for table in pending_tables %}
-                        <tr>
-                            <td>
-                                <strong>{{ table.name }}</strong><br>
-                                <small class="text-muted">{{ table.description|truncatechars:50 }}</small>
-                            </td>
-                            <td>{{ table.owner.username }}</td>
-                            <td>
-                                {% if table.file %}
-                                    <span class="badge bg-light text-dark border">
-                                        <i class="bi bi-file-earmark-spreadsheet"></i> {{ table.file.name|cut:"correspondences/"|truncatechars:15 }}
-                                    </span>
-                                {% else %} - {% endif %}
-                            </td>
-                            <td>{{ table.uploaded_at|date:"d/m/Y" }}</td>
-
-                            <td class="text-end">
-                                <a href="{% url 'admin_correspondence_review' table.id %}" class="btn btn-sm btn-outline-primary me-1" title="Inspecter">
-                                    <i class="bi bi-eye"></i> Voir
-                                </a>
-
-                                <form action="{% url 'admin_approve_correspondence' table.id %}" method="POST" class="d-inline">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-sm btn-success me-1" title="Accepter" onclick="return confirm('Valider cette table publique ?')">
-                                        <i class="bi bi-check-lg"></i>
-                                    </button>
-                                </form>
-
-                                <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectTableModal-{{ table.id }}" title="Refuser">
-                                    <i class="bi bi-x-lg"></i>
-                                </button>
-
-                                <div class="modal fade text-start" id="rejectTableModal-{{ table.id }}" tabindex="-1" aria-hidden="true">
-                                    <div class="modal-dialog">
-                                        <form action="{% url 'admin_reject_correspondence' table.id %}" method="POST">
-                                            {% csrf_token %}
-                                            <div class="modal-content">
-                                                <div class="modal-header bg-danger text-white">
-                                                    <h5 class="modal-title">Refuser la table</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    <p>Pourquoi refusez-vous la table <strong>{{ table.name }}</strong> ?</p>
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Justification (sera visible par {{ table.owner.username }}) :</label>
-                                                        <textarea name="reason" class="form-control" rows="3" required placeholder="Ex: Format incorrect, doublon..."></textarea>
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
-                                                    <button type="submit" class="btn btn-danger">Confirmer le refus</button>
-                                                </div>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                                </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    {% else %}
-        <div class="alert alert-success py-4 text-center">
-            <i class="bi bi-check-circle fs-3 mb-3"></i><br>
-            Aucune demande de table en attente.
-        </div>
-    {% endif %}
-</div>
 
     </div>
 </div>
