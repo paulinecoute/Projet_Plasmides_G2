@@ -1,70 +1,124 @@
 {% extends "biolib/base.html" %}
-{% block title %}{{ table.name }} — Aperçu{% endblock %}
+{% block title %}{{ table.name }} — Aperçu · BioLib{% endblock %}
 
 {% block content %}
 <style>
   :root {
-    --bg-main: #fcfcfc;
-    --border-color: #eee;
+    --bg-main: #f0f7ff;
+    --app-primary: #007bff;
+    --border-color: rgba(0, 123, 255, 0.1);
+    --text-dark: #004085;
   }
 
-  body { background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body { background-color: var(--bg-main); }
 
   .content-wrapper {
-    max-width: 850px;
-    margin: 0 auto;
-    padding-bottom: 50px;
+    max-width: 1000px;
+    margin: 40px auto;
+    padding-bottom: 80px;
   }
 
-  .nav-header { padding: 20px 0; margin-bottom: 10px; }
-  
-  .btn-back {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 40px; height: 40px;
-    background: #fff; border: 1px solid var(--border-color);
-    border-radius: 12px; color: #666; transition: 0.2s; text-decoration: none;
+  /* Bouton retour circulaire BioLib */
+  .btn-back-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 15px;
+    color: var(--app-primary);
+    transition: all 0.2s;
+    text-decoration: none;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.05);
   }
-  .btn-back:hover { border-color: #000; color: #000; }
+  .btn-back-circle:hover { 
+    background: var(--app-primary); 
+    color: #fff;
+    transform: translateX(-3px);
+  }
 
-  .hero-section { margin-bottom: 40px; }
-  .page-title { font-weight: 850; font-size: 2.8rem; letter-spacing: -0.05em; margin-bottom: 5px; }
-  .page-subtitle { color: #888; font-size: 1.1rem; }
+  .hero-section { margin-bottom: 35px; }
+  .page-title {
+    font-weight: 800;
+    font-size: 2.5rem;
+    color: var(--text-dark);
+    letter-spacing: -0.04em;
+  }
 
+  /* Carte de prévisualisation */
   .preview-card {
     background: #fff;
     border: 1px solid var(--border-color);
     border-radius: 24px;
     padding: 30px;
+    box-shadow: 0 10px 30px rgba(0, 123, 255, 0.05);
+    overflow: hidden;
+  }
+
+  .preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 20px;
+  }
+
+  .code-container {
+    background: #f8fbff;
+    border-radius: 16px;
+    padding: 25px;
+    border: 1px solid rgba(0, 123, 255, 0.05);
   }
 
   .code-area {
-    font-family: "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
-    font-size: 0.9rem;
-    line-height: 1.5;
-    color: #444;
+    font-family: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #334155;
     white-space: pre-wrap;
-    max-height: 70vh;
+    max-height: 65vh;
     overflow-y: auto;
     margin: 0;
   }
+
+  /* Style de la barre de défilement */
+  .code-area::-webkit-scrollbar { width: 8px; }
+  .code-area::-webkit-scrollbar-track { background: transparent; }
+  .code-area::-webkit-scrollbar-thumb { 
+    background: rgba(0, 123, 255, 0.2); 
+    border-radius: 10px; 
+  }
 </style>
 
-<div class="container pb-5">
+<div class="container">
   <div class="content-wrapper">
     
-    <div class="nav-header">
-      <a href="{% url 'correspondence_detail' table.id %}" class="btn-back shadow-sm">
-        <i class="bi bi-arrow-left"></i>
-      </a>
-    </div>
+    <a href="{% url 'correspondence_detail' table.id %}" class="btn-back-circle">
+      <i class="bi bi-arrow-left fs-5"></i>
+    </a>
 
     <div class="hero-section">
       <h1 class="page-title">{{ table.name }}</h1>
-      <p class="page-subtitle">Aperçu du contenu</p>
+      <p class="text-muted mb-0">Contenu brut du fichier source</p>
     </div>
 
-    <div class="preview-card shadow-sm">
-      <pre class="code-area">{{ content }}</pre>
+    <div class="preview-card">
+      <div class="preview-header">
+        <span class="fw-bold text-primary small">
+            <i class="bi bi-file-earmark-text me-1"></i> APERÇU DU FICHIER
+        </span>
+        <span class="badge bg-light text-dark rounded-pill px-3 py-2 border">
+            {{ table.file.name|cut:"correspondences/" }}
+        </span>
+      </div>
+
+      <div class="code-container">
+        <pre class="code-area">{{ content }}</pre>
+      </div>
     </div>
 
   </div>

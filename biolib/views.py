@@ -1641,24 +1641,32 @@ def plasmid_collection_detail(request, pk):
 
 # visualisation plasmide
 
+@login_required
 def plasmid_visualize(request, plasmid_id):
     plasmid = get_object_or_404(Plasmid, id=plasmid_id)
+    
+    # On récupère l'ID de la collection passé dans le lien (?coll=...)
+    collection_id = request.GET.get('coll')
+    collection = None
+    
+    if collection_id:
+        collection = plasmid.collections.filter(id=collection_id).first()
+    
+    if not collection:
+        collection = plasmid.collections.first()
 
-    # 1. Récupérer le contenu du fichier GenBank s'il existe
     genbank_content = ""
     if plasmid.genbank_file:
         try:
             with open(plasmid.genbank_file.path, 'r', encoding='utf-8') as f:
                 genbank_content = f.read()
-        except Exception as e:
-            print(f"Erreur de lecture : {e}")
-            # Fallback : utiliser la séquence brute si le fichier échoue
+        except Exception:
             genbank_content = plasmid.sequence
     else:
-        # Sinon utiliser la séquence brute stockée en BDD
         genbank_content = plasmid.sequence
 
     return render(request, 'biolib/plasmid_visualize.html', {
         'plasmid': plasmid,
+        'collection': collection, 
         'genbank_content': genbank_content
     })

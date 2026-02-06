@@ -3,80 +3,161 @@
 
 {% block content %}
 <style>
-  :root { --bg-main: #fcfcfc; --border-color: #eee; }
-  .content-wrapper { max-width: 700px; margin: 0 auto; padding-bottom: 100px; }
-  
-  /* Bouton Retour Carré */
-  .btn-back-square { 
-    width: 42px; height: 42px; background: #fff; border: 1px solid var(--border-color); 
-    border-radius: 12px; display: flex; align-items: center; justify-content: center; 
-    color: #000; transition: 0.2s; text-decoration: none; margin-bottom: 25px; 
+  :root {
+    --bg-main: #f0f7ff;
+    --app-primary: #007bff;
+    --border-color: rgba(0, 123, 255, 0.1);
+    --text-dark: #004085;
   }
-  .btn-back-square:hover { border-color: #000; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+
+  body { background-color: var(--bg-main); }
+
+  .content-wrapper { 
+    max-width: 750px; 
+    margin: 40px auto; 
+    padding-bottom: 80px;
+  }
+
+  .btn-back-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 15px;
+    color: var(--app-primary);
+    transition: all 0.2s;
+    text-decoration: none;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.05);
+  }
+  .btn-back-circle:hover { 
+    background: var(--app-primary); 
+    color: #fff;
+    transform: translateX(-3px);
+  }
 
   .page-header { margin-bottom: 35px; }
-  .page-title { font-weight: 900; font-size: 2.5rem; letter-spacing: -0.06em; color: #000; }
-  .page-subtitle { color: #888; font-weight: 500; }
+  
+  .header-badge {
+    display: inline-block;
+    background: #eef6ff;
+    color: var(--app-primary);
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 5px 15px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    letter-spacing: 0.05em;
+  }
 
-  /* Liste Verticale des Équipes */
-  .team-selection-list { display: flex; flex-direction: column; gap: 12px; }
+  .page-title { 
+    font-weight: 800; 
+    font-size: 2.4rem; 
+    letter-spacing: -0.04em; 
+    color: var(--text-dark); 
+    margin-bottom: 8px;
+  }
+  .page-subtitle { color: #6c757d; font-weight: 500; }
+
+  .team-selection-list { display: flex; flex-direction: column; gap: 15px; }
   
   .team-row {
     background: #fff;
     border: 1px solid var(--border-color);
-    border-radius: 20px;
-    padding: 22px 28px;
+    border-radius: 24px;
+    padding: 25px 30px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     text-decoration: none;
     color: inherit;
-    transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 10px 30px rgba(0, 123, 255, 0.02);
   }
   
   .team-row:hover {
-    border-color: #000;
-    transform: translateX(8px);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+    border-color: var(--app-primary);
+    transform: translateY(-4px);
+    box-shadow: 0 15px 35px rgba(0, 123, 255, 0.08);
   }
 
-  .team-info { display: flex; align-items: center; gap: 18px; }
-  .team-icon { 
-    width: 42px; height: 42px; background: #f0f4ff; border-radius: 12px; 
-    display: flex; align-items: center; justify-content: center; 
-    color: #2563eb; font-size: 1.2rem;
+  .team-info { display: flex; align-items: center; gap: 20px; }
+  
+  .team-icon-box { 
+    width: 50px; height: 50px; 
+    background: #f0f7ff; 
+    border-radius: 16px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    color: var(--app-primary); 
+    font-size: 1.4rem;
+    transition: 0.3s;
   }
   
-  .team-name { font-weight: 800; font-size: 1.1rem; color: #000; }
-  .go-icon { color: #ddd; transition: 0.2s; font-size: 1.2rem; }
-  .team-row:hover .go-icon { color: #2563eb; transform: scale(1.1); }
+  .team-row:hover .team-icon-box {
+    background: var(--app-primary);
+    color: #fff;
+  }
+  
+  .team-name { 
+    font-weight: 800; 
+    font-size: 1.2rem; 
+    color: var(--text-dark); 
+  }
+
+  .go-icon { 
+    width: 35px; height: 35px;
+    display: flex; align-items: center; justify-content: center;
+    background: #f8f9fa;
+    border-radius: 10px;
+    color: #adb5bd; 
+    transition: 0.3s; 
+  }
+  
+  .team-row:hover .go-icon { 
+    background: var(--app-primary);
+    color: #fff; 
+  }
 
   .empty-state {
-    text-align: center; padding: 60px; background: #fff; 
-    border: 2px dashed #eee; border-radius: 30px; color: #aaa;
+    text-align: center; padding: 80px 40px; 
+    background: #fff; 
+    border: 1px solid var(--border-color); 
+    border-radius: 30px; 
+    color: #adb5bd;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.02);
   }
 </style>
 
-<div class="container mt-5">
+<div class="container">
   <div class="content-wrapper">
     
-    <a href="{% url 'dashboard' %}" class="btn-back-square shadow-sm">
-      <i class="bi bi-arrow-left"></i>
+    <a href="{{ next|default:'/' }}" class="btn-back-circle">
+      <i class="bi bi-arrow-left fs-5"></i>
     </a>
 
     <div class="page-header">
+      <span class="header-badge">Laboratoires & Équipes</span>
       <h1 class="page-title">Mes Équipes</h1>
-      <p class="page-subtitle">Sélectionnez une équipe pour accéder à ses collections.</p>
+      <p class="page-subtitle">Choisissez une équipe pour explorer ses ressources partagées.</p>
     </div>
 
     <div class="team-selection-list">
       {% for team in teams %}
-        <a href="{% url 'team_collections' team.id %}" class="team-row shadow-sm">
+        <a href="{% url 'team_collections' team.id %}{% if next %}?next={{ next }}{% endif %}" class="team-row">
           <div class="team-info">
-            <div class="team-icon">
+            <div class="team-icon-box">
               <i class="bi bi-people-fill"></i>
             </div>
-            <span class="team-name">{{ team.name }}</span>
+            <div>
+                <span class="team-name d-block">{{ team.name }}</span>
+                <span class="text-muted small">Accéder aux collections</span>
+            </div>
           </div>
           <div class="go-icon">
             <i class="bi bi-chevron-right"></i>
@@ -84,9 +165,12 @@
         </a>
       {% empty %}
         <div class="empty-state">
-          <i class="bi bi-shield-slash fs-1 d-block mb-3"></i>
-          <p class="mb-0 fw-bold">Vous ne faites partie d’aucune équipe.</p>
-          <small>Contactez un administrateur pour rejoindre un laboratoire.</small>
+          <div class="mb-4">
+              <i class="bi bi-shield-lock-fill" style="font-size: 4rem; opacity: 0.2;"></i>
+          </div>
+          <h5 class="fw-bold text-dark">Aucune équipe trouvée</h5>
+          <p class="mb-0">Vous ne faites partie d’aucun laboratoire pour le moment.</p>
+          <small class="d-block mt-2">Veuillez contacter un administrateur pour être ajouté à une équipe.</small>
         </div>
       {% endfor %}
     </div>
@@ -95,10 +179,9 @@
 </div>
 
 <script>
-  // Petit effet au clic pour plus de réactivité
   document.querySelectorAll('.team-row').forEach(row => {
-    row.addEventListener('mousedown', () => row.style.transform = 'scale(0.98) translateX(8px)');
-    row.addEventListener('mouseup', () => row.style.transform = 'translateX(8px)');
+    row.addEventListener('mousedown', () => row.style.transform = 'scale(0.98) translateY(-2px)');
+    row.addEventListener('mouseup', () => row.style.transform = 'translateY(-4px)');
   });
 </script>
 

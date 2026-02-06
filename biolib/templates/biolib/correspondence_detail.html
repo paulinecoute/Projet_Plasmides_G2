@@ -1,145 +1,196 @@
 {% extends "biolib/base.html" %}
-{% block title %}{{ table.name }}{% endblock %}
+{% block title %}{{ table.name }} · BioLib{% endblock %}
 
 {% block content %}
 <style>
   :root {
-    --bg-main: #fcfcfc;
-    --border-color: #eee;
+    --bg-main: #f0f7ff;
+    --app-primary: #007bff;
+    --border-color: rgba(0, 123, 255, 0.1);
+    --text-dark: #004085;
   }
 
-  body { background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  .content-wrapper { max-width: 800px; margin: 0 auto; }
+  body { background-color: var(--bg-main); }
 
-  .nav-header { padding: 20px 0; margin-bottom: 20px; }
-
-  /* Bouton retour carré BioLib */
-  .btn-back-square {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 42px; height: 42px; background: #fff;
-    border: 1px solid var(--border-color); border-radius: 12px;
-    color: #000; transition: 0.2s; text-decoration: none;
+  .content-wrapper { 
+    max-width: 900px; 
+    margin: 40px auto; 
+    padding-bottom: 80px;
   }
-  .btn-back-square:hover { border-color: #000; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
 
-  .hero-section { margin-bottom: 40px; }
+  /* Bouton retour circulaire BioLib */
+  .btn-back-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 15px;
+    color: var(--app-primary);
+    transition: all 0.2s;
+    text-decoration: none;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.05);
+  }
+  .btn-back-circle:hover { 
+    background: var(--app-primary); 
+    color: #fff;
+    transform: translateX(-3px);
+  }
+
+  /* Header Card identique aux collections */
+  .table-header-card {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 35px;
+    margin-bottom: 35px;
+    box-shadow: 0 10px 30px rgba(0, 123, 255, 0.05);
+  }
 
   .table-title {
-    font-weight: 900;
-    font-size: 2.8rem;
-    letter-spacing: -0.06em;
-    margin-bottom: 8px;
-    line-height: 1.1;
-  }
-
-  .status-dot {
-    display: inline-flex; align-items: center;
-    font-size: 0.75rem; font-weight: 800;
-    color: #888; text-transform: uppercase; letter-spacing: 0.1em;
-  }
-  .dot { height: 8px; width: 8px; border-radius: 50%; margin-right: 8px; }
-  .dot-public { background-color: #10b981; }
-  .dot-private { background-color: #6b7280; }
-
-  /* Card de fichier */
-  .card-box {
-    background: #fff; border: 1px solid var(--border-color);
-    border-radius: 24px; padding: 25px; margin-bottom: 20px;
-  }
-
-  .file-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .file-left { display: flex; align-items: center; gap: 15px; font-weight: 700; color: #111; }
-
-  /* Boutons Pilules (Pill) comme dans collection_detail */
-  .btn-pill {
-    border-radius: 999px;
-    padding: 10px 24px;
     font-weight: 800;
+    font-size: 2.2rem;
+    color: var(--text-dark);
+    letter-spacing: -0.04em;
+    margin-bottom: 10px;
+  }
+
+  .description-text {
+    color: #6c757d;
+    font-size: 1rem;
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+
+  .meta-info { 
+    font-size: 0.85rem; 
+    color: #adb5bd; 
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+    font-weight: 600;
+  }
+
+  /* Card de fichier stylisée */
+  .card-box {
+    background: #fff; 
+    border: 1px solid var(--border-color);
+    border-radius: 24px; 
+    padding: 30px; 
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+  }
+
+  .file-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; }
+  .file-left { display: flex; align-items: center; gap: 20px; }
+  
+  .icon-wrapper {
+    width: 55px; height: 55px; 
+    background: #f0f7ff; 
+    border-radius: 16px; 
+    display: flex; align-items: center; justify-content: center;
+    color: var(--app-primary);
+  }
+
+  .btn-pill {
+    border-radius: 12px;
+    font-weight: 700;
+    padding: 10px 20px;
     font-size: 0.9rem;
     transition: 0.2s;
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    border: 1px solid var(--border-color);
+    text-decoration: none;
   }
-  .btn-pill-dark { background: #000; color: #fff; border: none; }
-  .btn-pill-dark:hover { background: #333; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
   
-  .btn-pill-outline { background: #fff; color: #666; }
-  .btn-pill-outline:hover { border-color: #000; color: #000; }
+  .btn-pill-primary { background: var(--app-primary); color: #fff; border: none; }
+  .btn-pill-primary:hover { background: #0056b3; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,123,255,0.3); color: #fff; }
+  
+  .btn-pill-outline { background: transparent; border: 1px solid var(--app-primary); color: var(--app-primary); }
+  .btn-pill-outline:hover { background: var(--app-primary); color: #fff; }
 
-  /* Bouton supprimer discret */
-  .btn-delete-min { background: none; border: none; color: #ccc; padding: 8px; transition: 0.2s; }
-  .btn-delete-min:hover { color: #ef4444; }
-
-  .meta-info { font-size: 0.8rem; color: #bbb; font-weight: 600; text-transform: uppercase; margin-top: 10px; }
+  .btn-delete-link {
+    color: #dc3545;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: 0.2s;
+    background: none;
+    border: none;
+    padding: 0;
+  }
+  .btn-delete-link:hover { opacity: 0.7; }
 </style>
 
-<div class="container pb-5">
+<div class="container">
   <div class="content-wrapper">
 
-    <div class="nav-header">
-      <a href="{{ next|default:request.META.HTTP_REFERER }}" class="btn-back-square shadow-sm">
-        <i class="bi bi-arrow-left"></i>
-      </a>
-    </div>
+    <a href="{% url 'correspondences' %}" class="btn-back-circle">
+      <i class="bi bi-arrow-left fs-5"></i>
+    </a>
 
-    <div class="hero-section">
-      <div class="row align-items-center">
-        <div class="col">
-          <div class="status-dot mb-2">
-            <span class="dot {% if table.is_public %}dot-public{% else %}dot-private{% endif %}"></span>
-            {% if table.is_public %}Public{% else %}Privé{% endif %}
-          </div>
+    <div class="table-header-card">
+      <div class="row align-items-start">
+        <div class="col-lg-8">
           <h1 class="table-title">{{ table.name }}</h1>
+          
+          <p class="description-text">
+            {{ table.description|default:"Aucune description fournie pour cette table de correspondance." }}
+          </p>
+
           <div class="meta-info">
-            <i class="bi bi-calendar3"></i> {{ table.uploaded_at|date:"d M Y" }}
-            {% if table.team %} <span class="ms-2">// {{ table.team.name|upper }}</span>{% endif %}
+            <span><i class="bi bi-calendar3 me-1"></i> Importé le {{ table.uploaded_at|date:"d M Y" }}</span>
+            {% if table.team %}
+              <span><i class="bi bi-people-fill me-1"></i> {{ table.team.name }}</span>
+            {% endif %}
+            <span><i class="bi bi-person-circle me-1"></i> {{ table.owner.username }}</span>
           </div>
         </div>
 
         {% if is_owner %}
-        <div class="col-auto d-flex gap-2">
-          <button class="btn-pill btn-pill-outline shadow-sm" disabled title="Fonctionnalité à venir">
-            {% if table.is_public %}Rendre privée{% else %}Rendre publique{% endif %}
-          </button>
-
+        <div class="col-lg-4 text-lg-end mt-4 mt-lg-0">
           <form method="post" action="{% url 'correspondence_delete' table.id %}" class="m-0">
-            {% csrf_token %}
-            <input type="hidden" name="next" value="{{ next|default:request.META.HTTP_REFERER }}">
-            <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm" 
-                    onclick="return confirm('Supprimer cette table ?');"
-                    style="padding: 10px 24px;">
-              Supprimer
-            </button>
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{% url 'correspondences' %}">
+              <button type="submit" class="btn-delete-link" onclick="return confirm('Supprimer définitivement cette table ?');">
+                <i class="bi bi-trash3 me-1"></i> Supprimer la table
+              </button>
           </form>
         </div>
         {% endif %}
       </div>
     </div>
 
-    <div class="card-box shadow-sm">
+    <h3 class="fw-bold text-dark mb-3 px-2" style="font-size: 1.1rem; letter-spacing: 0.02em;">DOCUMENT SOURCE</h3>
+    
+    <div class="card-box">
       <div class="file-row">
         <div class="file-left">
-          <div style="width: 45px; height: 45px; background: #f8f8f8; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-            <i class="bi bi-file-earmark-spreadsheet text-dark fs-4"></i>
+          <div class="icon-wrapper">
+            <i class="bi bi-file-earmark-spreadsheet-fill fs-3"></i>
           </div>
           <div class="d-flex flex-column">
-            <span class="fw-bold">{% if table.file %}{{ table.file.name|cut:"correspondences/" }}{% else %}Aucun fichier associé{% endif %}</span>
-            <span class="text-muted small">Table de correspondance .xlsx / .csv</span>
+            <span class="fw-bold text-dark fs-5 text-truncate" style="max-width: 300px;">
+                {% if table.file %}{{ table.file.name|cut:"correspondences/" }}{% else %}Aucun fichier associé{% endif %}
+            </span>
+            <span class="text-muted small">Données brutes de correspondance</span>
           </div>
         </div>
 
-        {% if table.file %}
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-3">
+          {% if table.file %}
           <a href="{% url 'correspondence_view_file' table.id %}" class="btn-pill btn-pill-outline">
-            <i class="bi bi-eye"></i> Voir
+            <i class="bi bi-eye"></i> Visualiser
           </a>
-          <a href="{{ table.file.url }}" download class="btn-pill btn-pill-dark shadow-sm">
-            <i class="bi bi-download"></i>
+          <a href="{{ table.file.url }}" download class="btn-pill btn-pill-primary">
+            <i class="bi bi-download"></i> Télécharger
           </a>
+          {% endif %}
         </div>
-        {% endif %}
       </div>
     </div>
 

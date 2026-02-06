@@ -100,6 +100,10 @@
     font-size: 0.85rem;
     transition: 0.2s;
     background: transparent;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .badge-gb {
@@ -165,7 +169,7 @@
                     {% for plasmid in plasmids %}
                     <tr>
                         <td>
-                            <a href="{% url 'plasmid_visualize' plasmid.id %}" class="text-decoration-none">
+                            <a href="{% url 'plasmid_visualize' plasmid.id %}?coll={{ collection.id }}" class="text-decoration-none">
                                 <span class="plasmid-id">{{ plasmid.identifier }}</span>
                             </a>
                         </td>
@@ -176,12 +180,12 @@
                             {% if plasmid.genbank_file %}
                                 <span class="badge-gb small"><i class="bi bi-file-code-fill me-1"></i> GenBank</span>
                             {% else %}
-                                <span class="badge bg-light text-muted border small"><i class="bi bi-text-left me-1"></i> RAW</span>
+                                <span class="badge bg-warning text-dark border-0 small" style="font-weight: 700; border-radius: 6px; padding: 5px 10px;"><i class="bi bi-text-left me-1"></i> RAW</span>
                             {% endif %}
                         </td>
                         <td class="text-end">
                             <div class="d-flex justify-content-end gap-2">
-                                <a href="{% url 'plasmid_visualize' plasmid.id %}" class="btn btn-action-sm btn-outline-primary" title="Ouvrir dans SeqViz">
+                                <a href="{% url 'plasmid_visualize' plasmid.id %}?coll={{ collection.id }}" class="btn btn-action-sm btn-outline-primary" title="Ouvrir dans SeqViz">
                                     <i class="bi bi-eye"></i>
                                 </a>
                                 

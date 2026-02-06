@@ -19,7 +19,6 @@
     padding-bottom: 80px;
   }
 
-  /* Header & Title */
   .hero-section { margin-bottom: 35px; }
   .page-title {
     font-weight: 800;
@@ -28,7 +27,6 @@
     letter-spacing: -0.04em;
   }
 
-  /* Tabs Design */
   .nav-tabs {
     border-bottom: 2px solid var(--border-color);
     margin-bottom: 30px;
@@ -41,6 +39,7 @@
     padding: 10px 20px;
     border-radius: 12px 12px 0 0;
     transition: 0.2s;
+    text-decoration: none;
   }
   .nav-tabs .nav-link:hover {
     color: var(--app-primary);
@@ -52,7 +51,6 @@
     border-bottom: 3px solid var(--app-primary);
   }
 
-  /* Card Design */
   .collection-card {
     background: #fff;
     border: 1px solid var(--border-color);
@@ -109,6 +107,7 @@
     padding: 6px 15px;
     font-size: 0.9rem;
     transition: 0.2s;
+    text-decoration: none;
   }
   .collection-card:hover .btn-open-card {
     background: var(--app-primary);
@@ -139,7 +138,7 @@
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link {% if current_view == 'team' %}active{% endif %}" href="?view=team">
+        <a class="nav-link {% if current_view == 'team' %}active{% endif %}" href="{% url 'choose_team_for_plasmids' %}">
           <i class="bi bi-people me-2"></i>Équipes
         </a>
       </li>

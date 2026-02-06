@@ -1,143 +1,176 @@
 {% extends "biolib/base.html" %}
-{% block title %}Importer une table{% endblock %}
+{% block title %}Importer une table · BioLib{% endblock %}
 
 {% block content %}
 <style>
   :root {
-    --bg-main: #fcfcfc;
-    --border-color: #eee;
+    --bg-main: #f0f7ff;
+    --app-primary: #007bff;
+    --border-color: rgba(0, 123, 255, 0.1);
+    --text-dark: #004085;
   }
 
-  body { background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body { background-color: var(--bg-main); }
 
   .content-wrapper {
-    max-width: 600px;
-    margin: 0 auto;
-    padding-bottom: 50px;
+    max-width: 650px;
+    margin: 40px auto;
+    padding-bottom: 80px;
   }
 
-  .nav-header { padding: 20px 0; margin-bottom: 10px; }
-  
-  .btn-back {
+  .btn-back-circle {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 45px;
+    height: 45px;
     background: #fff;
     border: 1px solid var(--border-color);
-    border-radius: 12px;
-    color: #666;
-    transition: 0.2s;
+    border-radius: 15px;
+    color: var(--app-primary);
+    transition: all 0.2s;
     text-decoration: none;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.05);
   }
-  .btn-back:hover { border-color: #000; color: #000; }
+  .btn-back-circle:hover { 
+    background: var(--app-primary); 
+    color: #fff;
+    transform: translateX(-3px);
+  }
 
-  .hero-section { margin-bottom: 40px; }
-  .page-title { font-weight: 850; font-size: 2.2rem; letter-spacing: -0.05em; margin-bottom: 5px; }
+  .hero-section { margin-bottom: 35px; }
+  .page-title {
+    font-weight: 800;
+    font-size: 2.5rem;
+    color: var(--text-dark);
+    letter-spacing: -0.04em;
+  }
   
   .form-card {
     background: #fff;
     border: 1px solid var(--border-color);
     border-radius: 24px;
-    padding: 35px;
+    padding: 40px;
+    box-shadow: 0 15px 35px rgba(0, 123, 255, 0.05);
   }
 
   .form-label {
     font-size: 0.75rem;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: #aaa;
+    letter-spacing: 0.08em;
+    color: #6c757d;
     margin-bottom: 10px;
+    display: block;
   }
 
   .form-control {
-    border: 1px solid #f0f0f0;
-    background: #fbfbfb;
-    border-radius: 12px;
-    padding: 12px 15px;
-    font-weight: 500;
-    transition: 0.2s;
+    border: 2px solid #f8fbff;
+    background: #f8fbff;
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-weight: 600;
+    color: var(--text-dark);
+    transition: all 0.2s;
   }
   .form-control:focus {
-    border-color: #000;
+    border-color: var(--app-primary);
     background: #fff;
-    box-shadow: none;
+    box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.1);
+    outline: none;
   }
 
-  /* File input styling */
   input[type="file"]::file-selector-button {
-    background: #000;
+    background: var(--app-primary);
     color: #fff;
     border: none;
-    border-radius: 8px;
-    padding: 5px 15px;
+    border-radius: 10px;
+    padding: 8px 16px;
     margin-right: 15px;
     font-size: 0.75rem;
     font-weight: 700;
     cursor: pointer;
     transition: 0.2s;
   }
-  input[type="file"]::file-selector-button:hover { background: #333; }
+  input[type="file"]::file-selector-button:hover { background: #0056b3; }
 
   .btn-submit {
-    background: #000;
+    background: var(--app-primary);
     color: #fff;
-    padding: 12px 30px;
-    border-radius: 14px;
+    padding: 16px 30px;
+    border-radius: 16px;
     font-weight: 700;
     border: none;
-    transition: 0.2s;
+    transition: 0.3s;
     width: 100%;
-    margin-top: 20px;
+    margin-top: 10px;
+    font-size: 1.1rem;
   }
-  .btn-submit:hover { background: #333; transform: translateY(-2px); }
+  .btn-submit:hover { 
+    background: #0056b3; 
+    transform: translateY(-2px); 
+    box-shadow: 0 10px 20px rgba(0, 123, 255, 0.2);
+  }
 
+  .helper-box {
+    background: #f0f7ff;
+    border-radius: 14px;
+    padding: 15px;
+    margin-top: 25px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
   .helper-text {
-    font-size: 0.8rem;
-    color: #888;
-    margin-top: 20px;
-    text-align: center;
+    font-size: 0.85rem;
+    color: var(--app-primary);
+    margin-bottom: 0;
+    font-weight: 600;
   }
 </style>
 
 <div class="container">
   <div class="content-wrapper">
     
-    <div class="nav-header">
-      <a href="{% url 'correspondences' %}" class="btn-back shadow-sm">
-        <i class="bi bi-arrow-left"></i>
-      </a>
-    </div>
+    <a href="{% url 'correspondences' %}" class="btn-back-circle">
+      <i class="bi bi-arrow-left fs-5"></i>
+    </a>
 
     <div class="hero-section">
       <h1 class="page-title">Nouvelle table</h1>
-      <p class="text-muted">Importez vos fichiers de mapping biologiques.</p>
+      <p class="text-muted">Importez vos fichiers de mapping pour vos annotations.</p>
     </div>
 
-    <div class="form-card shadow-sm">
+    <div class="form-card">
       <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
 
         <div class="mb-4">
           <label class="form-label">Nom de la table</label>
-          <input type="text" name="name" class="form-control" placeholder="ex: Mapping BsaI 2026" required>
+          <input type="text" name="name" class="form-control" placeholder="ex: Dictionnaire Enzymes 2026" required>
         </div>
 
         <div class="mb-4">
-          <label class="form-label">Fichier de données</label>
+          <label class="form-label">Description (optionnel)</label>
+          <textarea name="description" class="form-control" rows="3" placeholder="À quoi sert cette table ?"></textarea>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label">Sélectionner le fichier</label>
           <input type="file" name="file" class="form-control" accept=".csv, .xlsx, .xls" required>
         </div>
 
-        <button type="submit" class="btn-submit shadow-sm">
-          Lancer l'importation
+        <button type="submit" class="btn-submit">
+          <i class="bi bi-cloud-arrow-up-fill me-2"></i> Lancer l'importation
         </button>
 
-        <p class="helper-text">
-          <i class="bi bi-info-circle me-1"></i> 
-          Formats acceptés : CSV, Excel (.xlsx, .xls)
-        </p>
+        <div class="helper-box">
+          <i class="bi bi-info-circle-fill fs-5 text-primary"></i>
+          <p class="helper-text">
+            Formats acceptés : CSV, Excel (.xlsx, .xls)
+          </p>
+        </div>
       </form>
     </div>
 

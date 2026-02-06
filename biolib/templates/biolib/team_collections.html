@@ -19,7 +19,6 @@
     padding-bottom: 100px;
   }
   
-  /* Le fameux bouton retour circulaire BioLib */
   .btn-back-circle {
     display: inline-flex;
     align-items: center;
@@ -62,7 +61,6 @@
     letter-spacing: 0.05em;
   }
 
-  /* Liste Verticale BioLib */
   .collection-list-container { 
     display: flex; 
     flex-direction: column; 
@@ -113,7 +111,6 @@
   .c-name { font-weight: 800; font-size: 1.2rem; color: var(--text-dark); margin-bottom: 2px; }
   .c-owner-email { font-size: 0.85rem; color: #6c757d; font-weight: 500; }
 
-  /* Bouton d'action Création */
   .btn-create-biolib {
     background: var(--app-primary); 
     color: #fff; 
@@ -145,7 +142,6 @@
     transform: translateX(5px); 
   }
 
-  /* État Vide */
   .empty-state-biolib {
     background: #fff;
     border: 2px dashed var(--border-color);
@@ -158,19 +154,19 @@
 <div class="container">
   <div class="content-wrapper">
     
-    <a href="{% url 'team_detail' team.id %}" class="btn-back-circle shadow-sm">
+    <a href="{{ next|default:request.META.HTTP_REFERER|default:'/' }}" class="btn-back-circle shadow-sm">
       <i class="bi bi-arrow-left fs-5"></i>
     </a>
 
     <div class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
       <div>
         <span class="team-tag"><i class="bi bi-people-fill me-1"></i> {{ team.name }}</span>
-        <h1 class="page-title">Collections d'équipe</h1>
+        <h1 class="page-title">Collections</h1>
       </div>
       
       {% if is_leader %}
         <a href="{% url 'team_collection_create' team.id %}" class="btn-create-biolib">
-          <i class="bi bi-plus-circle-fill"></i> Nouvelle collection
+          <i class="bi bi-plus-circle-fill"></i> Ajouter
         </a>
       {% endif %}
     </div>
