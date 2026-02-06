@@ -115,7 +115,7 @@
 
                             <a href="{% url 'plasmid_visualize' plasmid.id %}"
                                class="btn btn-sm btn-outline-info"
-                               title="Visualiser avec SeqViz">
+                               title="Visualiser">
                                 <i class="bi bi-eye"></i>
                             </a>
 
@@ -128,16 +128,26 @@
                             </a>
                             {% endif %}
 
-                            {% if collection.owner == user %}
+                            {% if collection.owner != user %}
+                                <a href="{% url 'plasmid_copy' plasmid.id %}"
+                                   class="btn btn-sm btn-outline-success"
+                                   title="Sauvegarder dans mes collections...">
+                                    <i class="bi bi-hdd-network"></i>
+                                </a>
+                            {% endif %}
+                            {% if has_write_access %}
 
                                 <a href="{% url 'plasmid_edit' plasmid.id %}"
                                    class="btn btn-sm btn-outline-warning"
-                                   title="Modifier les annotations">
+                                   title="Modifier">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+                            {% endif %}
+                            {% if collection.owner == user %}
                                 <form method="post"
                                       action="{% url 'plasmid_delete' plasmid.id %}"
-                                      class="d-inline"> {% csrf_token %}
+                                      class="d-inline">
+                                    {% csrf_token %}
                                     <input type="hidden" name="next" value="{{ request.path }}">
                                     <button type="submit"
                                             class="btn btn-sm btn-outline-danger"

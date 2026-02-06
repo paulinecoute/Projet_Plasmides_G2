@@ -1,0 +1,44 @@
+{% extends 'biolib/base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="bi bi-hdd-network"></i> Sauvegarder le plasmide</h4>
+                </div>
+                <div class="card-body">
+                    <p>
+                        Vous allez copier le plasmide <strong>{{ plasmid.name }}</strong> ({{ plasmid.identifier }}) dans votre espace personnel.
+                    </p>
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Option 1 : Ajouter à une collection existante</label>
+                            {{ form.existing_collection }}
+                        </div>
+
+                        <div class="text-center my-3 text-muted">- OU -</div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Option 2 : Créer une nouvelle collection</label>
+                            {{ form.new_collection_name }}
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ request.META.HTTP_REFERER|default:'/' }}" class="btn btn-outline-secondary">Annuler</a>
+
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-lg"></i> Confirmer la copie
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
