@@ -1217,7 +1217,8 @@ def plasmid_upload(request, collection_id):
     collection = get_object_or_404(
         PlasmidCollection,
         id=collection_id,
-        owner=request.user
+        owner=request.user,
+        publication_status='draft'
     )
 
     next_url = request.GET.get("next")

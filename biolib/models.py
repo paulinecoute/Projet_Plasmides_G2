@@ -112,7 +112,9 @@ class PlasmidCollection(models.Model):
         max_length=20,
         choices=PUBLICATION_STATUS,
         default='draft',
-        verbose_name="Statut de publication"
+        verbose_name="Statut de publication",
+        null=True,
+        blank=True
     )
     admin_feedback = models.TextField(blank=True, null=True, verbose_name="Raison du refus")
 
