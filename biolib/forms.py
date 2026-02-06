@@ -286,3 +286,35 @@ class FeatureEditForm(forms.Form):
     )
 
 FeatureFormSet = forms.formset_factory(FeatureEditForm, extra=0)
+
+class CopyPlasmidForm(forms.Form):
+    # Liste déroulante des collections existantes
+    existing_collection = forms.ModelChoiceField(
+        queryset=PlasmidCollection.objects.none(), # Sera rempli dans le __init__
+        required=False,
+        label="Choisir une collection existante",
+        empty_label="-- Sélectionnez une collection --",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
+    # Champ texte pour créer une nouvelle collection
+    new_collection_name = forms.CharField(
+        required=False,
+        label="Ou créer une nouvelle collection",
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nom de la nouvelle collection'})
+    )
+
+    def __init__(self, user, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # On ne propose que les collections de l'utilisateur connecté
+        self.fields['existing_collection'].queryset = PlasmidCollection.objects.filter(owner=user)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        existing = cleaned_data.get("existing_collection")
+        new_name = cleaned_data.get("new_collection_name")
+
+        if not existing and not new_name:
+            raise forms.ValidationError("Vous devez choisir une collection existante OU entrer un nom pour une nouvelle.")
+
+        return cleaned_data

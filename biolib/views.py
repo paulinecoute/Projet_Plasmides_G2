@@ -5,7 +5,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.http import FileResponse, HttpResponse, Http404, HttpResponseForbidden
 from django.conf import settings
 from django.db.models import Q
-from .forms import CustomUserCreationForm, SimulationForm, CampaignTemplateForm, TemplatePartFormSet, CorrespondenceForm, PlasmidForm, FeatureFormSet
+from .forms import CustomUserCreationForm, SimulationForm, CampaignTemplateForm, TemplatePartFormSet, CorrespondenceForm, PlasmidForm, FeatureFormSet, CopyPlasmidForm
 from .models import Simulation, CampaignTemplate, Plasmid, Team, User, Correspondence, PlasmidCollection
 import traceback
 import pathlib
@@ -26,7 +26,7 @@ from io import StringIO
 from django.urls import reverse
 import io
 from django.core.exceptions import PermissionDenied
-
+import uuid
 
 import insillyclo.data_source
 try:
@@ -1733,49 +1733,48 @@ def plasmid_collection_detail(request, pk):
     collection = get_object_or_404(PlasmidCollection, pk=pk)
 
     is_owner = (request.user == collection.owner)
-    is_public = (collection.publication_status == 'approved')
-    is_admin = request.user.is_staff
 
-    if not is_owner and not is_public and not is_admin:
-        return HttpResponseForbidden("Accès refusé : Cette collection est privée.")
+    is_team_member = False
+    if collection.team:
+        is_team_member = collection.team.members.filter(id=request.user.id).exists()
+
+    if not collection.is_public:
+        if not (is_owner or is_team_member):
+            raise PermissionDenied("Accès refusé : Cette collection est privée.")
 
     plasmids = collection.plasmids.all()
 
-    context = {
+    return render(request, 'biolib/plasmid_collection_detail.html', {
         'collection': collection,
         'plasmids': plasmids,
-        'is_owner': is_owner
-    }
-
-    return render(request, 'biolib/plasmid_collection_detail.html', context)
+        'has_write_access': is_owner or is_team_member
+    })
 
 # visualisation plasmide
 
 def plasmid_visualize(request, plasmid_id):
-    plasmid = get_object_or_404(Plasmid, id=plasmid_id)
+    plasmid = get_object_or_404(Plasmid, pk=plasmid_id)
+
+    can_edit = False
+    if request.user.is_authenticated:
+        can_edit = plasmid.collections.filter(
+            Q(owner=request.user) |
+            Q(team__members=request.user)
+        ).exists()
 
     genbank_content = ""
     if plasmid.genbank_file:
         try:
-            with open(plasmid.genbank_file.path, 'r', encoding='utf-8') as f:
+            with plasmid.genbank_file.open('r') as f:
                 genbank_content = f.read()
-        except Exception as e:
-            print(f"Erreur de lecture : {e}")
-            genbank_content = plasmid.sequence
-    else:
-        genbank_content = plasmid.sequence
-
-    if request.user.is_authenticated:
-        can_edit = plasmid.collections.filter(owner=request.user).exists()
-    else:
-        can_edit = False
+        except Exception:
+            pass
 
     return render(request, 'biolib/plasmid_visualize.html', {
         'plasmid': plasmid,
         'genbank_content': genbank_content,
         'can_edit': can_edit,
     })
-
 
 @login_required
 def request_publication(request, pk):
@@ -1880,77 +1879,68 @@ def correspondence_request_publication(request, pk):
 def plasmid_edit(request, pk):
     plasmid = get_object_or_404(Plasmid, pk=pk)
 
-    is_owner = plasmid.collections.filter(owner=request.user).exists()
-    if not is_owner:
-        raise PermissionDenied("Permission refusée.")
+    has_permission = plasmid.collections.filter(
+            Q(owner=request.user) |
+            Q(team__members=request.user)
+        ).exists()
+
+    if not has_permission:
+        raise PermissionDenied("Vous devez posséder ce plasmide (ou être dans l'équipe) pour le modifier.")
 
     genbank_record = None
     features_initial_data = []
-
     if plasmid.genbank_file:
         try:
             with plasmid.genbank_file.open('r') as handle:
                 genbank_record = SeqIO.read(handle, "genbank")
-
             for feature in genbank_record.features:
                 if feature.type == 'source': continue
-
                 quals = feature.qualifiers
                 current_name = quals.get('label', quals.get('gene', quals.get('product', quals.get('note', ['Inconnu']))))[0]
-
-                identifier = f"{feature.type}::{feature.location}"
-
                 features_initial_data.append({
-                    'feature_identifier': identifier,
+                    'feature_identifier': f"{feature.type}::{feature.location}",
                     'feature_type': feature.type,
                     'feature_location': str(feature.location),
                     'feature_name': current_name
                 })
-        except Exception as e:
-            print(f"Erreur lecture GenBank: {e}")
+        except Exception:
+            pass # Gestion d'erreur simplifiée pour l'exemple
 
     if request.method == 'POST':
-        plasmid_form = PlasmidForm(request.POST, request.FILES, instance=plasmid)
+        form = PlasmidForm(request.POST, request.FILES, instance=plasmid)
         feature_formset = FeatureFormSet(request.POST)
 
-        # On vérifie que TOUT est valide
-        if plasmid_form.is_valid() and feature_formset.is_valid():
-            plasmid_instance = plasmid_form.save(commit=False)
+        if form.is_valid() and feature_formset.is_valid():
+            plasmid_instance = form.save(commit=False)
 
+            # Mise à jour GenBank (Si modif)
             if genbank_record and feature_formset.has_changed():
-                updated = False
-                for form in feature_formset:
-                    if form.has_changed() and 'feature_name' in form.cleaned_data:
-                        target_id = form.cleaned_data['feature_identifier']
-                        new_name = form.cleaned_data['feature_name']
-
+                for f_form in feature_formset:
+                    if f_form.has_changed() and 'feature_name' in f_form.cleaned_data:
+                        target_id = f_form.cleaned_data['feature_identifier']
                         for feature in genbank_record.features:
-                            current_id = f"{feature.type}::{feature.location}"
-                            if current_id == target_id:
-                                feature.qualifiers['label'] = [new_name]
-                                updated = True
+                            if f"{feature.type}::{feature.location}" == target_id:
+                                feature.qualifiers['label'] = [f_form.cleaned_data['feature_name']]
                                 break
-                if updated:
-                    output_buffer = io.StringIO()
-                    SeqIO.write(genbank_record, output_buffer, "genbank")
 
-                    new_content = ContentFile(output_buffer.getvalue().encode('utf-8'))
-
-                    plasmid_instance.genbank_file.save(plasmid_instance.genbank_file.name, new_content, save=False)
-                    print("Fichier GenBank mis à jour avec les nouveaux noms d'annotations.")
+                # Écriture du fichier (écrasement direct car on est chez nous)
+                output_buffer = io.StringIO()
+                SeqIO.write(genbank_record, output_buffer, "genbank")
+                plasmid_instance.genbank_file.save(plasmid.genbank_file.name, ContentFile(output_buffer.getvalue().encode('utf-8')), save=False)
 
             plasmid_instance.save()
             return redirect('plasmid_visualize', plasmid_id=plasmid.pk)
 
     else:
-        plasmid_form = PlasmidForm(instance=plasmid)
+        form = PlasmidForm(instance=plasmid)
         feature_formset = FeatureFormSet(initial=features_initial_data)
 
     return render(request, 'biolib/plasmid_edit.html', {
-        'form': plasmid_form,
+        'form': form,
         'feature_formset': feature_formset,
         'plasmid': plasmid
     })
+
 
 @login_required
 def plasmid_detail(request, pk):
@@ -2029,3 +2019,64 @@ def admin_reject_template(request, pk):
         else:
             messages.error(request, "Motif de refus obligatoire.")
     return redirect('admin_publication_list')
+
+@login_required
+def plasmid_copy(request, pk):
+    original_plasmid = get_object_or_404(Plasmid, pk=pk)
+
+    if request.method == 'POST':
+        form = CopyPlasmidForm(request.user, request.POST)
+        if form.is_valid():
+            # 1. Déterminer la collection cible
+            target_collection = form.cleaned_data['existing_collection']
+            new_col_name = form.cleaned_data['new_collection_name']
+
+            if new_col_name:
+                # Création à la volée
+                target_collection = PlasmidCollection.objects.create(
+                    name=new_col_name,
+                    owner=request.user,
+                    publication_status='draft' # Par défaut privé
+                )
+
+            # 2. Logique de clonage (Identique à ce qu'on a fait avant)
+            base_identifier = f"{original_plasmid.identifier}_copy"
+            new_identifier = base_identifier
+            counter = 1
+            while Plasmid.objects.filter(identifier=new_identifier).exists():
+                new_identifier = f"{base_identifier}_{counter}"
+                counter += 1
+
+            new_plasmid = Plasmid(
+                identifier=new_identifier,
+                name=original_plasmid.name,
+                description=original_plasmid.description,
+                sequence=original_plasmid.sequence
+            )
+
+            # Copie physique du fichier
+            if original_plasmid.genbank_file:
+                original_plasmid.genbank_file.open()
+                content = ContentFile(original_plasmid.genbank_file.read())
+                original_plasmid.genbank_file.close()
+
+                import uuid
+                file_ext = os.path.splitext(original_plasmid.genbank_file.name)[1]
+                new_filename = f"plasmid_{request.user.id}_{uuid.uuid4().hex[:8]}{file_ext}"
+                new_plasmid.genbank_file.save(new_filename, content, save=False)
+
+            new_plasmid.save()
+
+            # 3. Ajout à la collection CHOISIE
+            target_collection.plasmids.add(new_plasmid)
+
+            # Redirection vers la copie créée
+            return redirect('plasmid_visualize', plasmid_id=new_plasmid.pk)
+    else:
+        # GET : On affiche le formulaire vide
+        form = CopyPlasmidForm(request.user)
+
+    return render(request, 'biolib/plasmid_copy.html', {
+        'form': form,
+        'plasmid': original_plasmid
+    })

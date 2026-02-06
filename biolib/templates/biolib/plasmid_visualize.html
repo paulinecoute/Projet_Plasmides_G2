@@ -8,14 +8,19 @@
 
     <div style="margin-top: 15px;" class="d-flex gap-2">
         <a href="{{ plasmid.genbank_file.url }}" class="btn btn-primary" download>
-            <i class="bi bi-download"></i> Télécharger le fichier .gb
+            <i class="bi bi-download"></i> Télécharger .gb
         </a>
 
         {% if can_edit %}
             <a href="{% url 'plasmid_edit' plasmid.id %}" class="btn btn-warning">
                 <i class="bi bi-pencil"></i> Modifier les annotations
             </a>
+        {% else %}
+            <a href="{% url 'plasmid_copy' plasmid.id %}" class="btn btn-success">
+                <i class="bi bi-hdd-network"></i> Sauvegarder dans mes collections...
+            </a>
         {% endif %}
+
     </div>
 </div>
 
