@@ -14,80 +14,160 @@
     </div>
 
     {% if user.is_authenticated %}
-    <ul class="nav nav-tabs mb-4">
-        <li class="nav-item">
-            <a class="nav-link {% if current_view == 'my' %}active{% endif %}" 
-               href="?view=my">
-                Personnelles
-            </a>
+    <ul class="nav nav-pills mb-4" id="pills-tab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="pills-personal-tab" data-bs-toggle="pill" data-bs-target="#pills-personal" type="button" role="tab">
+                <i class="bi bi-person"></i> Personnelles
+            </button>
         </li>
-        <li class="nav-item">
-            <a class="nav-link {% if current_view == 'team' %}active{% endif %}" 
-               href="?view=team">
-                Équipes
-            </a>
+
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pills-team-tab" data-bs-toggle="pill" data-bs-target="#pills-team" type="button" role="tab">
+                <i class="bi bi-people"></i> Équipes
+            </button>
+        </li>
+
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pills-public-tab" data-bs-toggle="pill" data-bs-target="#pills-public" type="button" role="tab">
+                <i class="bi bi-globe"></i> Publiques
+            </button>
         </li>
     </ul>
     {% endif %}
 
-    {% if collections %}
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        {% for col in collections %}
-        <div class="col">
-            <div class="card h-100 shadow-sm hover-shadow">
-                <div class="card-body">
+    <div class="tab-content" id="pills-tabContent">
 
-                    <div class="d-flex justify-content-between align-items-start">
-                        <h5 class="card-title text-truncate" title="{{ col.name }}">
-                            {{ col.name }}
-                        </h5>
+        <div class="tab-pane fade show active" id="pills-personal" role="tabpanel">
+            {% if my_collections %}
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    {% for col in my_collections %}
+                    <div class="col">
+                        <div class="card h-100 shadow-sm hover-shadow">
+                            <div class="card-body">
 
-                        {% if col.team %}
-                            <span class="badge bg-info text-dark">{{ col.team.name }}</span>
-                        {% elif col.is_public %}
-                            <span class="badge bg-success">Public</span>
-                        {% else %}
-                            <span class="badge bg-secondary">Privé</span>
-                        {% endif %}
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <h5 class="card-title text-truncate" title="{{ col.name }}">
+                                        {{ col.name }}
+                                    </h5>
+
+                                    {% if col.publication_status == 'approved' %}
+                                        <span class="badge bg-success">Public</span>
+                                    {% elif col.publication_status == 'pending' %}
+                                        <span class="badge bg-warning text-dark">En attente</span>
+                                    {% elif col.publication_status == 'rejected' %}
+                                        <span class="badge bg-danger">Refusé</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Privé</span>
+                                    {% endif %}
+                                </div>
+
+                                <p class="card-text text-muted small mt-2">
+                                    {{ col.description|default:"Pas de description."|truncatechars:100 }}
+                                </p>
+
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <small class="text-muted">
+                                        {{ col.plasmids.count }} plasmides
+                                    </small>
+
+                                    <a href="{% url 'plasmid_collection_detail' col.id %}"
+                                       class="btn btn-outline-primary btn-sm stretched-link">
+                                       Ouvrir
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="card-footer bg-transparent border-top-0 text-end">
+                                <small class="text-muted">Propriétaire : Vous</small>
+                            </div>
+                        </div>
                     </div>
-
-                    <p class="card-text text-muted small mt-2">
-                        {{ col.description|default:"Pas de description."|truncatechars:100 }}
-                    </p>
-
-                    <div class="d-flex justify-content-between align-items-center mt-3">
-                        <small class="text-muted">
-                            {{ col.plasmids.count }} plasmides
-                        </small>
-
-                        <a href="{% url 'plasmid_collection_detail' col.id %}"
-                           class="btn btn-outline-primary btn-sm stretched-link">
-                            Ouvrir
-                        </a>
-                    </div>
-
+                    {% endfor %}
                 </div>
-
-                <div class="card-footer bg-transparent border-top-0 text-end">
-                    <small class="text-muted" style="font-size: 0.75rem;">
-                        {% if col.owner %}
-                            Propriétaire : {{ col.owner.username }}
-                        {% else %}
-                            Collection publique
-                        {% endif %}
-                    </small>
+            {% else %}
+                <div class="alert alert-light text-center border py-5">
+                    <i class="bi bi-folder2-open fs-1 text-muted"></i>
+                    <p class="mt-2">Vous n'avez pas encore de collection personnelle.</p>
+                    <a href="{% url 'collection_create' %}" class="btn btn-sm btn-primary mt-2">Créer ma première collection</a>
                 </div>
-            </div>
+            {% endif %}
         </div>
-        {% endfor %}
-    </div>
 
-    {% else %}
-    <div class="alert alert-info text-center">
-        Aucune collection trouvée.
+        <div class="tab-pane fade" id="pills-team" role="tabpanel">
+            {% if team_collections %}
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    {% for col in team_collections %}
+                         <div class="col">
+                            <div class="card h-100 shadow-sm hover-shadow">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <h5 class="card-title text-truncate" title="{{ col.name }}">{{ col.name }}</h5>
+                                        <span class="badge bg-info text-dark">Équipe</span>
+                                    </div>
+                                    <p class="card-text text-muted small mt-2">
+                                        {{ col.description|default:"Pas de description."|truncatechars:100 }}
+                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <small class="text-muted">{{ col.plasmids.count }} plasmides</small>
+                                        <a href="{% url 'plasmid_collection_detail' col.id %}" class="btn btn-outline-primary btn-sm stretched-link">Ouvrir</a>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent border-top-0 text-end">
+                                    <small class="text-muted">Propriétaire : {{ col.owner.username }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-light text-center border py-5">
+                    <p>Aucune collection d'équipe.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="tab-pane fade {% if not user.is_authenticated %}show active{% endif %}" id="pills-public" role="tabpanel">
+            {% if public_collections %}
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    {% for col in public_collections %}
+                        <div class="col">
+                            <div class="card h-100 shadow-sm hover-shadow">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <h5 class="card-title text-truncate text-primary" title="{{ col.name }}">{{ col.name }}</h5>
+                                        <span class="badge bg-success">Public</span>
+                                    </div>
+                                    <h6 class="card-subtitle mb-2 text-muted small mt-1">
+                                        <i class="bi bi-person-circle"></i> {{ col.owner.username }}
+                                    </h6>
+                                    <p class="card-text text-muted small mt-2">
+                                        {{ col.description|default:"Pas de description."|truncatechars:100 }}
+                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <small class="text-muted">{{ col.plasmids.count }} plasmides</small>
+                                        <a href="{% url 'plasmid_collection_detail' col.id %}" class="btn btn-outline-primary btn-sm stretched-link">Explorer</a>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent border-top-0 text-muted small">
+                                    Mis à jour le {{ col.updated_at|date:"d/m/Y" }} (ID: {{ col.id }})
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info text-center py-5">
+                    <i class="bi bi-globe fs-1 d-block mb-3"></i>
+                    <h5>Aucune collection publique pour le moment.</h5>
+                </div>
+            {% endif %}
+        </div>
+
     </div>
-    {% endif %}
 </div>
+
+<script type="text/template" id="card-template">
+    </script>
 
 <style>
     .hover-shadow:hover {
@@ -95,5 +175,13 @@
         box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
         transition: 0.3s;
     }
+    .nav-pills .nav-link.active {
+        background-color: #0d6efd; /* Couleur primaire Bootstrap */
+    }
+    .nav-pills .nav-link {
+        color: #495057;
+        margin-right: 5px;
+    }
 </style>
+
 {% endblock %}

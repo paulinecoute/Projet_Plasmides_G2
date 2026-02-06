@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
-from django.http import FileResponse, HttpResponse, Http404
+from django.contrib.admin.views.decorators import staff_member_required
+from django.http import FileResponse, HttpResponse, Http404,HttpResponseForbidden
 from django.conf import settings
 from django.db.models import Q
 from .forms import CustomUserCreationForm, SimulationForm, CampaignTemplateForm, TemplatePartFormSet
@@ -22,32 +23,7 @@ from django.contrib import messages
 from django.utils.safestring import mark_safe
 from Bio import SeqIO
 from io import StringIO
-
-
-# Import Insillyclo
-#try:
-#    import insillyclo.observer
-#    import insillyclo.simulator
-#    from insillyclo.simulator import compute_all
-#except ImportError:
-#    class BaseObserver: pass
-#    def compute_all(*args, **kwargs): pass
-#
-## Observer pour la console Django
-#class DjangoConsoleObserver(insillyclo.observer.InSillyCloCliObserver if 'insillyclo.observer' in locals() else object):
-#    def __init__(self):
-#        if hasattr(insillyclo.observer, 'InSillyCloCliObserver'):
-#            super().__init__(debug=False, fail_on_error=True)
-#
-#    def notify_message(self, message):
-#        print(f"[INSILLYCLO] {message}")
-#    def notify_progress(self, val): pass
-#    def notify_missing_sequence_for_input_part(self, *args, **kwargs): pass
-#    def assembly_start(self, *args, **kwargs): pass
-#    def __getattr__(self, name):
-#        # Sécurité ultime : si le simulateur appelle une méthode inconnue, on ne plante pas
-#        def _missing(*args, **kwargs): return None
-#        return _missing
+import io
 
 
 import insillyclo.data_source
@@ -732,9 +708,99 @@ def simulation_result(request, pk=None):
         except Exception:
             pass
 
-    return render(request, 'biolib/simulation_result.html', {'simulation': simulation, 'csv_data': csv_data})
+    base_path = pathlib.Path(output_folder)
+    all_gb_files = list(base_path.glob("*.gb"))
 
+    generated_files = []
 
+    db_csv_path = base_path / 'DB_produced_plasmid.csv'
+
+    if db_csv_path.exists():
+        produced_ids = set()
+        try:
+            with open(db_csv_path, 'r', encoding='utf-8') as f:
+                reader = csv.reader(f, delimiter=';')
+                next(reader, None)
+                for row in reader:
+                    if row:
+                        produced_ids.add(row[0].strip())
+        except Exception as e:
+            print(f"Erreur lecture CSV: {e}")
+
+        for f in all_gb_files:
+            if f.stem in produced_ids:
+                generated_files.append(f.name)
+    my_collections = []
+    if request.user.is_authenticated:
+        my_collections = PlasmidCollection.objects.filter(owner=request.user)
+
+    return render(request, 'biolib/simulation_result.html', {'simulation': simulation,'csv_data': csv_data,       'results': generated_files, 'my_collections': my_collections
+    })
+
+@login_required
+def save_generated_plasmid(request, simulation_id):
+    if request.method == "POST":
+        simulation = get_object_or_404(Simulation, id=simulation_id)
+
+        filename = request.POST.get('filename')
+        collection_id = request.POST.get('collection_id')
+        new_collection_name = request.POST.get('new_collection_name')
+
+        target_collection = None
+
+        if new_collection_name and new_collection_name.strip():
+            target_collection = PlasmidCollection.objects.create(
+                owner=request.user,
+                name=new_collection_name.strip(),
+                description="Collection créée depuis les résultats de simulation."
+            )
+            messages.success(request, f"Nouvelle collection '{target_collection.name}' créée avec succès.")
+
+        elif collection_id:
+            target_collection = get_object_or_404(PlasmidCollection, id=collection_id, owner=request.user)
+
+        else:
+            messages.error(request, "Vous devez choisir une collection existante ou en créer une nouvelle.")
+            return redirect('simulation_result', pk=simulation_id)
+
+        sim_root = os.path.join(settings.MEDIA_ROOT, 'simulations', str(simulation.id))
+        path_in_outputs = os.path.join(sim_root, 'outputs', filename)
+        path_at_root = os.path.join(sim_root, filename)
+
+        source_file_path = None
+        if os.path.exists(path_in_outputs):
+            source_file_path = path_in_outputs
+        elif os.path.exists(path_at_root):
+            source_file_path = path_at_root
+
+        if source_file_path:
+            try:
+                with open(source_file_path, 'rb') as f:
+                    file_content = f.read()
+
+                identifier = filename
+
+                plasmid, created = Plasmid.objects.get_or_create(
+                    identifier=identifier,
+                    defaults={
+                        'name': filename,
+                        'sequence': ""
+                    }
+                )
+
+                if created:
+                    plasmid.genbank_file.save(filename, ContentFile(file_content), save=True)
+
+                plasmid.collections.add(target_collection)
+
+                messages.success(request, f"Le plasmide '{identifier}' a bien été ajouté à '{target_collection.name}'.")
+
+            except Exception as e:
+                messages.error(request, f"Erreur technique : {e}")
+        else:
+            messages.error(request, f"Fichier introuvable : {filename}")
+
+    return redirect('simulation_result', pk=simulation_id)
 
 def update_simulation_gel(request, pk):
     simulation = get_object_or_404(Simulation, pk=pk)
@@ -869,13 +935,56 @@ def download_specific_file(request, pk, filename):
     raise Http404
 
 def download_simulation_zip(request, pk):
-    zip_filename = f"simulation_{pk}_archive.zip"
-    path_to_zip = os.path.join(settings.BASE_DIR, 'media', 'simulations', str(pk), zip_filename)
-    if os.path.exists(path_to_zip):
-        response = FileResponse(open(path_to_zip, 'rb'), content_type='application/zip')
-        response['Content-Disposition'] = f'attachment; filename="{zip_filename}"'
-        return response
-    raise Http404
+    # 1. Définition du chemin de base
+    sim_dir = pathlib.Path(settings.MEDIA_ROOT) / 'simulations' / str(pk)
+
+    if not sim_dir.exists():
+        raise Http404("Dossier de simulation introuvable")
+
+    # 2. Préparation de la liste des IDs à garder (Basé sur le CSV)
+    produced_ids = set()
+    db_csv_path = sim_dir / 'DB_produced_plasmid.csv'
+
+    if db_csv_path.exists():
+        try:
+            with open(db_csv_path, 'r', encoding='utf-8') as f:
+                # Utilisation du délimiteur ';' comme demandé
+                reader = csv.reader(f, delimiter=';')
+                next(reader, None) # Sauter le header
+                for row in reader:
+                    if row:
+                        # On stocke l'ID (ex: pSA001)
+                        produced_ids.add(row[0].strip())
+        except Exception as e:
+            print(f"Erreur lecture CSV: {e}")
+
+    # 3. Création du ZIP en mémoire
+    buffer = io.BytesIO()
+
+    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+
+        # A. Ajouter les fichiers .gb FILTRÉS
+        for f in sim_dir.glob("*.gb"):
+            # Si le CSV existe, on filtre strictement
+            if produced_ids:
+                if f.stem in produced_ids:
+                    zip_file.write(f, arcname=f.name)
+            # Sinon (secours), on prend tout ce qui commence par 'p' (ex: pFinal...)
+            # pour éviter les tADH1 (templates)
+            else:
+                if f.name.startswith("p"):
+                    zip_file.write(f, arcname=f.name)
+
+        # B. Ajouter les autres fichiers utiles (Images, CSV, etc.)
+        # J'ai retiré '.json' de cette liste
+        for f in sim_dir.glob("*"):
+            if f.suffix in ['.csv', '.png', '.jpg', '.svg']:
+                zip_file.write(f, arcname=f.name)
+
+    # 4. Envoi du fichier
+    buffer.seek(0)
+    filename = f"simulation_{pk}_resultats.zip"
+    return FileResponse(buffer, as_attachment=True, filename=filename)
 
 def download_simulation_csv(request, pk):
     # Backward compatibility
@@ -884,15 +993,6 @@ def download_simulation_csv(request, pk):
 # ==============================================================================
 # 5. GESTION DES ÉQUIPES ET COLLECTIONS
 # ==============================================================================
-
-#@login_required
-#def team_list(request):
-#    teams = Team.objects.filter(Q(leader=request.user) | Q(members=request.user)).distinct()
-#    for team in teams:
-#        team.tables_count = Correspondence.objects.filter(team=team).count()
-#        team.campaigns_count = Simulation.objects.filter(team=team).count()
-#        team.plasmids_count = Plasmid.objects.filter(collections__team=team).distinct().count()
-#    return render(request, 'biolib/teams.html', {'teams': teams})
 
 @login_required
 def team_create(request):
@@ -966,21 +1066,15 @@ def team_delete(request, team_id):
 
 @login_required
 def team_list(request):
-    # 1. Récupérer toutes les équipes dont l'utilisateur est membre
     teams = Team.objects.filter(members=request.user)
 
-    # 2. Calculer les statistiques pour chaque équipe
     for team in teams:
         team.members_count = team.members.count()
 
-        # Compte le nombre de collections
         team.collections_count = team.plasmidcollection_set.count()
 
-        # Compte le nombre de plasmides uniques (Correction Many-to-Many)
         team.plasmids_count = Plasmid.objects.filter(collections__team=team).distinct().count()
 
-        # Compte le nombre de simulations
-        # CORRECTION ICI : On utilise directement le nom qui marche dans votre team_detail
         team.simulations_count = team.simulations.count()
 
     context = {
@@ -1177,16 +1271,15 @@ def plasmid_delete(request, plasmid_id):
 
 @login_required
 def remove_plasmid_from_collection(request, collection_id, plasmid_id):
-    # 1. On récupère la collection (sécurisée par owner)
+    # On récupère la collection
     collection = get_object_or_404(PlasmidCollection, id=collection_id, owner=request.user)
 
     # 2. On récupère le plasmide
     plasmid = get_object_or_404(Plasmid, id=plasmid_id)
 
-    # 3. ON LE DÉTACHE (On coupe le lien sans supprimer l'objet)
+    # ON LE DÉTACHE (On coupe le lien sans supprimer l'objet)
     collection.plasmids.remove(plasmid)
 
-    # 4. Feedback et redirection
     messages.success(request, f"Le plasmide '{plasmid.name}' a été retiré de la collection.")
     return redirect('plasmid_collection_detail', pk=collection.id)
 
@@ -1520,74 +1613,71 @@ def choose_team_for_correspondences(request):
 # VISUALISATION DE PLASMIDES
 
 def plasmid_collection_list(request):
-    view_type = request.GET.get('view', 'my')
 
-    # CAS INVITÉ (non connecté)
+    # --- CAS 1 : INVITÉ (Non connecté) ---
     if not request.user.is_authenticated:
-        collections = PlasmidCollection.objects.filter(
-            is_public=True,
-            team__isnull=True
+        # CORRECTION ICI : On utilise publication_status='approved'
+        # et non plus is_public=True
+        public_collections = PlasmidCollection.objects.filter(
+            publication_status='approved'
         ).order_by('-id')
 
         return render(request, 'biolib/plasmid_collection_list.html', {
-            'collections': collections,
-            'current_view': 'public',
+            'public_collections': public_collections,
+            # On passe des listes vides pour les autres pour éviter les erreurs dans le template
+            'my_collections': [],
+            'team_collections': [],
             'page_title': "Collections publiques"
         })
 
-    # CAS UTILISATEUR CONNECTÉ
-    if view_type == 'team':
-        # 🔵 Collections d’équipe uniquement
-        collections = PlasmidCollection.objects.filter(
-            team__members=request.user
-        ).distinct().order_by('-id')
+    # --- CAS 2 : UTILISATEUR CONNECTÉ ---
+    # On récupère les 3 listes séparément pour remplir les 3 onglets
 
-        title = "Collections d’équipe"
+    # A. Mes collections (Onglet 1)
+    my_collections = PlasmidCollection.objects.filter(
+        owner=request.user
+    ).distinct().order_by('-id')
 
-    else:
-        collections = PlasmidCollection.objects.filter(
-            Q(owner=request.user, team__isnull=True) |
-            Q(is_public=True, team__isnull=True)
-        ).distinct().order_by('-id')
+    # B. Collections d'équipe (Onglet 2)
+    # Note : Si vous n'utilisez pas encore les équipes, cette liste sera vide, c'est ok.
+    team_collections = PlasmidCollection.objects.filter(
+        team__members=request.user
+    ).distinct().order_by('-id')
 
-        title = "Mes Collections"
+    # C. Collections Publiques (Onglet 3)
+    public_collections = PlasmidCollection.objects.filter(
+        publication_status='approved'
+    ).order_by('-id')
 
+    # On envoie tout au template
     return render(request, 'biolib/plasmid_collection_list.html', {
-        'collections': collections,
-        'current_view': view_type,
-        'page_title': title
+        'my_collections': my_collections,
+        'team_collections': team_collections,
+        'public_collections': public_collections,
+        'page_title': "Mes Collections"
     })
 
 
 
 def plasmid_collection_detail(request, pk):
-    """
-    Détail d'une collection spécifique avec la liste des plasmides.
-    """
     collection = get_object_or_404(PlasmidCollection, pk=pk)
 
-    # Vérification simple des droits d'accès (propriétaire ou membre de l'équipe)
-    has_access = False
-    if collection.owner == request.user:
-        has_access = True
-    elif collection.team and request.user in collection.team.members.all():
-        has_access = True
+    is_owner = (request.user == collection.owner)
+    is_public = (collection.publication_status == 'approved')
 
-    if not has_access:
-        return HttpResponse("Accès refusé à cette collection.", status=403)
 
-    return render(request, 'biolib/plasmid_collection_detail.html', {
+    if not is_owner and not is_public:
+        return HttpResponseForbidden("Accès refusé : Cette collection est privée.")
+
+    plasmids = collection.plasmids.all()
+
+    context = {
         'collection': collection,
-        'plasmids': collection.plasmids.all() # On suppose que le related_name est 'plasmids' par défaut ou défini ainsi
-    })
+        'plasmids': plasmids,
+        'is_owner': is_owner
+    }
 
-    next_url = request.GET.get("next")
-
-    return render(request, "biolib/correspondence_view_file.html", {
-        "table": table,
-        "content": content,
-        "next": next_url
-    })
+    return render(request, 'biolib/plasmid_collection_detail.html', context)
 
 # visualisation plasmide
 
@@ -1612,3 +1702,53 @@ def plasmid_visualize(request, plasmid_id):
         'plasmid': plasmid,
         'genbank_content': genbank_content
     })
+
+# Vue USER
+@login_required
+def request_publication(request, pk):
+    collection = get_object_or_404(PlasmidCollection, pk=pk, owner=request.user)
+
+    if collection.publication_status == 'draft' or collection.publication_status == 'rejected':
+        collection.publication_status = 'pending'
+        collection.save()
+        messages.success(request, f"La demande de publication pour '{collection.name}' a été envoyée aux administrateurs.")
+
+    return redirect('plasmid_collection_detail', pk=pk)
+
+# Vue ADMIN
+@staff_member_required # Seul un admin peut voir ça
+def admin_publication_list(request):
+    # Liste toutes les collections en attente
+    pending_collections = PlasmidCollection.objects.filter(publication_status='pending').order_by('-id')
+
+    return render(request, 'biolib/admin_publication_list.html', {
+        'pending_collections': pending_collections
+    })
+
+@staff_member_required
+def admin_approve_collection(request, pk):
+    collection = get_object_or_404(PlasmidCollection, pk=pk)
+
+    if request.method == 'POST':
+        collection.publication_status = 'approved'
+        collection.admin_feedback = "" # On nettoie les anciens feedbacks
+        collection.save()
+        messages.success(request, f"La collection '{collection.name}' est maintenant publique !")
+
+    return redirect('admin_publication_list')
+
+@staff_member_required
+def admin_reject_collection(request, pk):
+    collection = get_object_or_404(PlasmidCollection, pk=pk)
+
+    if request.method == 'POST':
+        reason = request.POST.get('reason')
+        if reason:
+            collection.publication_status = 'rejected'
+            collection.admin_feedback = reason
+            collection.save()
+            messages.warning(request, f"La collection '{collection.name}' a été refusée.")
+        else:
+            messages.error(request, "Vous devez fournir une raison pour le refus.")
+
+    return redirect('admin_publication_list')

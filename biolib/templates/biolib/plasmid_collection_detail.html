@@ -15,25 +15,63 @@
 
     <div class="card mb-4 border-0 shadow-sm bg-light">
         <div class="card-body">
-            <h2 class="card-title">{{ collection.name }}</h2>
-            <p class="card-text">{{ collection.description }}</p>
 
-            <div class="d-flex gap-2">
-                <a href="{% url 'plasmid_upload' collection.id %}?next={{ request.path }}"
-                   class="btn btn-success btn-sm">
-                    <i class="bi bi-cloud-upload"></i> Ajouter des plasmides
-                </a>
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <h2 class="card-title mb-0">{{ collection.name }}</h2>
+
+                <div>
+                    {% if collection.publication_status == 'draft' %}
+                        <span class="badge bg-secondary"><i class="bi bi-lock-fill"></i> Privé</span>
+                    {% elif collection.publication_status == 'pending' %}
+                        <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split"></i> En attente</span>
+                    {% elif collection.publication_status == 'approved' %}
+                        <span class="badge bg-success"><i class="bi bi-globe"></i> Public</span>
+                    {% elif collection.publication_status == 'rejected' %}
+                        <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Refusé</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <p class="card-text text-muted">{{ collection.description }}</p>
+
+            {% if collection.publication_status == 'rejected' and collection.admin_feedback %}
+                <div class="alert alert-danger d-flex align-items-center" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill flex-shrink-0 me-2"></i>
+                    <div>
+                        <strong>Publication refusée :</strong> {{ collection.admin_feedback }}
+                        <div class="small mt-1">Veuillez corriger les problèmes puis soumettre à nouveau.</div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <hr>
+
+            <div class="d-flex gap-2 flex-wrap">
 
                 {% if collection.owner == user %}
-                <form method="post"
-                      action="{% url 'plasmid_collection_delete' collection.id %}"
-                      onsubmit="return confirm('Êtes-vous sûr ?');">
-                    {% csrf_token %}
-                    <input type="hidden" name="next" value="{{ request.path }}">
-                    <button type="submit" class="btn btn-danger btn-sm">
-                        <i class="bi bi-trash"></i> Supprimer la collection
-                    </button>
-                </form>
+
+                    <a href="{% url 'plasmid_upload' collection.id %}?next={{ request.path }}"
+                       class="btn btn-success btn-sm">
+                        <i class="bi bi-cloud-upload"></i> Ajouter des plasmides
+                    </a>
+
+                    {% if collection.publication_status == 'draft' or collection.publication_status == 'rejected' %}
+                        <a href="{% url 'request_publication' collection.id %}"
+                           class="btn btn-primary btn-sm">
+                            <i class="bi bi-megaphone"></i> Demander la publication
+                        </a>
+                    {% endif %}
+
+                    <form method="post"
+                          action="{% url 'plasmid_collection_delete' collection.id %}"
+                          onsubmit="return confirm('Êtes-vous sûr ? Cette action est irréversible.');">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                            <i class="bi bi-trash"></i> Supprimer
+                        </button>
+                    </form>
+
                 {% endif %}
             </div>
         </div>

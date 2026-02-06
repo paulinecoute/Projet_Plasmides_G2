@@ -34,13 +34,13 @@
                         <span class="input-group-text bg-secondary border-secondary text-white-50">
                             <i class="bi bi-search"></i>
                         </span>
-                        <input class="form-control bg-secondary text-white border-secondary" 
-                               type="search" 
-                               name="q" 
-                               placeholder="Rechercher..." 
-                               aria-label="Search" 
+                        <input class="form-control bg-secondary text-white border-secondary"
+                               type="search"
+                               name="q"
+                               placeholder="Rechercher..."
+                               aria-label="Search"
                                value="{{ query|default:'' }}"
-                               style="--bs-bg-opacity: .2;"> 
+                               style="--bs-bg-opacity: .2;">
                                </div>
                 </form>
 
@@ -57,7 +57,13 @@
                 <li class="nav-item col-6 col-lg-auto">
                     <a class="nav-link py-2 px-0 px-lg-2" href="{% url 'simulation_list' %}">Simulation</a>
                 </li>
-
+                {% if user.is_staff %}
+                    <li class="nav-item col-6 col-lg-auto">
+                        <a class="nav-link py-2 px-0 px-lg-2 text-warning fw-bold" href="{% url 'admin_publication_list' %}">
+                            <i class="bi bi-shield-lock"></i> Admin
+                        </a>
+                    </li>
+                {% endif %}
                 <hr class="d-lg-none text-white-50">
 
                 <li class="nav-item py-2 py-lg-1 col-12 col-lg-auto">
@@ -80,7 +86,15 @@
                                 Mon profil
                             </a>
                         </li>
-
+                        {% if user.is_staff %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center text-warning" href="{% url 'admin_publication_list' %}">
+                                    <i class="bi bi-check-circle-fill me-2"></i>
+                                    Valider publications
+                                </a>
+                            </li>
+                        {% endif %}
                         <li><hr class="dropdown-divider"></li>
 
                         <li>

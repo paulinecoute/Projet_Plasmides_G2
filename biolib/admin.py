@@ -37,16 +37,13 @@ class TeamAdmin(admin.ModelAdmin):
 
 @admin.register(PlasmidCollection)
 class PlasmidCollectionAdmin(admin.ModelAdmin):
-    list_display = ('name', 'owner', 'team', 'is_public')
-    list_filter = ('is_public', 'team')
+    list_display = ('name', 'owner', 'publication_status')
+
+    list_filter = ('publication_status', 'owner')
+
     search_fields = ('name', 'description')
 
 @admin.register(Plasmid)
-#class PlasmidAdmin(admin.ModelAdmin):
-#    list_display = ('identifier', 'name', 'collection')
-#    list_filter = ('collection',)
-#    search_fields = ('identifier', 'name', 'sequence')
-
 class PlasmidAdmin(admin.ModelAdmin):
     list_display = ('name', 'get_collections')
 
