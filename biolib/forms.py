@@ -201,12 +201,14 @@ class SimulationForm(forms.ModelForm):
         self.fields['custom_enzymes'].choices = [
                 ('BsaI', 'BsaI'), ('BsmBI', 'BsmBI'), ('NotI', 'NotI'), ('BbsI', 'BbsI'), ('SapI', 'SapI')
             ]
+
         # 2. Gestion de l'équipe (Sécurité)
         if user and user.is_authenticated:
             # On ne montre que les équipes de l'utilisateur
             self.fields['team'].queryset = Team.objects.filter(members=user)
             self.fields['collections'].queryset = PlasmidCollection.objects.filter(
-                Q(owner=user) | Q(is_public='True')
+                Q(owner=user) |
+                Q(publication_status='approved') | Q(team__members=user)
             ).distinct()
         else:
             # Si pas connecté, pas d'équipe possible

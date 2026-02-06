@@ -70,6 +70,7 @@ urlpatterns = [
     path('simulation/<int:pk>/download_file/<str:filename>/', views.download_specific_file, name='download_specific_file'),
     path('simulation/<int:pk>/update_gel/', views.update_simulation_gel, name='update_simulation_gel'),
     path("teams/<int:team_id>/simulations/", views.team_simulations, name="team_simulations"),
+    path('simulation/<int:simulation_id>/save/', views.save_generated_plasmid, name='save_generated_plasmid'),
 
     # ============================================================
     # ESPACE PERSONNEL
@@ -101,11 +102,8 @@ urlpatterns = [
     path("collections/<int:collection_id>/upload/", views.plasmid_upload, name="plasmid_upload"),
     path("collections/<int:collection_id>/delete/", views.collection_delete, name="collection_delete"),
     path("plasmids/<int:plasmid_id>/delete/", views.plasmid_delete, name="plasmid_delete"),
-    path(
-    "library/<int:pk>/delete/",
-    views.plasmid_collection_delete,
-    name="plasmid_collection_delete"
-    ),
+    path("library/<int:pk>/delete/",views.plasmid_collection_delete,name="plasmid_collection_delete"),
+    path('collections/<int:pk>/request-publish/', views.request_publication, name='request_publication'),
 
 
     # ============================================================
@@ -143,6 +141,12 @@ urlpatterns = [
     path("teams/<int:team_id>/correspondences/<int:correspondence_id>/remove-file/", views.team_correspondence_remove_file, name="team_correspondence_remove_file"),
     path("teams/<int:team_id>/correspondences/<int:correspondence_id>/delete/", views.team_correspondence_delete, name="team_correspondence_delete"),
 
+    # ============================================================
+    # ACTIONS ADMIN
+    # ============================================================
+    path('admin-panel/requests/', views.admin_publication_list, name='admin_publication_list'),
+    path('admin-panel/requests/<int:pk>/approve/', views.admin_approve_collection, name='admin_approve_collection'),
+    path('admin-panel/requests/<int:pk>/reject/', views.admin_reject_collection, name='admin_reject_collection'),
 ]
 
 if settings.DEBUG:

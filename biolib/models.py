@@ -99,10 +99,28 @@ class PlasmidCollection(models.Model):
     description = models.TextField(blank=True) # Vient de Main
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True)
     team = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, blank=True)
-    is_public = models.BooleanField(default=False)
+
+    PUBLICATION_STATUS = [
+        ('draft', 'Privé'),
+        ('pending', 'En attente de validation'),
+        ('approved', 'Public (Validé)'),
+        ('rejected', 'Refusé'),
+    ]
+
+    publication_status = models.CharField(
+        max_length=20,
+        choices=PUBLICATION_STATUS,
+        default='draft',
+        verbose_name="Statut de publication"
+    )
+    admin_feedback = models.TextField(blank=True, null=True, verbose_name="Raison du refus")
 
     def __str__(self):
         return self.name
+    @property
+    def is_public(self):
+        return self.publication_status == 'approved'
+
 
 class Plasmid(models.Model):
     """ Fusion : On garde la branche d'AGASH pour les fichier + on conserve la simplicité de MAIN """
@@ -113,16 +131,20 @@ class Plasmid(models.Model):
     )
     identifier = models.CharField(max_length=100, help_text="Code labo (ex: pYTK045)")
     name = models.CharField(max_length=200, blank=True)
+    PUBLICATION_STATUS = [
+        ('draft', 'Privé'),
+        ('pending', 'En attente de validation'),
+        ('approved', 'Public (Validé)'),
+        ('rejected', 'Refusé'),
+    ]
 
     # AGASH : Fichier source
     genbank_file = models.FileField(upload_to='plasmids/', verbose_name="Fichier GenBank", null=True, blank=True)
 
     # MAIN/AGASH : Séquence brute (utile pour recherche rapide)
     sequence = models.TextField(help_text="Séquence nucléotidique")
-
     def __str__(self):
         return f"{self.identifier} - {self.name}"
-
 # ==============================================================================
 # 3. MAPPING & CORRESPONDANCE
 # ==============================================================================

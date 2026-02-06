@@ -71,6 +71,115 @@
                         </div>
                     </div>
                 </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingPlasmids">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#plasmidFiles" aria-expanded="true" aria-controls="plasmidFiles">
+                            <i class="fas fa-dna me-2"></i> <strong>Plasmides Générés (.gb)</strong>
+                        </button>
+                    </h2>
+                    <div id="plasmidFiles" class="accordion-collapse collapse show" aria-labelledby="headingPlasmids" data-bs-parent="#resultFilesAccordion">
+                        <div class="accordion-body">
+
+                            {% if results %}
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Nom du fichier</th>
+                                            <th class="text-end">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for filename in results %}
+                                        <tr>
+                                            <td>
+                                                <i class="fas fa-file-code text-primary me-2"></i> {{ filename }}
+                                            </td>
+                                            <td class="text-end">
+                                                <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#saveModal-{{ forloop.counter }}">
+                                                    <i class="fas fa-plus-circle"></i> Ajouter à une collection
+                                                </button>
+
+                                                <div class="modal fade text-start" id="saveModal-{{ forloop.counter }}" tabindex="-1" aria-hidden="true">
+                                                    <div class="modal-dialog">
+                                                        <div class="modal-content">
+                                                            <form method="POST" action="{% url 'save_generated_plasmid' simulation.id %}">
+                                                                {% csrf_token %}
+
+                                                                <div class="modal-header bg-success text-white">
+                                                                    <h5 class="modal-title"><i class="fas fa-save"></i> Sauvegarder le plasmide</h5>
+                                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                </div>
+                                                                <div class="modal-body">
+                                                                    <div class="alert alert-light border">
+                                                                        <i class="fas fa-file-code text-primary"></i> <strong>{{ filename }}</strong>
+                                                                    </div>
+
+                                                                    <input type="hidden" name="filename" value="{{ filename }}">
+
+                                                                    <div class="mb-3">
+                                                                        <label class="form-label fw-bold">Option A : Choisir une collection existante</label>
+                                                                        <select name="collection_id" class="form-select collection-select" id="select-{{ forloop.counter }}">
+                                                                            <option value="" selected>-- Sélectionner --</option>
+                                                                            {% for col in my_collections %}
+                                                                                <option value="{{ col.id }}">{{ col.name }}</option>
+                                                                            {% endfor %}
+                                                                        </select>
+                                                                    </div>
+
+                                                                    <div class="text-center text-muted my-2">- OU -</div>
+
+                                                                    <div class="mb-3">
+                                                                        <label class="form-label fw-bold">Option B : Créer une nouvelle collection</label>
+                                                                        <div class="input-group">
+                                                                            <span class="input-group-text"><i class="fas fa-folder-plus"></i></span>
+                                                                            <input type="text" name="new_collection_name" class="form-control new-collection-input"
+                                                                                   id="input-{{ forloop.counter }}" placeholder="Nom du nouveau dossier...">
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <p class="small text-muted mt-3">
+                                                                        <i class="fas fa-info-circle"></i> Le plasmide conservera ses annotations (.gb).
+                                                                    </p>
+                                                                </div>
+
+                                                                <script>
+                                                                    document.addEventListener('DOMContentLoaded', function() {
+                                                                        // Quand on tape dans le champ "Nouveau", on désélectionne la liste
+                                                                        document.getElementById('input-{{ forloop.counter }}').addEventListener('input', function() {
+                                                                            if(this.value.length > 0) {
+                                                                                document.getElementById('select-{{ forloop.counter }}').value = "";
+                                                                                document.getElementById('select-{{ forloop.counter }}').disabled = true;
+                                                                            } else {
+                                                                                document.getElementById('select-{{ forloop.counter }}').disabled = false;
+                                                                            }
+                                                                        });
+                                                                    });
+                                                                </script>
+
+                                                                <div class="modal-footer">
+                                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                                    <button type="submit" class="btn btn-success" {% if not my_collections %}disabled{% endif %}>Enregistrer</button>
+                                                                </div>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                                <div class="alert alert-info">
+                                    Aucun fichier GenBank (.gb) n'a été détecté dans les résultats.
+                                </div>
+                            {% endif %}
+
+                        </div>
+                    </div>
+                </div>
 
                 <div class="accordion-item">
                     <h2 class="accordion-header" id="headingDilution">
