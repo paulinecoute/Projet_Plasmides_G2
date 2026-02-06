@@ -229,6 +229,11 @@ class CampaignTemplate(models.Model):
         verbose_name="Visibilité"
     )
 
+    # --- NOUVEAUX CHAMPS POUR LA PUBLICATION ---
+    publication_requested = models.BooleanField(default=False, verbose_name="Demande de publication envoyée")
+    admin_feedback = models.TextField(blank=True, null=True, verbose_name="Raison du refus")
+    # -------------------------------------------
+
     # --- AJOUT DU LIEN VERS L'ÉQUIPE ---
     team = models.ForeignKey(
         Team,

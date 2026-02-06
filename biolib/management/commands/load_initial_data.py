@@ -69,7 +69,7 @@ class Command(BaseCommand):
                             template = CampaignTemplate(
                                 name=identifier,
                                 owner=admin_user,
-                                description=f"Importé automatiquement depuis {folder_name}",
+                                description="", # <--- DESCRIPTION VIDE MAINTENANT
                                 visibility='public',
                                 is_public=True
                             )

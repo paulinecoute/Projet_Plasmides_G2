@@ -78,8 +78,8 @@
   }
   .table-custom td { 
     background: #fff; 
-    border-top: 1px solid var(--border-color);
-    border-bottom: 1px solid var(--border-color);
+    border-top: 1px solid var(--border-color); 
+    border-bottom: 1px solid var(--border-color); 
     padding: 15px; 
     font-size: 0.9rem;
   }
@@ -126,6 +126,15 @@
       </a>
     </div>
 
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-4 shadow-sm border-0">
+                {{ message|safe }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
     <div class="hero-section">
       <div class="mb-2">
         {% if template.visibility == 'private' %}
@@ -166,6 +175,25 @@
       </div>
     </div>
 
+    {% if template.publication_requested and template.visibility != 'public' %}
+        <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-4">
+            <i class="bi bi-hourglass-split fs-4 me-3 text-primary"></i>
+            <div>
+                <strong>En attente de validation</strong>
+                <div class="small text-muted">Votre demande de publication a été envoyée aux administrateurs.</div>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if template.admin_feedback %}
+        <div class="alert alert-danger border-0 shadow-sm d-flex align-items-center mb-4">
+            <i class="bi bi-exclamation-circle-fill fs-4 me-3 text-danger"></i>
+            <div>
+                <strong>Publication refusée</strong>
+                <div class="small text-muted">Motif : {{ template.admin_feedback }}</div>
+            </div>
+        </div>
+    {% endif %}
     <span class="section-label">Configuration des InputParts</span>
     <div class="table-responsive">
       <table class="table-custom">
@@ -217,12 +245,21 @@
       </a>
       
       <div class="d-flex gap-2">
-        {% if template.visibility != 'public' %}
-            <button type="button" class="btn-action border" onclick="alert('Contactez un Administrateur pour publier ce template.')">
-                <i class="bi bi-globe"></i> Publier
-            </button>
+        
+        {% if template.visibility != 'public' and user == template.owner %}
+            {% if not template.publication_requested %}
+                <form action="{% url 'request_template_publication' template.id %}" method="POST" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-action border bg-white text-dark" onclick="return confirm('Soumettre ce template aux administrateurs pour publication ?')">
+                        <i class="bi bi-globe"></i> Publier
+                    </button>
+                </form>
+            {% else %}
+                <button disabled class="btn-action border bg-light text-muted">
+                    <i class="bi bi-clock"></i> En attente
+                </button>
+            {% endif %}
         {% endif %}
-
         <a href="{% url 'export_template_excel' template.id %}" class="btn-action border bg-light text-success">
             <i class="bi bi-file-earmark-excel"></i> Excel
         </a>
@@ -231,7 +268,7 @@
             <i class="bi bi-pencil-square"></i> Modifier
         </a>
 
-        {# Logique de suppression préservée #}
+        {# Logique de suppression #}
         {% if template.visibility == 'public' %}
             {% if user.is_staff %}
                 <a href="{% url 'delete_template' template.id %}" class="btn-action bg-danger text-white">

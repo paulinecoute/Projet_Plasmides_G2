@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import FileResponse, HttpResponse, Http404,HttpResponseForbidden
+from django.http import FileResponse, HttpResponse, Http404, HttpResponseForbidden
 from django.conf import settings
 from django.db.models import Q
 from .forms import CustomUserCreationForm, SimulationForm, CampaignTemplateForm, TemplatePartFormSet, CorrespondenceForm, PlasmidForm, FeatureFormSet, CopyPlasmidForm
@@ -271,6 +271,7 @@ def create_template(request):
         'form': form,
         'formset': formset
     })
+
 def template_detail(request, pk):
     template = get_object_or_404(CampaignTemplate, pk=pk)
     return render(request, 'biolib/template_detail.html', {'template': template})
@@ -295,6 +296,30 @@ def delete_template(request, pk):
         return redirect('template')
 
     return render(request, 'biolib/template_confirm_delete.html', {'template': template})
+
+@login_required
+def request_template_publication(request, pk):
+    """
+    Permet à l'utilisateur de demander la publication d'un template.
+    """
+    template = get_object_or_404(CampaignTemplate, pk=pk)
+    
+    # Sécurité : Seul le propriétaire peut demander
+    if template.owner != request.user:
+        return HttpResponse("Accès refusé.", status=403)
+
+    # Si c'est déjà public, on ne fait rien
+    if template.visibility == 'public':
+        return redirect('template_detail', pk=pk)
+
+    if request.method == 'POST':
+        template.publication_requested = True
+        template.admin_feedback = "" # On vide le feedback en cas de nouvelle demande
+        template.save()
+        messages.success(request, "Votre demande de publication a été envoyée aux administrateurs.")
+        return redirect('template_detail', pk=pk)
+
+    return redirect('template_detail', pk=pk)
 
 def export_template_excel(request, template_id):
     template = get_object_or_404(CampaignTemplate, id=template_id)
@@ -871,9 +896,9 @@ def update_simulation_gel(request, pk):
             timestamp = int(time.time())
 
             if os.path.exists(path_png):
-                   simulation.result_file = f"simulations/{simulation.id}/digestion.png?t={timestamp}"
+                    simulation.result_file = f"simulations/{simulation.id}/digestion.png?t={timestamp}"
             elif os.path.exists(path_svg):
-                   simulation.result_file = f"simulations/{simulation.id}/digestion.svg?t={timestamp}"
+                    simulation.result_file = f"simulations/{simulation.id}/digestion.svg?t={timestamp}"
 
             simulation.save()
 
@@ -1775,9 +1800,15 @@ def admin_publication_list(request):
         publication_status='pending'
     ).order_by('-id')
 
+    # --- AJOUT : Les Templates ---
+    pending_templates = CampaignTemplate.objects.filter(
+        publication_requested=True
+    ).order_by('-created_at')
+
     return render(request, 'biolib/admin_publication_list.html', {
         'pending_collections': pending_collections,
-        'pending_tables': pending_tables
+        'pending_tables': pending_tables,
+        'pending_templates': pending_templates, # <--- On passe ça au template HTML
     })
 
 @staff_member_required
@@ -1958,6 +1989,36 @@ def correspondence_create(request):
         form = CorrespondenceForm()
 
     return render(request, 'biolib/correspondence_form.html', {'form': form})
+
+# --- AJOUTS POUR LA GESTION ADMIN DES TEMPLATES ---
+
+@staff_member_required
+def admin_approve_template(request, pk):
+    template = get_object_or_404(CampaignTemplate, pk=pk)
+    if request.method == 'POST':
+        # On valide : ça devient Public
+        template.visibility = 'public'
+        template.is_public = True # Pour compatibilité avec l'ancien champ si utilisé
+        template.publication_requested = False # La demande est traitée
+        template.admin_feedback = "" # On nettoie les vieux messages
+        template.save()
+        messages.success(request, f"Le template '{template.name}' est maintenant PUBLIC.")
+    return redirect('admin_publication_list')
+
+@staff_member_required
+def admin_reject_template(request, pk):
+    template = get_object_or_404(CampaignTemplate, pk=pk)
+    if request.method == 'POST':
+        reason = request.POST.get('reason')
+        if reason:
+            # On refuse : ça reste Privé, mais on note pourquoi
+            template.publication_requested = False # La demande est traitée (rejetée)
+            template.admin_feedback = reason
+            template.save()
+            messages.warning(request, f"Le template '{template.name}' a été refusé.")
+        else:
+            messages.error(request, "Motif de refus obligatoire.")
+    return redirect('admin_publication_list')
 
 @login_required
 def plasmid_copy(request, pk):
