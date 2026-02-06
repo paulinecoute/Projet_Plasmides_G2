@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import FileResponse, HttpResponse, Http404,HttpResponseForbidden
+from django.http import FileResponse, HttpResponse, Http404, HttpResponseForbidden
 from django.conf import settings
 from django.db.models import Q
 from .forms import CustomUserCreationForm, SimulationForm, CampaignTemplateForm, TemplatePartFormSet, CorrespondenceForm, PlasmidForm, FeatureFormSet
@@ -271,6 +271,7 @@ def create_template(request):
         'form': form,
         'formset': formset
     })
+
 def template_detail(request, pk):
     template = get_object_or_404(CampaignTemplate, pk=pk)
     return render(request, 'biolib/template_detail.html', {'template': template})
@@ -295,6 +296,30 @@ def delete_template(request, pk):
         return redirect('template')
 
     return render(request, 'biolib/template_confirm_delete.html', {'template': template})
+
+@login_required
+def request_template_publication(request, pk):
+    """
+    Permet à l'utilisateur de demander la publication d'un template.
+    """
+    template = get_object_or_404(CampaignTemplate, pk=pk)
+    
+    # Sécurité : Seul le propriétaire peut demander
+    if template.owner != request.user:
+        return HttpResponse("Accès refusé.", status=403)
+
+    # Si c'est déjà public, on ne fait rien
+    if template.visibility == 'public':
+        return redirect('template_detail', pk=pk)
+
+    if request.method == 'POST':
+        template.publication_requested = True
+        template.admin_feedback = "" # On vide le feedback en cas de nouvelle demande
+        template.save()
+        messages.success(request, "Votre demande de publication a été envoyée aux administrateurs.")
+        return redirect('template_detail', pk=pk)
+
+    return redirect('template_detail', pk=pk)
 
 def export_template_excel(request, template_id):
     template = get_object_or_404(CampaignTemplate, id=template_id)
@@ -871,9 +896,9 @@ def update_simulation_gel(request, pk):
             timestamp = int(time.time())
 
             if os.path.exists(path_png):
-                   simulation.result_file = f"simulations/{simulation.id}/digestion.png?t={timestamp}"
+                    simulation.result_file = f"simulations/{simulation.id}/digestion.png?t={timestamp}"
             elif os.path.exists(path_svg):
-                   simulation.result_file = f"simulations/{simulation.id}/digestion.svg?t={timestamp}"
+                    simulation.result_file = f"simulations/{simulation.id}/digestion.svg?t={timestamp}"
 
             simulation.save()
 
