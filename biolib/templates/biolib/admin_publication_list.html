@@ -4,82 +4,191 @@
 <div class="container mt-5">
     <h2 class="mb-4"><i class="fas fa-tasks"></i> Administration : Demandes de publication</h2>
 
-    {% if pending_collections %}
-    <div class="card shadow-sm">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Collection</th>
-                        <th>Propriétaire</th>
-                        <th>Plasmides</th>
-                        <th>Date demande</th>
-                        <th class="text-end">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for col in pending_collections %}
-                    <tr>
-                        <td>
-                            <strong>{{ col.name }}</strong><br>
-                            <small class="text-muted">{{ col.description|truncatechars:50 }}</small>
-                        </td>
-                        <td>{{ col.owner.username }}</td>
-                        <td><span class="badge bg-secondary">{{ col.plasmids.count }}</span></td>
-                        <td>{{ col.updated_at|date:"d/m/Y" }}</td>
-                        <td class="text-end">
-                            <a href="{% url 'plasmid_collection_detail' col.id %}" target="_blank" class="btn btn-sm btn-outline-primary me-1" title="Inspecter">
-                                <i class="fas fa-eye"></i> Voir
-                            </a>
+    <ul class="nav nav-tabs mb-4" id="adminTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="collections-tab" data-bs-toggle="tab" data-bs-target="#collections" type="button" role="tab">
+                <i class="bi bi-collection"></i> Collections de Plasmides
+                {% if pending_collections %}
+                    <span class="badge bg-danger rounded-pill ms-2">{{ pending_collections.count }}</span>
+                {% endif %}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tables-tab" data-bs-toggle="tab" data-bs-target="#tables" type="button" role="tab">
+                <i class="bi bi-table"></i> Tables de Correspondance
+                {% if pending_tables %}
+                    <span class="badge bg-danger rounded-pill ms-2">{{ pending_tables.count }}</span>
+                {% endif %}
+            </button>
+        </li>
+    </ul>
 
-                            <form action="{% url 'admin_approve_collection' col.id %}" method="POST" class="d-inline">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-success me-1" onclick="return confirm('Confirmer la publication ?')">
-                                    <i class="fas fa-check"></i> Accepter
-                                </button>
-                            </form>
+    <div class="tab-content" id="adminTabContent">
 
-                            <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal-{{ col.id }}">
-                                <i class="fas fa-times"></i> Refuser
-                            </button>
+        <div class="tab-pane fade show active" id="collections" role="tabpanel">
+            {% if pending_collections %}
+            <div class="card shadow-sm border-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Collection</th>
+                                <th>Propriétaire</th>
+                                <th>Plasmides</th>
+                                <th>Date demande</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for col in pending_collections %}
+                            <tr>
+                                <td>
+                                    <strong>{{ col.name }}</strong><br>
+                                    <small class="text-muted">{{ col.description|truncatechars:50 }}</small>
+                                </td>
+                                <td>{{ col.owner.username }}</td>
+                                <td><span class="badge bg-secondary">{{ col.plasmids.count }}</span></td>
+                                <td>{{ col.created_at|date:"d/m/Y" }}</td> <td class="text-end">
+                                    <a href="{% url 'plasmid_collection_detail' col.id %}" target="_blank" class="btn btn-sm btn-outline-primary me-1" title="Inspecter">
+                                        <i class="bi bi-eye"></i> Voir
+                                    </a>
 
-                            <div class="modal fade text-start" id="rejectModal-{{ col.id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <form action="{% url 'admin_reject_collection' col.id %}" method="POST">
+                                    <form action="{% url 'admin_approve_collection' col.id %}" method="POST" class="d-inline">
                                         {% csrf_token %}
-                                        <div class="modal-content">
-                                            <div class="modal-header bg-danger text-white">
-                                                <h5 class="modal-title">Refuser la publication</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <p>Pourquoi refusez-vous la collection <strong>{{ col.name }}</strong> ?</p>
-                                                <div class="mb-3">
-                                                    <label class="form-label">Justification (sera visible par l'utilisateur) :</label>
-                                                    <textarea name="reason" class="form-control" rows="3" required placeholder="Ex: Manque de descriptions précises, doublons..."></textarea>
+                                        <button type="submit" class="btn btn-sm btn-success me-1" onclick="return confirm('Confirmer la publication ?')">
+                                            <i class="bi bi-check-lg"></i>
+                                        </button>
+                                    </form>
+
+                                    <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal-{{ col.id }}">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+
+                                    <div class="modal fade text-start" id="rejectModal-{{ col.id }}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <form action="{% url 'admin_reject_collection' col.id %}" method="POST">
+                                                {% csrf_token %}
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-danger text-white">
+                                                        <h5 class="modal-title">Refuser la publication</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p>Refuser la collection <strong>{{ col.name }}</strong> ?</p>
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Justification :</label>
+                                                            <textarea name="reason" class="form-control" rows="3" required></textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                                                        <button type="submit" class="btn btn-danger">Confirmer le refus</button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% else %}
+                <div class="alert alert-success py-4 text-center">
+                    <i class="bi bi-check-circle fs-3 mb-3"></i><br>
+                    Aucune demande de collection en attente.
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="tab-pane fade" id="tables" role="tabpanel">
+        {% if pending_tables %}
+        <div class="card shadow-sm border-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Table</th>
+                            <th>Propriétaire</th>
+                            <th>Fichier</th>
+                            <th>Date demande</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for table in pending_tables %}
+                        <tr>
+                            <td>
+                                <strong>{{ table.name }}</strong><br>
+                                <small class="text-muted">{{ table.description|truncatechars:50 }}</small>
+                            </td>
+                            <td>{{ table.owner.username }}</td>
+                            <td>
+                                {% if table.file %}
+                                    <span class="badge bg-light text-dark border">
+                                        <i class="bi bi-file-earmark-spreadsheet"></i> {{ table.file.name|cut:"correspondences/"|truncatechars:15 }}
+                                    </span>
+                                {% else %} - {% endif %}
+                            </td>
+                            <td>{{ table.uploaded_at|date:"d/m/Y" }}</td>
+
+                            <td class="text-end">
+                                <a href="{% url 'admin_correspondence_review' table.id %}" class="btn btn-sm btn-outline-primary me-1" title="Inspecter">
+                                    <i class="bi bi-eye"></i> Voir
+                                </a>
+
+                                <form action="{% url 'admin_approve_correspondence' table.id %}" method="POST" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-success me-1" title="Accepter" onclick="return confirm('Valider cette table publique ?')">
+                                        <i class="bi bi-check-lg"></i>
+                                    </button>
+                                </form>
+
+                                <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectTableModal-{{ table.id }}" title="Refuser">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+
+                                <div class="modal fade text-start" id="rejectTableModal-{{ table.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <form action="{% url 'admin_reject_correspondence' table.id %}" method="POST">
+                                            {% csrf_token %}
+                                            <div class="modal-content">
+                                                <div class="modal-header bg-danger text-white">
+                                                    <h5 class="modal-title">Refuser la table</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <p>Pourquoi refusez-vous la table <strong>{{ table.name }}</strong> ?</p>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Justification (sera visible par {{ table.owner.username }}) :</label>
+                                                        <textarea name="reason" class="form-control" rows="3" required placeholder="Ex: Format incorrect, doublon..."></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                                                    <button type="submit" class="btn btn-danger">Confirmer le refus</button>
                                                 </div>
                                             </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
-                                                <button type="submit" class="btn btn-danger">Confirmer le refus</button>
-                                            </div>
-                                        </div>
-                                    </form>
+                                        </form>
+                                    </div>
                                 </div>
-                            </div>
-
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                                </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
     {% else %}
         <div class="alert alert-success py-4 text-center">
-            <i class="fas fa-check-circle fs-3 mb-3"></i><br>
-            Aucune demande de publication en attente. Tout est à jour !
+            <i class="bi bi-check-circle fs-3 mb-3"></i><br>
+            Aucune demande de table en attente.
         </div>
     {% endif %}
+</div>
+
+    </div>
 </div>
 {% endblock %}

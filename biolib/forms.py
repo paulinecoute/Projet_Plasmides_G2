@@ -1,9 +1,11 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
-from .models import CampaignTemplate, TemplatePart, Simulation, Team, PlasmidCollection
+from .models import CampaignTemplate, TemplatePart, Simulation, Team, PlasmidCollection, Correspondence
 from django.forms import inlineformset_factory
 from django.db.models import Q
+import os
+from django.core.exceptions import ValidationError
 
 User = get_user_model()
 
@@ -62,6 +64,43 @@ class CampaignTemplateForm(forms.ModelForm):
         # Le champ équipe est optionnel
         self.fields['team'].required = False
         self.fields['team'].empty_label = "--- Sélectionner une équipe ---"
+
+class CorrespondenceForm(forms.ModelForm):
+    class Meta:
+        model = Correspondence
+        fields = ['name', 'description', 'file']
+
+        # 2. Personnalisation des champs (Labels en français + Widgets)
+        labels = {
+            'name': 'Nom de la table',
+            'description': 'Description',
+            'file': 'Fichier de correspondance (.csv, .xlsx)'
+        }
+
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Table conversion A'}),
+            'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+
+            # C'est ICI que l'on filtre la fenêtre de sélection
+            'file': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': '.csv, .xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, text/csv'
+            }),
+        }
+
+    # 3. Validation de sécurité (Backend)
+    def clean_file(self):
+        file = self.cleaned_data.get('file')
+
+        if file:
+            # On récupère l'extension du fichier
+            ext = os.path.splitext(file.name)[1].lower()
+            valid_extensions = ['.csv', '.xlsx']
+
+            if ext not in valid_extensions:
+                raise ValidationError("Format non supporté. Veuillez utiliser uniquement .csv ou .xlsx")
+
+        return file
 
 class TemplatePartForm(forms.ModelForm):
     class Meta:
@@ -214,7 +253,7 @@ class SimulationForm(forms.ModelForm):
             # Si pas connecté, pas d'équipe possible
             self.fields['team'].queryset = Team.objects.none()
             self.fields['collections'].queryset = PlasmidCollection.objects.filter(
-                is_public='True'
+                publication_status='approved'
             )
         self.fields['visibility'].required = False
         self.fields['team'].required = False

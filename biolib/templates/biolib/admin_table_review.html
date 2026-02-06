@@ -1,0 +1,99 @@
+{% extends 'biolib/base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <a href="{% url 'admin_publication_list' %}" class="btn btn-outline-secondary mb-3">
+        <i class="bi bi-arrow-left"></i> Retour à la liste
+    </a>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">
+                <i class="bi bi-search"></i> Examen de la table : {{ table.name }}
+            </h4>
+        </div>
+        <div class="card-body">
+
+            <div class="row">
+                <div class="col-md-6 border-end">
+                    <h5 class="text-primary">Informations</h5>
+                    <ul class="list-group list-group-flush mb-3">
+                        <li class="list-group-item px-0">
+                            <strong>Propriétaire :</strong> {{ table.owner.username }}
+                        </li>
+                        <li class="list-group-item px-0">
+                            <strong>Date de soumission :</strong> {{ table.uploaded_at|date:"d/m/Y H:i" }}
+                        </li>
+                        <li class="list-group-item px-0">
+                            <strong>Description :</strong><br>
+                            <span class="text-muted">{{ table.description|default:"Aucune description fournie." }}</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="col-md-6 ps-md-4">
+                    <h5 class="text-primary">Fichier joint</h5>
+
+                    {% if table.file %}
+                        <div class="alert alert-light border d-flex align-items-center mt-3">
+                            <i class="bi bi-file-earmark-spreadsheet fs-2 text-success me-3"></i>
+                            <div>
+                                <strong>{{ table.file.name|cut:"correspondences/" }}</strong>
+                                <br>
+                                <a href="{{ table.file.url }}" class="btn btn-sm btn-outline-dark mt-2" download>
+                                    <i class="bi bi-download"></i> Télécharger pour vérifier
+                                </a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">Aucun fichier associé.</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <hr class="my-4">
+
+            <h5 class="mb-3">Décision de l'administrateur</h5>
+
+            <div class="d-flex gap-2">
+
+                <form action="{% url 'admin_approve_correspondence' table.id %}" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success btn-lg" onclick="return confirm('Êtes-vous sûr de vouloir publier cette table ?')">
+                        <i class="bi bi-check-circle"></i> Valider et Publier
+                    </button>
+                </form>
+
+                <button type="button" class="btn btn-danger btn-lg" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                    <i class="bi bi-x-circle"></i> Refuser...
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form action="{% url 'admin_reject_correspondence' table.id %}" method="POST">
+            {% csrf_token %}
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Refuser la publication</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Veuillez indiquer la raison du refus pour l'utilisateur <strong>{{ table.owner.username }}</strong> :</p>
+                    <div class="mb-3">
+                        <textarea name="reason" class="form-control" rows="4" required placeholder="Ex : Le fichier ne respecte pas le format attendu..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-danger">Confirmer le refus</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
