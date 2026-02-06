@@ -175,11 +175,11 @@
           <span class="view-badge">Voir</span>
         </a>
 
-        <!-- ✅ MODIF ICI : lien réel -->
-        <a href="{% url 'team_correspondences' team.id %}" class="resource-link shadow-sm">
+        <a href="{% url 'team_correspondences' team.id %}?next={{ request.path }}" class="resource-link shadow-sm">
           <span class="fw-bold"><i class="bi bi-table"></i> Tables de correspondance</span>
           <span class="view-badge">Voir</span>
         </a>
+
 
         <a href="{% url 'team_simulations' team.id %}" class="resource-link shadow-sm">
           <span class="fw-bold">

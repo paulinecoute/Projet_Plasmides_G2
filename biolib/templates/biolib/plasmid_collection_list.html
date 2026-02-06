@@ -22,10 +22,10 @@
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link {% if current_view == 'team' %}active{% endif %}" 
-               href="?view=team">
+            <a href="{% url 'choose_team_for_plasmids' %}">
                 Équipes
             </a>
+
         </li>
     </ul>
     {% endif %}

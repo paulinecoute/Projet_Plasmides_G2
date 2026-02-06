@@ -1,199 +1,96 @@
-{% extends "biolib/base.html" %}
-{% block title %}Tables de correspondance{% endblock %}
+{% extends 'biolib/base.html' %}
 
 {% block content %}
-<style>
-  :root {
-    --bg-main: #fcfcfc;
-    --border-color: #eee;
-  }
+<div class="container py-4">
 
-  body {
-    background-color: var(--bg-main);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  }
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ page_title }}</h1>
 
-  .content-wrapper {
-    max-width: 800px;
-    margin: 0 auto;
-  }
-
-  .nav-header {
-    padding: 20px 0;
-    margin-bottom: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .btn-back {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    background: #fff;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    color: #666;
-    transition: 0.2s;
-    text-decoration: none;
-  }
-  .btn-back:hover { border-color: #000; color: #000; }
-
-  .hero-section {
-    margin-bottom: 40px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .page-title {
-    font-weight: 850;
-    font-size: 2.8rem;
-    letter-spacing: -0.05em;
-    margin-bottom: 0;
-  }
-
-  .table-card {
-    background: #fff;
-    border: 1px solid var(--border-color);
-    border-radius: 18px;
-    padding: 20px 24px;
-    transition: all 0.2s ease;
-    text-decoration: none;
-    color: inherit;
-    display: block;
-    position: relative;
-    margin-bottom: 12px;
-  }
-  .table-card:hover {
-    border-color: #000;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-  }
-
-  .status-dot {
-    display: inline-flex;
-    align-items: center;
-    font-size: 0.65rem;
-    font-weight: 700;
-    color: #aaa;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 4px;
-  }
-
-  .dot {
-    height: 6px;
-    width: 6px;
-    border-radius: 50%;
-    display: inline-block;
-    margin-right: 6px;
-  }
-  .dot-public { background-color: #10b981; }
-  .dot-private { background-color: #6b7280; }
-
-  .table-name {
-    font-weight: 700;
-    font-size: 1.15rem;
-    margin-bottom: 2px;
-    color: #111;
-  }
-
-  .meta-info {
-    font-size: 0.8rem;
-    color: #bbb;
-    font-family: 'SF Mono', monospace;
-  }
-
-  .trash-btn {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    color: #eee;
-    background: transparent;
-    border: none;
-    transition: color 0.2s;
-  }
-  .table-card:hover .trash-btn { color: #ccc; }
-  .trash-btn:hover { color: #ff4d4d !important; }
-
-  .btn-import {
-    background: #000;
-    color: #fff;
-    padding: 10px 20px;
-    border-radius: 12px;
-    font-weight: 600;
-    font-size: 0.9rem;
-    text-decoration: none;
-    transition: 0.2s;
-  }
-  .btn-import:hover { background: #333; color: #fff; }
-</style>
-
-<div class="container pb-5">
-  <div class="content-wrapper">
-
-    <!-- HEADER -->
-    <div class="nav-header">
-      <a href="{% url 'dashboard' %}" class="btn-back shadow-sm">
-        <i class="bi bi-arrow-left"></i>
-      </a>
-
-      <!-- ✅ ACCÈS AUX TABLES D'ÉQUIPE -->
-      <a href="{% url 'choose_team_for_correspondences' %}"
-         class="btn btn-outline-dark rounded-pill fw-bold px-4">
-        Tables d’équipe
-      </a>
-    </div>
-
-    <!-- TITRE + IMPORT -->
-    <div class="hero-section">
-      <h1 class="page-title">Tables</h1>
-      <a href="{% url 'correspondence_upload' %}" class="btn-import">
-        <i class="bi bi-upload me-1"></i> Importer
-      </a>
-    </div>
-
-    <!-- LISTE -->
-    <div class="mt-4">
-      {% for table in correspondences %}
-        <a href="{% url 'correspondence_detail' table.id %}" class="table-card">
-
-          <div class="status-dot">
-            {% if table.is_public %}
-              <span class="dot dot-public"></span> Public
-            {% else %}
-              <span class="dot dot-private"></span> Privé
-            {% endif %}
-          </div>
-
-          <h3 class="table-name">{{ table.name }}</h3>
-
-          <div class="meta-info">
-            {{ table.uploaded_at|date:"d M Y" }}
-          </div>
-
-          <form method="post"
-                action="{% url 'correspondence_delete' table.id %}"
-                class="m-0"
-                onclick="event.stopPropagation();">
-            {% csrf_token %}
-            <button type="submit"
-                    class="trash-btn"
-                    onclick="return confirm('Supprimer cette table ?');">
-              <i class="bi bi-x-lg"></i>
-            </button>
-          </form>
-
+        {% if user.is_authenticated %}
+        <a href="{% url 'correspondence_upload' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Nouvelle table
         </a>
-      {% empty %}
-        <div class="p-5 text-center text-muted fw-light bg-white rounded-4 border">
-          Aucune table.
-        </div>
-      {% endfor %}
+        {% endif %}
     </div>
 
-  </div>
+    {% if user.is_authenticated %}
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link {% if current_view == 'my' %}active{% endif %}"
+               href="?view=my">
+                Personnelles
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link"
+               href="{% url 'choose_team_for_correspondences' %}?next={{ request.path }}">
+                Équipes
+            </a>
+        </li>
+    </ul>
+    {% endif %}
+
+    <!-- LISTE DES TABLES -->
+    {% if correspondences %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for table in correspondences %}
+        <div class="col">
+            <div class="card h-100 shadow-sm hover-shadow">
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h5 class="card-title text-truncate" title="{{ table.name }}">
+                            {{ table.name }}
+                        </h5>
+
+                        {% if table.team %}
+                            <span class="badge bg-info text-dark">{{ table.team.name }}</span>
+                        {% elif table.is_public %}
+                            <span class="badge bg-success">Public</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Privé</span>
+                        {% endif %}
+                    </div>
+
+                    <p class="card-text text-muted small mt-2">
+                        Table importée le {{ table.uploaded_at|date:"d/m/Y" }}
+                    </p>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <small class="text-muted">
+                            {{ table.file.name|default:"Aucun fichier" }}
+                        </small>
+
+                        <a href="{% url 'correspondence_detail' table.id %}"
+                           class="btn btn-outline-primary btn-sm stretched-link">
+                            Ouvrir
+                        </a>
+                    </div>
+
+                </div>
+
+                <div class="card-footer bg-transparent border-top-0 text-end">
+                    <small class="text-muted" style="font-size: 0.75rem;">
+                        Propriétaire : {{ table.owner.username }}
+                    </small>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="alert alert-info text-center">
+        Aucune table de correspondance trouvée.
+    </div>
+    {% endif %}
 </div>
+
+<style>
+    .hover-shadow:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+        transition: 0.3s;
+    }
+</style>
 {% endblock %}
