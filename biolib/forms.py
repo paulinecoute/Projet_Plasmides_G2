@@ -40,7 +40,6 @@ class CampaignTemplateForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'enzyme': forms.Select(attrs={'class': 'form-select'}),
             'output_separator': forms.Select(attrs={'class': 'form-select'}),
-            # IDs importants pour le JavaScript
             'visibility': forms.Select(attrs={'class': 'form-select', 'id': 'id_visibility'}),
             'team': forms.Select(attrs={'class': 'form-select', 'id': 'id_team'}),
         }
@@ -51,17 +50,14 @@ class CampaignTemplateForm(forms.ModelForm):
 
         # si utilisateur connecté
         if user:
-            # que les equipes dans lesquelles on est
             self.fields['team'].queryset = Team.objects.filter(members=user)
 
-            # si l'utilisateur n'est PAS Admin (Staff), on retire l'option 'Public'
             if not user.is_staff:
                 self.fields['visibility'].choices = [
                     ('private', 'Privé (Moi uniquement)'),
                     ('team', 'Visible par mon équipe'),
                 ]
 
-        # Le champ équipe est optionnel
         self.fields['team'].required = False
         self.fields['team'].empty_label = "--- Sélectionner une équipe ---"
 
@@ -70,7 +66,6 @@ class CorrespondenceForm(forms.ModelForm):
         model = Correspondence
         fields = ['name', 'description', 'file']
 
-        # 2. Personnalisation des champs (Labels en français + Widgets)
         labels = {
             'name': 'Nom de la table',
             'description': 'Description',
@@ -81,7 +76,6 @@ class CorrespondenceForm(forms.ModelForm):
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Table conversion A'}),
             'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
 
-            # C'est ICI que l'on filtre la fenêtre de sélection
             'file': forms.FileInput(attrs={
                 'class': 'form-control',
                 'accept': '.csv, .xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, text/csv'
@@ -93,7 +87,6 @@ class CorrespondenceForm(forms.ModelForm):
         file = self.cleaned_data.get('file')
 
         if file:
-            # On récupère l'extension du fichier
             ext = os.path.splitext(file.name)[1].lower()
             valid_extensions = ['.csv', '.xlsx']
 
@@ -112,7 +105,6 @@ class TemplatePartForm(forms.ModelForm):
             'type_id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Type'}),
             'order': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'style': 'width: 80px'}),
 
-            # Les checkbox stylisées
             'is_mandatory': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'include_in_output': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'is_separable': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
@@ -129,9 +121,7 @@ TemplatePartFormSet = inlineformset_factory(
 class PlasmidForm(forms.ModelForm):
     class Meta:
         model = Plasmid
-        # On définit les champs que l'utilisateur a le droit de modifier
         fields = ['name', 'description', 'genbank_file']
-        # ATTENTION : Si votre champ s'appelle 'file' dans models.py, changez 'genbank_file' par 'file' ci-dessus.
 
         labels = {
             'name': 'Nom du plasmide',
@@ -145,12 +135,10 @@ class PlasmidForm(forms.ModelForm):
             'genbank_file': forms.FileInput(attrs={'class': 'form-control'}),
         }
 
-    # Validation personnalisée pour vérifier l'extension du fichier
     def clean_genbank_file(self):
         file = self.cleaned_data.get('genbank_file')
 
         if file:
-            # Si c'est une modification et qu'on ne change pas le fichier, 'file' peut être l'ancien objet
             if not hasattr(file, 'name'):
                 return file
 
@@ -163,16 +151,15 @@ class PlasmidForm(forms.ModelForm):
         return file
 class SimulationForm(forms.ModelForm):
 
-    # Cases à cocher pour le Gel (Options avancées)
     custom_enzymes = forms.MultipleChoiceField(
-        choices=[], # On remplit ça dynamiquement dans le __init__
+        choices=[],
         widget=forms.CheckboxSelectMultiple,
         required=False,
         label="Enzymes pour le gel"
     )
 
     collections = forms.ModelMultipleChoiceField(
-        queryset=PlasmidCollection.objects.none(), # Vide par défaut, rempli dans __init__
+        queryset=PlasmidCollection.objects.none(),
         required=False,
         widget=forms.SelectMultiple(attrs={'class': 'form-select', 'size': '5'}),
         label="Utiliser des collections existantes"
@@ -247,7 +234,6 @@ class SimulationForm(forms.ModelForm):
             'enzyme': forms.Select(attrs={'class': 'form-select'}),
             'campaign_file': forms.FileInput(attrs={'class': 'form-control', 'accept': '.csv, .xls, .xlsx'}),
 
-            # IDs SPÉCIAUX POUR LE JAVASCRIPT (Comme pour Templates)
             'visibility': forms.Select(attrs={'class': 'form-select', 'id': 'id_sim_visibility'}),
             'team': forms.Select(attrs={'class': 'form-select', 'id': 'id_sim_team'}),
             'zip_file': forms.ClearableFileInput(attrs={'class': 'form-control', 'accept': '.zip,application/zip,application/x-zip,application/x-zip-compressed',
@@ -257,34 +243,20 @@ class SimulationForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        # On récupère l'utilisateur
         user = kwargs.pop('user', None)
         super(SimulationForm, self).__init__(*args, **kwargs)
-
-        # 1. Remplissage des enzymes (Logique Biopython ou Fallback)
-        #try:
-        #    from Bio.Restriction import AllEnzymes
-        #    enz_list = sorted([str(e) for e in AllEnzymes])
-        #    self.fields['custom_enzymes'].choices = [(e, e) for e in enz_list]
-        #except ImportError:
-        #    # Fallback simple si Biopython manque
-        #    self.fields['custom_enzymes'].choices = [
-        #        ('BsaI', 'BsaI'), ('BsmBI', 'BsmBI'), ('NotI', 'NotI')
-        #    ]
         self.fields['custom_enzymes'].choices = [
                 ('BsaI', 'BsaI'), ('BsmBI', 'BsmBI'), ('NotI', 'NotI'), ('BbsI', 'BbsI'), ('SapI', 'SapI')
             ]
 
         # 2. Gestion de l'équipe (Sécurité)
         if user and user.is_authenticated:
-            # On ne montre que les équipes de l'utilisateur
             self.fields['team'].queryset = Team.objects.filter(members=user)
             self.fields['collections'].queryset = PlasmidCollection.objects.filter(
                 Q(owner=user) |
                 Q(publication_status='approved') | Q(team__members=user)
             ).distinct()
         else:
-            # Si pas connecté, pas d'équipe possible
             self.fields['team'].queryset = Team.objects.none()
             self.fields['collections'].queryset = PlasmidCollection.objects.filter(
                 publication_status='approved'

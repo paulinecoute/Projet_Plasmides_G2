@@ -1671,43 +1671,31 @@ def choose_team_for_correspondences(request):
 
 
 def plasmid_collection_list(request):
-
-    # CAS INVITÉ
     if not request.user.is_authenticated:
-        # CORRECTION ICI : On utilise publication_status='approved'
-        # et non plus is_public=True
         public_collections = PlasmidCollection.objects.filter(
             publication_status='approved'
         ).order_by('-id')
 
         return render(request, 'biolib/plasmid_collection_list.html', {
             'public_collections': public_collections,
-            # On passe des listes vides pour les autres pour éviter les erreurs dans le template
             'my_collections': [],
             'team_collections': [],
             'page_title': "Collections publiques"
         })
 
-    # --- CAS 2 : UTILISATEUR CONNECTÉ ---
-    # On récupère les 3 listes séparément pour remplir les 3 onglets
 
-    # A. Mes collections (Onglet 1)
     my_collections = PlasmidCollection.objects.filter(
         owner=request.user
     ).distinct().order_by('-id')
 
-    # B. Collections d'équipe (Onglet 2)
-    # Note : Si vous n'utilisez pas encore les équipes, cette liste sera vide, c'est ok.
     team_collections = PlasmidCollection.objects.filter(
         team__members=request.user
     ).distinct().order_by('-id')
 
-    # C. Collections Publiques (Onglet 3)
     public_collections = PlasmidCollection.objects.filter(
         publication_status='approved'
     ).order_by('-id')
 
-    # On envoie tout au template
     return render(request, 'biolib/plasmid_collection_list.html', {
         'my_collections': my_collections,
         'team_collections': team_collections,
@@ -1741,7 +1729,6 @@ def plasmid_collection_detail(request, pk):
 def plasmid_visualize(request, plasmid_id):
     plasmid = get_object_or_404(Plasmid, id=plasmid_id)
 
-    # 1. Récupérer le contenu du fichier GenBank s'il existe
     genbank_content = ""
     if plasmid.genbank_file:
         try:
@@ -1749,10 +1736,8 @@ def plasmid_visualize(request, plasmid_id):
                 genbank_content = f.read()
         except Exception as e:
             print(f"Erreur de lecture : {e}")
-            # Fallback : utiliser la séquence brute si le fichier échoue
             genbank_content = plasmid.sequence
     else:
-        # Sinon utiliser la séquence brute stockée en BDD
         genbank_content = plasmid.sequence
 
     if request.user.is_authenticated:
@@ -1762,12 +1747,11 @@ def plasmid_visualize(request, plasmid_id):
 
     return render(request, 'biolib/plasmid_visualize.html', {
         'plasmid': plasmid,
-        'genbank_content': genbank_content, # (votre variable existante)
-        'can_edit': can_edit, # <--- N'oubliez pas d'ajouter ceci au contexte
+        'genbank_content': genbank_content,
+        'can_edit': can_edit,
     })
 
 
-# Vue USER
 @login_required
 def request_publication(request, pk):
     collection = get_object_or_404(PlasmidCollection, pk=pk, owner=request.user)
@@ -1782,17 +1766,16 @@ def request_publication(request, pk):
 # Vue ADMIN
 @staff_member_required
 def admin_publication_list(request):
-    # 1. Les collections
+    # Les collections
     pending_collections = PlasmidCollection.objects.filter(
         publication_status='pending'
     ).order_by('-id')
 
-    # 2. Les tables (NOUVEAU)
+    # Les tables
     pending_tables = Correspondence.objects.filter(
         publication_status='pending'
     ).order_by('-id')
 
-    # On envoie les deux au template
     return render(request, 'biolib/admin_publication_list.html', {
         'pending_collections': pending_collections,
         'pending_tables': pending_tables
@@ -1804,7 +1787,7 @@ def admin_approve_collection(request, pk):
 
     if request.method == 'POST':
         collection.publication_status = 'approved'
-        collection.admin_feedback = "" # On nettoie les anciens feedbacks
+        collection.admin_feedback = ""
         collection.save()
         messages.success(request, f"La collection '{collection.name}' est maintenant publique !")
 
@@ -1828,18 +1811,14 @@ def admin_reject_collection(request, pk):
 
 def correspondence_list(request):
 
-    # 1. Onglet "Personnelles"
     my_tables = Correspondence.objects.filter(
         owner=request.user
     ).order_by('-id')
 
-    # 2. Onglet "Équipes"
-    # (Récupère les tables des équipes dont je suis membre, sauf les miennes)
     team_tables = Correspondence.objects.filter(
         team__members=request.user
     ).exclude(owner=request.user).distinct().order_by('-id')
 
-    # 3. Onglet "Publiques"
     public_tables = Correspondence.objects.filter(
         publication_status='approved'
     ).order_by('-id')
@@ -1942,23 +1921,20 @@ def plasmid_edit(request, pk):
         'plasmid': plasmid
     })
 
-@login_required # (Assurez-vous que c'est protégé, ou gérez le cas anonyme)
+@login_required
 def plasmid_detail(request, pk):
     plasmid = get_object_or_404(Plasmid, pk=pk)
 
-    # On vérifie si l'utilisateur a le droit de modifier (même logique que ci-dessus)
     can_edit = plasmid.collections.filter(owner=request.user).exists()
 
     return render(request, 'biolib/plasmid_detail.html', {
         'plasmid': plasmid,
-        'can_edit': can_edit, # <--- On envoie cette info au HTML
+        'can_edit': can_edit,
     })
 @staff_member_required
 def admin_correspondence_review(request, pk):
-    # Récupère la table
     table = get_object_or_404(Correspondence, pk=pk)
 
-    # Affiche le template de révision (que nous avons créé plus tôt)
     return render(request, 'biolib/admin_table_review.html', {
         'table': table
     })
@@ -1967,7 +1943,7 @@ def admin_approve_correspondence(request, pk):
     if request.method == 'POST':
         table = get_object_or_404(Correspondence, pk=pk)
         table.publication_status = 'approved'
-        table.admin_feedback = "" # On nettoie le feedback
+        table.admin_feedback = ""
         table.save()
     return redirect('admin_publication_list')
 
@@ -1975,7 +1951,7 @@ def admin_approve_correspondence(request, pk):
 def admin_reject_correspondence(request, pk):
     if request.method == 'POST':
         table = get_object_or_404(Correspondence, pk=pk)
-        reason = request.POST.get('reason', '') # On récupère la raison du formulaire modal
+        reason = request.POST.get('reason', '')
         table.publication_status = 'rejected'
         table.admin_feedback = reason
         table.save()
@@ -1985,9 +1961,9 @@ def correspondence_create(request):
         form = CorrespondenceForm(request.POST, request.FILES)
         if form.is_valid():
             table = form.save(commit=False)
-            table.owner = request.user # On assigne le propriétaire
+            table.owner = request.user
             table.save()
-            return redirect('correspondence_list') # Retour à la liste après succès
+            return redirect('correspondence_list')
     else:
         form = CorrespondenceForm()
 
