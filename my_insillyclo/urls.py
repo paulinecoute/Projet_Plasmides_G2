@@ -11,7 +11,7 @@ urlpatterns = [
 
     # pages principales
     path('', views.home, name='home'),
-    path('search/', views.search_view, name='search'), # <--- NOUVELLE ROUTE RECHERCHE
+    path('search/', views.search_view, name='search'),
 
     # menu templates
     path('template/', views.template, name='template'),
@@ -32,6 +32,10 @@ urlpatterns = [
 
     # suppression template
     path('template/<int:pk>/delete/', views.delete_template, name='delete_template'),
+
+    # --- NOUVEAU : Demande de publication Template ---
+    path('template/<int:pk>/request-publish/', views.request_template_publication, name='request_template_publication'),
+    # -------------------------------------------------
 
     path(
         "teams/<int:team_id>/templates/",
@@ -132,6 +136,7 @@ urlpatterns = [
     path('correspondence/<int:pk>/request-publication/', views.correspondence_request_publication, name='correspondence_request_publication'),
     path('correspondence/', views.correspondence_list, name='correspondence_list'),
     path('correspondence/new/', views.correspondence_create, name='correspondence_create'),
+    
     # ============================================================
     # CORRESPONDANCES (ÉQUIPE)
     # ============================================================
@@ -152,7 +157,8 @@ urlpatterns = [
     path('admin-panel/requests/<int:pk>/reject/', views.admin_reject_collection, name='admin_reject_collection'),
     path('admin-panel/correspondence/<int:pk>/review/', views.admin_correspondence_review, name='admin_correspondence_review'),
     path('admin-panel/correspondence/<int:pk>/approve/', views.admin_approve_correspondence, name='admin_approve_correspondence'),
-    path('admin-panel/correspondence/<int:pk>/reject/', views.admin_reject_correspondence, name='admin_reject_correspondence'),]
+    path('admin-panel/correspondence/<int:pk>/reject/', views.admin_reject_correspondence, name='admin_reject_correspondence'),
+]
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
