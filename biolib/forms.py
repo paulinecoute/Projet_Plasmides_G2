@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
-from .models import CampaignTemplate, TemplatePart, Simulation, Team, PlasmidCollection, Correspondence
+from .models import CampaignTemplate, TemplatePart, Simulation, Team, PlasmidCollection, Correspondence, Plasmid
 from django.forms import inlineformset_factory
 from django.db.models import Q
 import os
@@ -126,7 +126,41 @@ TemplatePartFormSet = inlineformset_factory(
     can_delete=True
 )
 
+class PlasmidForm(forms.ModelForm):
+    class Meta:
+        model = Plasmid
+        # On définit les champs que l'utilisateur a le droit de modifier
+        fields = ['name', 'description', 'genbank_file']
+        # ATTENTION : Si votre champ s'appelle 'file' dans models.py, changez 'genbank_file' par 'file' ci-dessus.
 
+        labels = {
+            'name': 'Nom du plasmide',
+            'description': 'Annotations / Notes',
+            'genbank_file': 'Fichier de séquence (.gb, .fasta)'
+        }
+
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: pYTK001_Promoteur'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Décrivez les annotations, les gènes présents...'}),
+            'genbank_file': forms.FileInput(attrs={'class': 'form-control'}),
+        }
+
+    # Validation personnalisée pour vérifier l'extension du fichier
+    def clean_genbank_file(self):
+        file = self.cleaned_data.get('genbank_file')
+
+        if file:
+            # Si c'est une modification et qu'on ne change pas le fichier, 'file' peut être l'ancien objet
+            if not hasattr(file, 'name'):
+                return file
+
+            ext = os.path.splitext(file.name)[1].lower()
+            valid_extensions = ['.gb', '.gbk', '.fasta', '.fa', '.dna', '.zip']
+
+            if ext not in valid_extensions:
+                raise ValidationError("Format non supporté. Utilisez : .gb, .fasta ou .zip")
+
+        return file
 class SimulationForm(forms.ModelForm):
 
     # Cases à cocher pour le Gel (Options avancées)
@@ -258,3 +292,25 @@ class SimulationForm(forms.ModelForm):
         self.fields['visibility'].required = False
         self.fields['team'].required = False
         self.fields['team'].empty_label = "--- Sélectionner une équipe ---"
+
+
+class FeatureEditForm(forms.Form):
+    feature_identifier = forms.CharField(widget=forms.HiddenInput())
+
+    feature_type = forms.CharField(
+        label="Type",
+        required=False,
+        widget=forms.TextInput(attrs={'readonly': 'readonly', 'class': 'form-control-plaintext fw-bold'})
+    )
+    feature_location = forms.CharField(
+        label="Position",
+        required=False,
+        widget=forms.TextInput(attrs={'readonly': 'readonly', 'class': 'form-control-plaintext btn-sm'})
+    )
+
+    feature_name = forms.CharField(
+        label="Nom / Label",
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+
+FeatureFormSet = forms.formset_factory(FeatureEditForm, extra=0)

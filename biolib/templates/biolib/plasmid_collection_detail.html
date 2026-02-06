@@ -129,17 +129,23 @@
                             {% endif %}
 
                             {% if collection.owner == user %}
-                            <form method="post"
-                                  action="{% url 'plasmid_delete' plasmid.id %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="next" value="{{ request.path }}">
-                                <button type="submit"
-                                        class="btn btn-sm btn-outline-danger"
-                                        title="Supprimer"
-                                        onclick="return confirm('Supprimer ce plasmide ?');">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </form>
+
+                                <a href="{% url 'plasmid_edit' plasmid.id %}"
+                                   class="btn btn-sm btn-outline-warning"
+                                   title="Modifier les annotations">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form method="post"
+                                      action="{% url 'plasmid_delete' plasmid.id %}"
+                                      class="d-inline"> {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.path }}">
+                                    <button type="submit"
+                                            class="btn btn-sm btn-outline-danger"
+                                            title="Supprimer"
+                                            onclick="return confirm('Supprimer ce plasmide ?');">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
                             {% endif %}
 
                         </div>

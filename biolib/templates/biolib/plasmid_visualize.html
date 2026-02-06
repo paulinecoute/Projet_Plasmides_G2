@@ -5,9 +5,17 @@
     <h2>Visualisation : {{ plasmid.name }}</h2>
 
     <div id="seqviz-root" style="height: 600px; width: 100%; border: 1px solid #ccc; margin-top: 20px;"></div>
-    
-    <div style="margin-top: 10px;">
-        <a href="{{ plasmid.genbank_file.url }}" class="btn btn-primary" download>Télécharger le fichier .gb</a>
+
+    <div style="margin-top: 15px;" class="d-flex gap-2">
+        <a href="{{ plasmid.genbank_file.url }}" class="btn btn-primary" download>
+            <i class="bi bi-download"></i> Télécharger le fichier .gb
+        </a>
+
+        {% if can_edit %}
+            <a href="{% url 'plasmid_edit' plasmid.id %}" class="btn btn-warning">
+                <i class="bi bi-pencil"></i> Modifier les annotations
+            </a>
+        {% endif %}
     </div>
 </div>
 
@@ -15,7 +23,7 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        
+
         // On récupère les données envoyées par Django via le tag 'escapejs'
         // Cela transforme le contenu Python en chaîne de caractères JS sécurisée
         const plasmidName = "{{ plasmid.identifier|escapejs }}";
@@ -26,7 +34,7 @@
             name: plasmidName,
             // SeqViz est capable de lire le contenu GenBank directement via la prop 'file' (même si dépréciée, c'est le plus simple ici)
             // ou via 'seq' si c'est juste une séquence brute.
-            file: fileContent, 
+            file: fileContent,
             style: { height: "100%", width: "100%" },
             viewer: "both", // Affiche linéaire et circulaire
             showComplement: true,
@@ -35,7 +43,7 @@
 
         // 3. Rendu "Without React" comme indiqué dans le README
         const element = document.getElementById("root");
-        
+
         // SeqViz expose un objet global window.seqviz
         window.seqviz
             .Viewer("seqviz-root", viewerOptions) // On cible l'ID de la div

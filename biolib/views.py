@@ -5,7 +5,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.http import FileResponse, HttpResponse, Http404,HttpResponseForbidden
 from django.conf import settings
 from django.db.models import Q
-from .forms import CustomUserCreationForm, SimulationForm, CampaignTemplateForm, TemplatePartFormSet, CorrespondenceForm
+from .forms import CustomUserCreationForm, SimulationForm, CampaignTemplateForm, TemplatePartFormSet, CorrespondenceForm, PlasmidForm, FeatureFormSet
 from .models import Simulation, CampaignTemplate, Plasmid, Team, User, Correspondence, PlasmidCollection
 import traceback
 import pathlib
@@ -25,6 +25,7 @@ from Bio import SeqIO
 from io import StringIO
 from django.urls import reverse
 import io
+from django.core.exceptions import PermissionDenied
 
 
 import insillyclo.data_source
@@ -1754,10 +1755,17 @@ def plasmid_visualize(request, plasmid_id):
         # Sinon utiliser la séquence brute stockée en BDD
         genbank_content = plasmid.sequence
 
+    if request.user.is_authenticated:
+        can_edit = plasmid.collections.filter(owner=request.user).exists()
+    else:
+        can_edit = False
+
     return render(request, 'biolib/plasmid_visualize.html', {
         'plasmid': plasmid,
-        'genbank_content': genbank_content
+        'genbank_content': genbank_content, # (votre variable existante)
+        'can_edit': can_edit, # <--- N'oubliez pas d'ajouter ceci au contexte
     })
+
 
 # Vue USER
 @login_required
@@ -1858,36 +1866,93 @@ def correspondence_request_publication(request, pk):
 
     return redirect('correspondence_list')
 
+@login_required
+def plasmid_edit(request, pk):
+    plasmid = get_object_or_404(Plasmid, pk=pk)
 
-# VUE 2 : L'Admin clique sur "Examiner" dans le tableau de bord
-#@staff_member_required
-#def admin_correspondence_review(request, pk):
-#    table = get_object_or_404(Correspondence, pk=pk)
-#
-#    if request.method == 'POST':
-#        action = request.POST.get('action')
-#        feedback = request.POST.get('feedback', '')
-#
-#        if action == 'approve':
-#            table.publication_status = 'approved'
-#            table.admin_feedback = ""
-#            table.save()
-#            return redirect('admin_publication_list') # Retour à la liste admin
-#
-#        elif action == 'reject':
-#            if not feedback.strip():
-#                return render(request, 'biolib/admin_table_review.html', {
-#                    'table': table,
-#                    'error': "Justification obligatoire."
-#                })
-#            table.publication_status = 'rejected'
-#            table.admin_feedback = feedback
-#            table.save()
-#            return redirect('admin_publication_list') # Retour à la liste admin
-#
-#    return render(request, 'biolib/admin_table_review.html', {
-#        'table': table
-#    })
+    is_owner = plasmid.collections.filter(owner=request.user).exists()
+    if not is_owner:
+        raise PermissionDenied("Permission refusée.")
+
+    genbank_record = None
+    features_initial_data = []
+
+    if plasmid.genbank_file:
+        try:
+            with plasmid.genbank_file.open('r') as handle:
+                genbank_record = SeqIO.read(handle, "genbank")
+
+            for feature in genbank_record.features:
+                if feature.type == 'source': continue
+
+                quals = feature.qualifiers
+                current_name = quals.get('label', quals.get('gene', quals.get('product', quals.get('note', ['Inconnu']))))[0]
+
+                identifier = f"{feature.type}::{feature.location}"
+
+                features_initial_data.append({
+                    'feature_identifier': identifier,
+                    'feature_type': feature.type,
+                    'feature_location': str(feature.location),
+                    'feature_name': current_name
+                })
+        except Exception as e:
+            print(f"Erreur lecture GenBank: {e}")
+
+    if request.method == 'POST':
+        plasmid_form = PlasmidForm(request.POST, request.FILES, instance=plasmid)
+        feature_formset = FeatureFormSet(request.POST)
+
+        # On vérifie que TOUT est valide
+        if plasmid_form.is_valid() and feature_formset.is_valid():
+            plasmid_instance = plasmid_form.save(commit=False)
+
+            if genbank_record and feature_formset.has_changed():
+                updated = False
+                for form in feature_formset:
+                    if form.has_changed() and 'feature_name' in form.cleaned_data:
+                        target_id = form.cleaned_data['feature_identifier']
+                        new_name = form.cleaned_data['feature_name']
+
+                        for feature in genbank_record.features:
+                            current_id = f"{feature.type}::{feature.location}"
+                            if current_id == target_id:
+                                feature.qualifiers['label'] = [new_name]
+                                updated = True
+                                break
+                if updated:
+                    output_buffer = io.StringIO()
+                    SeqIO.write(genbank_record, output_buffer, "genbank")
+
+                    new_content = ContentFile(output_buffer.getvalue().encode('utf-8'))
+
+                    plasmid_instance.genbank_file.save(plasmid_instance.genbank_file.name, new_content, save=False)
+                    print("Fichier GenBank mis à jour avec les nouveaux noms d'annotations.")
+
+            plasmid_instance.save()
+            return redirect('plasmid_visualize', plasmid_id=plasmid.pk)
+
+    else:
+        plasmid_form = PlasmidForm(instance=plasmid)
+        feature_formset = FeatureFormSet(initial=features_initial_data)
+
+    return render(request, 'biolib/plasmid_edit.html', {
+        'form': plasmid_form,
+        'feature_formset': feature_formset,
+        'plasmid': plasmid
+    })
+
+@login_required # (Assurez-vous que c'est protégé, ou gérez le cas anonyme)
+def plasmid_detail(request, pk):
+    plasmid = get_object_or_404(Plasmid, pk=pk)
+
+    # On vérifie si l'utilisateur a le droit de modifier (même logique que ci-dessus)
+    can_edit = plasmid.collections.filter(owner=request.user).exists()
+
+    return render(request, 'biolib/plasmid_detail.html', {
+        'plasmid': plasmid,
+        'can_edit': can_edit, # <--- On envoie cette info au HTML
+    })
 @staff_member_required
 def admin_correspondence_review(request, pk):
     # Récupère la table
