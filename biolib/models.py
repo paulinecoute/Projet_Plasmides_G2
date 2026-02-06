@@ -134,6 +134,7 @@ class Plasmid(models.Model):
     )
     identifier = models.CharField(max_length=100, help_text="Code labo (ex: pYTK045)")
     name = models.CharField(max_length=200, blank=True)
+    description = models.TextField(blank=True, null=True, verbose_name="Description / Notes")
     PUBLICATION_STATUS = [
         ('draft', 'Privé'),
         ('pending', 'En attente de validation'),

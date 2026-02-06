@@ -1,0 +1,77 @@
+{% extends 'biolib/base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10"> <div class="card shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0"><i class="bi bi-pencil-square"></i> Modifier le Plasmide</h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        Modifiez les métadonnées globales et les annotations internes du fichier GenBank.
+                    </p>
+
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <h5 class="text-primary mb-3">Métadonnées Générales</h5>
+                        {{ form.as_p }}
+
+                        <hr class="my-4">
+
+                        {% if feature_formset and feature_formset.total_form_count > 0 %}
+                            <h5 class="text-primary mb-3">Annotations / Features Internes</h5>
+                            <div class="alert alert-info py-2 small">
+                                <i class="bi bi-info-circle"></i> Changez les noms dans la colonne "Nom / Label" pour renommer les fragments (ex: "fragment A" -> "Promoteur X").
+                            </div>
+
+                            {{ feature_formset.management_form }}
+
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Type</th>
+                                            <th>Position</th>
+                                            <th style="min-width: 250px;">Nom / Label (Modifiable)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for feature_form in feature_formset %}
+                                        <tr>
+                                            {{ feature_form.feature_identifier }}
+
+                                            <td>{{ feature_form.feature_type }}</td>
+                                            <td class="small text-muted">{{ feature_form.feature_location }}</td>
+                                            <td>
+                                                {{ feature_form.feature_name }}
+                                                {% if feature_form.feature_name.errors %}
+                                                    <div class="text-danger small">{{ feature_form.feature_name.errors }}</div>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                             <p class="text-muted fst-italic">Aucune annotation modifiable trouvée dans le fichier GenBank.</p>
+                        {% endif %}
+
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'plasmid_visualize' plasmid.pk %}" class="btn btn-outline-secondary">
+                                Annuler
+                            </a>
+                            <button type="submit" class="btn btn-warning fw-bold">
+                                <i class="bi bi-save"></i> Enregistrer TOUTES les modifications
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
