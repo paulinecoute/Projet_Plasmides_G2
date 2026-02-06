@@ -106,7 +106,11 @@ class PlasmidCollection(models.Model):
 
 class Plasmid(models.Model):
     """ Fusion : On garde la branche d'AGASH pour les fichier + on conserve la simplicité de MAIN """
-    collection = models.ForeignKey(PlasmidCollection, on_delete=models.CASCADE, related_name='plasmids')
+    collections = models.ManyToManyField(
+        PlasmidCollection,
+        related_name='plasmids',
+        verbose_name="Collections"
+    )
     identifier = models.CharField(max_length=100, help_text="Code labo (ex: pYTK045)")
     name = models.CharField(max_length=200, blank=True)
 
@@ -120,12 +124,12 @@ class Plasmid(models.Model):
         return f"{self.identifier} - {self.name}"
 
 # ==============================================================================
-# 3. MAPPING & CORRESPONDANCE 
+# 3. MAPPING & CORRESPONDANCE
 # ==============================================================================
 
 class Correspondence(models.Model):
     name = models.CharField(max_length=200, default="Table de correspondance")
-    description = models.TextField(blank=True, default="")  
+    description = models.TextField(blank=True, default="")
     file = models.FileField(upload_to="correspondences/")
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
@@ -198,7 +202,7 @@ class CampaignTemplate(models.Model):
     # -- Partie AGASH (Fichiers & Droits) --
     file = models.FileField(upload_to="templates/", blank=True, null=True, help_text="Fichier modèle Excel")
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
-    team = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, blank=True)
+    #team = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, blank=True)
     is_public = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 

@@ -42,10 +42,25 @@ class PlasmidCollectionAdmin(admin.ModelAdmin):
     search_fields = ('name', 'description')
 
 @admin.register(Plasmid)
+#class PlasmidAdmin(admin.ModelAdmin):
+#    list_display = ('identifier', 'name', 'collection')
+#    list_filter = ('collection',)
+#    search_fields = ('identifier', 'name', 'sequence')
+
 class PlasmidAdmin(admin.ModelAdmin):
-    list_display = ('identifier', 'name', 'collection')
-    list_filter = ('collection',)
-    search_fields = ('identifier', 'name', 'sequence')
+    list_display = ('name', 'get_collections')
+
+    list_filter = ('collections',)
+
+    search_fields = ('name', 'collections__name')
+
+    def get_collections(self, obj):
+        return ", ".join([c.name for c in obj.collections.all()])
+
+    get_collections.short_description = 'Collections'
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.prefetch_related('collections')
 
 # ==============================================================================
 # CORRESPONDANCE (Structure MAIN + UX AGASH)
