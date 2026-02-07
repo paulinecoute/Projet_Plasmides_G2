@@ -1370,20 +1370,40 @@ def plasmid_collection_delete(request, pk):
 # CORRESPONDENCES UTILISATEUR (hors équipe)
 # ============================================================
 
-@login_required
+
 def correspondences_view(request):
     view_type = request.GET.get('view', 'my')
 
+    # CAS UTILISATEUR NON CONNECTÉ
+    if not request.user.is_authenticated:
+        correspondences = Correspondence.objects.filter(
+            publication_status='approved',
+            team__isnull=True
+        ).order_by('-uploaded_at')
+
+        title = "Tables de correspondance publiques"
+
+        return render(request, "biolib/correspondences.html", {
+            "correspondences": correspondences,
+            "current_view": "public",
+            "page_title": title,
+        })
+
+    #  CAS UTILISATEUR CONNECTÉ
     if view_type == 'my':
         correspondences = Correspondence.objects.filter(
             owner=request.user,
             team__isnull=True
         ).order_by('-uploaded_at')
+
         title = "Mes tables de correspondance"
 
     else:
-        # fallback sécurité
-        correspondences = Correspondence.objects.none()
+        correspondences = Correspondence.objects.filter(
+            Q(publication_status='approved') |
+            Q(owner=request.user)
+        ).order_by('-uploaded_at')
+
         title = "Tables de correspondance"
 
     return render(request, "biolib/correspondences.html", {
@@ -1839,7 +1859,19 @@ def admin_reject_collection(request, pk):
 
     return redirect('admin_publication_list')
 
+
 def correspondence_list(request):
+
+    if not request.user.is_authenticated:
+        public_tables = Correspondence.objects.filter(
+            publication_status='approved'
+        ).order_by('-id')
+
+        return render(request, 'biolib/correspondence_list.html', {
+            'my_tables': [],
+            'team_tables': [],
+            'public_tables': public_tables,
+        })
 
     my_tables = Correspondence.objects.filter(
         owner=request.user
@@ -1858,7 +1890,9 @@ def correspondence_list(request):
         'team_tables': team_tables,
         'public_tables': public_tables,
     }
+
     return render(request, 'biolib/correspondence_list.html', context)
+
 
 @login_required
 def correspondence_request_publication(request, pk):
@@ -1870,7 +1904,6 @@ def correspondence_request_publication(request, pk):
     if table.publication_status in ['draft', 'rejected']:
         table.publication_status = 'pending'
         table.save()
-        # Redirection vers la page de détail de la table
         return redirect('correspondence_detail', pk=pk)
 
     return redirect('correspondence_list')
