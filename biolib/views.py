@@ -2304,3 +2304,27 @@ def delete_public_campaign(request, pk):
         campaign.delete()
         messages.success(request, "Campagne publique supprimée.")
     return redirect('simulation_list')
+
+
+from types import SimpleNamespace # N'oubliez pas cet import tout en haut ou avant la fonction
+
+def visualize_simulation_plasmid(request, simulation_id, filename):
+    # Construit le chemin vers le fichier .gb
+    file_path = os.path.join(settings.MEDIA_ROOT, 'simulations', str(simulation_id), filename)
+
+    # Vérifie si le fichier existe
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Le fichier {filename} n'existe pas pour la simulation {simulation_id}.")
+
+    # Lit le contenu du fichier
+    with open(file_path, 'r') as f:
+        genbank_content = f.read()
+
+    # Crée un objet fictif avec SimpleNamespace pour imiter un modèle Django (car le template attend un objet 'plasmid')
+    plasmid_obj = SimpleNamespace(id=None, name=filename, identifier=filename, genbank_file=None)
+
+    return render(request, 'biolib/plasmid_visualize.html', {
+        'plasmid': plasmid_obj,
+        'genbank_content': genbank_content,
+        'can_edit': False,  # Désactive les boutons d'édition car c'est un fichier généré non sauvegardé
+    })

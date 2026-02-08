@@ -69,6 +69,9 @@ urlpatterns = [
     path('simulation/<int:pk>/update_gel/', views.update_simulation_gel, name='update_simulation_gel'),
     path("teams/<int:team_id>/simulations/", views.team_simulations, name="team_simulations"),
     path('simulation/<int:simulation_id>/save/', views.save_generated_plasmid, name='save_generated_plasmid'),
+    path('simulation/<int:simulation_id>/visualize/<str:filename>/',
+     views.visualize_simulation_plasmid,
+     name='visualize_simulation_plasmid'),
 
     # --- NOUVEAU : Suppression et Partage Simulation ---
     path('simulation/<int:pk>/delete/', views.delete_simulation, name='delete_simulation'),
@@ -175,6 +178,7 @@ urlpatterns = [
     # Collections
     path('admin-panel/requests/<int:pk>/approve/', views.admin_approve_collection, name='admin_approve_collection'),
     path('admin-panel/requests/<int:pk>/reject/', views.admin_reject_collection, name='admin_reject_collection'),
+
 
     # Tables de correspondance
     path('admin-panel/correspondence/<int:pk>/review/', views.admin_correspondence_review, name='admin_correspondence_review'),

@@ -93,48 +93,56 @@
                                         <div class="list-group-item d-flex justify-content-between align-items-center">
                                             <span><i class="fas fa-file-code text-muted me-2"></i> {{ filename }}</span>
 
-                                            {% if user.is_authenticated %}
-                                            <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#saveModal-{{ forloop.counter }}">
-                                                <i class="fas fa-plus"></i> Bibliothèque
-                                            </button>
+                                            <div class="d-flex gap-2">
+                                                
+                                                <a href="{% url 'visualize_simulation_plasmid' simulation_id=simulation.id filename=filename %}"
+                                                class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i> Visualiser
+                                                </a>
 
-                                            <div class="modal fade" id="saveModal-{{ forloop.counter }}" tabindex="-1">
-                                                <div class="modal-dialog">
-                                                    <form method="POST" action="{% url 'save_generated_plasmid' simulation.id %}">
-                                                        {% csrf_token %}
-                                                        <div class="modal-content">
-                                                            <div class="modal-header bg-success text-white">
-                                                                <h6 class="modal-title">Sauvegarder {{ filename }}</h6>
-                                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                            </div>
-                                                            <div class="modal-body">
-                                                                <input type="hidden" name="filename" value="{{ filename }}">
+                                                {% if user.is_authenticated %}
+                                                    <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#saveModal-{{ forloop.counter }}">
+                                                        <i class="fas fa-plus"></i> Bibliothèque
+                                                    </button>
 
-                                                                <label class="form-label small fw-bold">Choisir une collection :</label>
-                                                                <select name="collection_id" class="form-select mb-3" id="select-{{ forloop.counter }}">
-                                                                    <option value="" selected>-- Sélectionner --</option>
-                                                                    {% for col in my_collections %}
-                                                                        <option value="{{ col.id }}">{{ col.name }}</option>
-                                                                    {% endfor %}
-                                                                </select>
+                                                    <div class="modal fade" id="saveModal-{{ forloop.counter }}" tabindex="-1">
+                                                        <div class="modal-dialog">
+                                                            <form method="POST" action="{% url 'save_generated_plasmid' simulation.id %}">
+                                                                {% csrf_token %}
+                                                                <div class="modal-content">
+                                                                    <div class="modal-header bg-success text-white">
+                                                                        <h6 class="modal-title">Sauvegarder {{ filename }}</h6>
+                                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                                    </div>
+                                                                    <div class="modal-body">
+                                                                        <input type="hidden" name="filename" value="{{ filename }}">
 
-                                                                <div class="text-center small text-muted my-2">- OU -</div>
+                                                                        <label class="form-label small fw-bold">Choisir une collection :</label>
+                                                                        <select name="collection_id" class="form-select mb-3" id="select-{{ forloop.counter }}">
+                                                                            <option value="" selected>-- Sélectionner --</option>
+                                                                            {% for col in my_collections %}
+                                                                                <option value="{{ col.id }}">{{ col.name }}</option>
+                                                                            {% endfor %}
+                                                                        </select>
 
-                                                                <input type="text" name="new_collection_name" class="form-control new-collection-input" id="input-{{ forloop.counter }}" placeholder="Nouveau nom de collection...">
+                                                                        <div class="text-center small text-muted my-2">- OU -</div>
 
-                                                                <p class="small text-muted mt-2">
-                                                                    <i class="fas fa-info-circle"></i> Le plasmide conservera ses annotations.
-                                                                </p>
-                                                            </div>
-                                                            <div class="modal-footer">
-                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                                                                <button type="submit" class="btn btn-success">Enregistrer</button>
-                                                            </div>
+                                                                        <input type="text" name="new_collection_name" class="form-control new-collection-input" id="input-{{ forloop.counter }}" placeholder="Nouveau nom de collection...">
+
+                                                                        <p class="small text-muted mt-2">
+                                                                            <i class="fas fa-info-circle"></i> Le plasmide conservera ses annotations.
+                                                                        </p>
+                                                                    </div>
+                                                                    <div class="modal-footer">
+                                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                                        <button type="submit" class="btn btn-success">Enregistrer</button>
+                                                                    </div>
+                                                                </div>
+                                                            </form>
                                                         </div>
-                                                    </form>
-                                                </div>
+                                                    </div>
+                                                {% endif %}
                                             </div>
-                                            {% endif %}
                                         </div>
                                         {% endfor %}
                                     </div>
