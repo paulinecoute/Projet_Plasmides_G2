@@ -148,6 +148,7 @@ def dashboard(request):
         "teams_count": teams_count,
     })
 
+
 # ==============================================================================
 # 2. GESTION DES TEMPLATES
 # ==============================================================================
@@ -1114,6 +1115,7 @@ def team_list(request):
 # COLLECTIONS UTILISATEUR (équipe)
 # ============================================================
 
+
 @login_required
 def team_collections(request, team_id):
     team = get_object_or_404(Team, id=team_id, members=request.user)
@@ -1181,6 +1183,7 @@ def team_collection_create(request, team_id):
         "team": team,
         "members": team.members.all()
     })
+
 
 @login_required
 def choose_team_for_plasmids(request):
@@ -1695,6 +1698,7 @@ def team_correspondence_delete(request, team_id, correspondence_id):
     if request.method == "POST":
         table.delete()
         return redirect("team_correspondences", team_id=team.id)
+
 
 @login_required
 def choose_team_for_correspondences(request):
