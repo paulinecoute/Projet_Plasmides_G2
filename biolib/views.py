@@ -5,8 +5,8 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.http import FileResponse, HttpResponse, Http404, HttpResponseForbidden
 from django.conf import settings
 from django.db.models import Q
-from .forms import CustomUserCreationForm, SimulationForm, CampaignTemplateForm, TemplatePartFormSet, CorrespondenceForm, PlasmidForm, FeatureFormSet, CopyPlasmidForm, PlasmidCollectionForm
-from .models import Simulation, CampaignTemplate, Plasmid, Team, User, Correspondence, PlasmidCollection
+from .forms import CustomUserCreationForm, SimulationForm, CampaignTemplateForm, TemplatePartFormSet, CorrespondenceForm, PlasmidForm, FeatureFormSet, CopyPlasmidForm, PlasmidCollectionForm, PublicCampaignForm
+from .models import Simulation, CampaignTemplate, Plasmid, Team, User, Correspondence, PlasmidCollection, PublicCampaign
 import traceback
 import pathlib
 import glob
@@ -82,7 +82,6 @@ def search_view(request):
             sim_access = Q(user=request.user) | Q(visibility='team', team__members=request.user)
 
             # Collections : Mes privées + Mon équipe + Publiques
-            # CORRECTION ICI : on utilise publication_status='approved' au lieu de is_public=True
             col_access = Q(owner=request.user) | Q(team__members=request.user) | Q(publication_status='approved')
 
         else:
@@ -90,7 +89,6 @@ def search_view(request):
             tmpl_access = Q(visibility='public')
             sim_access = Q(pk__in=[])
 
-            # CORRECTION ICI AUSSI
             col_access = Q(publication_status='approved')
 
         # 2. EXÉCUTION DE LA RECHERCHE
@@ -443,10 +441,17 @@ def simulation_list(request):
         simulations = source_qs.order_by('-date_run')
         title = "Mes simulations"
 
+    # --- AJOUT POUR LES CAMPAGNES PUBLIQUES ---
+    public_campaigns = PublicCampaign.objects.all().order_by('-uploaded_at')
+    campaign_form = PublicCampaignForm() if request.user.is_staff else None
+    # ------------------------------------------
+
     return render(request, 'biolib/simulation_list.html', {
         'simulations': simulations,
         'current_view': view_type,
-        'page_title': title
+        'page_title': title,
+        'public_campaigns': public_campaigns, # Nouvelle variable
+        'campaign_form': campaign_form,       # Nouvelle variable
     })
 
 def create_simulation(request):
@@ -623,7 +628,7 @@ def create_simulation(request):
 
                 # Petit message bonus pour confirmer que les plasmides des collections sélectionnées sont inclus
                 if not simulation.zip_file and len(raw_paths_list) > 0:
-                     messages.success(request, f"Collection créée par fusion des {len(raw_paths_list)} plasmides sélectionnés.")
+                      messages.success(request, f"Collection créée par fusion des {len(raw_paths_list)} plasmides sélectionnés.")
 
 
             staging_dir = os.path.join(output_folder, 'staging_plasmids')
@@ -2146,6 +2151,11 @@ def plasmid_copy(request, pk):
         # GET : On affiche le formulaire vide
         form = CopyPlasmidForm(request.user)
 
+    return render(request, 'biolib/plasmid_copy.html', {
+        'form': form,
+        'plasmid': original_plasmid
+    })
+
 @login_required
 def delete_simulation(request, pk):
     simulation = get_object_or_404(Simulation, pk=pk)
@@ -2161,7 +2171,7 @@ def delete_simulation(request, pk):
         sim_dir = os.path.join(settings.MEDIA_ROOT, 'simulations', str(simulation.id))
         if os.path.exists(sim_dir):
             shutil.rmtree(sim_dir)
-        
+
         simulation.delete()
         messages.success(request, "Simulation supprimée avec succès.")
         return redirect('simulation_list')
@@ -2171,13 +2181,13 @@ def delete_simulation(request, pk):
 @login_required
 def share_simulation_team(request, pk):
     simulation = get_object_or_404(Simulation, pk=pk)
-    
+
     if simulation.user != request.user:
         return HttpResponseForbidden("Seul le propriétaire peut partager cette simulation.")
 
     if request.method == 'POST':
         team_id = request.POST.get('team_id')
-        
+
         if team_id:
             team = get_object_or_404(Team, id=team_id, members=request.user)
             simulation.team = team
@@ -2191,7 +2201,28 @@ def share_simulation_team(request, pk):
             messages.success(request, "Simulation repassée en privé.")
 
     return redirect('simulation_result', pk=pk)
-    return render(request, 'biolib/plasmid_copy.html', {
-        'form': form,
-        'plasmid': original_plasmid
-    })
+
+# ==============================================================================
+# GESTION DES CAMPAGNES PUBLIQUES (ADMIN)
+# ==============================================================================
+
+@staff_member_required
+def add_public_campaign(request):
+    if request.method == 'POST':
+        form = PublicCampaignForm(request.POST, request.FILES)
+        if form.is_valid():
+            campaign = form.save(commit=False)
+            campaign.uploaded_by = request.user
+            campaign.save()
+            messages.success(request, f"Campagne '{campaign.name}' ajoutée aux ressources publiques.")
+        else:
+            messages.error(request, "Erreur lors de l'ajout.")
+    return redirect('simulation_list')
+
+@staff_member_required
+def delete_public_campaign(request, pk):
+    campaign = get_object_or_404(PublicCampaign, pk=pk)
+    if request.method == 'POST':
+        campaign.delete()
+        messages.success(request, "Campagne publique supprimée.")
+    return redirect('simulation_list')
