@@ -291,11 +291,30 @@
                         {% csrf_token %}
                         <p class="small text-muted mb-2">Cochez les enzymes pour simuler une nouvelle digestion :</p>
                         <div class="mb-3" style="max-height: 150px; overflow-y: auto;">
-                            {% for enz in "BsaI,BsmBI,BbsI,SapI,NotI"|make_list %} <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="gel_enzymes" value="{{ enz }}" id="gel_{{ enz }}">
-                                    <label class="form-check-label small" for="gel_{{ enz }}">{{ enz }}</label>
-                                </div>
-                            {% endfor %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="gel_enzymes" value="BsaI" id="gel_BsaI">
+                                <label class="form-check-label small" for="gel_BsaI">BsaI</label>
+                            </div>
+
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="gel_enzymes" value="BsmBI" id="gel_BsmBI">
+                                <label class="form-check-label small" for="gel_BsmBI">BsmBI</label>
+                            </div>
+
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="gel_enzymes" value="BbsI" id="gel_BbsI">
+                                <label class="form-check-label small" for="gel_BbsI">BbsI</label>
+                            </div>
+
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="gel_enzymes" value="SapI" id="gel_SapI">
+                                <label class="form-check-label small" for="gel_SapI">SapI</label>
+                            </div>
+
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="gel_enzymes" value="NotI" id="gel_NotI">
+                                <label class="form-check-label small" for="gel_NotI">NotI</label>
+                            </div>
                         </div>
                         <button type="submit" class="btn btn-warning btn-sm w-100">Mettre à jour</button>
                     </form>
