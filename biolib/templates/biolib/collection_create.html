@@ -153,6 +153,12 @@
       <form method="post">
         {% csrf_token %}
 
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger mb-4">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
         <div class="mb-4">
           <label class="form-label">{{ form.name.label }}</label>
           {{ form.name }}
@@ -191,22 +197,12 @@
                 <div class="text-danger">{{ form.team.errors }}</div>
             {% endif %}
 
-            <div class="text-center my-3 text-muted" style="font-size: 0.85rem; font-weight: 600;">
-              - OU -
-            </div>
-
-            <label class="form-label" style="color: #000;">
-                <i class="bi bi-plus-circle-dotted me-1"></i> Créer une nouvelle équipe
-            </label>
-            {{ form.new_team_name }}
             <div class="info-box mt-2">
                 <i class="bi bi-info-circle-fill me-2"></i>
-                Vous deviendrez automatiquement le chef de cette nouvelle équipe.
+                Seules les équipes dont vous êtes membre apparaissent ici.
             </div>
 
-        </div>
-
-        <div class="d-flex align-items-center justify-content-end gap-4 mt-5">
+        </div> <div class="d-flex align-items-center justify-content-end gap-4 mt-5">
           <a href="{% url 'plasmid_collection_list' %}" class="btn-cancel">
             Annuler
           </a>
@@ -241,24 +237,6 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 
     toggleTeamSelect();
-    const teamSelect = document.getElementById('{{ form.team.id_for_label }}');
-    const newTeamInput = document.getElementById('{{ form.new_team_name.id_for_label }}');
-
-    if(teamSelect && newTeamInput) {
-        // Si on tape un nom, on remet le select à vide (si possible)
-        newTeamInput.addEventListener('input', function() {
-            if(this.value.length > 0) {
-                teamSelect.value = "";
-            }
-        });
-
-        // Si on choisit une équipe, on vide le champ texte
-        teamSelect.addEventListener('change', function() {
-            if(this.value !== "") {
-                newTeamInput.value = "";
-            }
-        });
-    }
 });
 </script>
 
