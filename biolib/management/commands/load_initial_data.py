@@ -1,118 +1,44 @@
-import os
 from django.core.management.base import BaseCommand
-from django.conf import settings
-from django.core.files import File
-from biolib.models import Plasmid, PlasmidCollection, User, CampaignTemplate
+from biolib.models import User, CampaignTemplate, TemplatePart
 
 class Command(BaseCommand):
-    help = 'Charge les plasmides et les templates récursivement depuis le dossier data_web'
+    help = 'Crée UNIQUEMENT le Template_Example (3 inputs) manuellement.'
 
     def handle(self, *args, **kwargs):
-        data_dir = os.path.join(settings.BASE_DIR, 'data_web')
+        self.stdout.write("--- Création unique du Template_Example ---")
 
-        self.stdout.write("--- Démarrage de l'import Récursif ---")
-
-        if not os.path.exists(data_dir):
-            self.stdout.write(self.style.ERROR(f"ERREUR : '{data_dir}' n'existe pas !"))
-            return
-
+        # 1. Récupération de l'Admin (Propriétaire)
         admin_user = User.objects.filter(is_superuser=True).first()
         if not admin_user:
-            self.stdout.write(self.style.ERROR("Erreur : Aucun administrateur trouvé."))
+            self.stdout.write(self.style.ERROR("ERREUR : Aucun administrateur trouvé. Créez un superuser d'abord."))
             return
 
-        count_plasmids = 0
-        count_templates = 0
+        # 2. Nettoyage : On supprime l'ancien s'il existe pour éviter les doublons
+        CampaignTemplate.objects.filter(name="Template_Example", owner=admin_user).delete()
 
-        for root, dirs, files in os.walk(data_dir):
-            folder_name = os.path.basename(root)
+        # 3. Création du Template avec les paramètres demandés
+        template = CampaignTemplate.objects.create(
+            name="Template_Example",
+            owner=admin_user,
+            description="Ceci est un exemple de Template vierge. Vous pouvez le modifier.",
+            enzyme="BsaI",          # Laisser par défaut
+            output_separator="-",   # Laisser par défaut
+            visibility="public",    # Public
+            is_public=True
+        )
 
-            collection = None
+        # 4. Création des 3 parties (input Plasmid 1 à 3)
+        # - Optionnel = True (donc is_mandatory=False)
+        # - Inclus = True
+        for i in range(1, 4): # Boucle de 1 à 3
+            TemplatePart.objects.create(
+                template=template,
+                name=f"input Plasmid {i}",  # Nom exact demandé
+                type_id="1",                # Type par défaut
+                order=i,
+                is_mandatory=False,         # Optionnel
+                include_in_output=True,     # Inclus dans le nom
+                is_separable=False
+            )
 
-            if folder_name != 'data_web':
-                collection_name = f"Collection {folder_name}"
-
-                collection, created = PlasmidCollection.objects.get_or_create(
-                    name=collection_name,
-                    defaults={'owner': admin_user, 'publication_status': 'approved'}
-                )
-                if created:
-                    self.stdout.write(self.style.SUCCESS(f" > Collection créée : {collection_name}"))
-            else:
-                self.stdout.write(f" > Racine '{folder_name}' : Pas de collection créée.")
-
-
-            valid_files = [f for f in files if f.lower().endswith(('.gb', '.dna', '.fasta', '.xlsx'))]
-            if not valid_files:
-                continue
-
-            for filename in valid_files:
-                file_path = os.path.join(root, filename)
-                identifier = os.path.splitext(filename)[0]
-
-                if filename.lower().endswith('.xlsx'):
-                    try:
-                        template = CampaignTemplate.objects.filter(name=identifier, owner=admin_user).first()
-
-                        action_tpl = ""
-                        if template:
-                            action_tpl = "Updated"
-                        else:
-                            action_tpl = "Created"
-                            template = CampaignTemplate(
-                                name=identifier,
-                                owner=admin_user,
-                                description="",
-                                visibility='public',
-                                is_public=True
-                            )
-
-                        with open(file_path, 'rb') as f_byte:
-                            template.file.save(filename, File(f_byte), save=True)
-
-                        count_templates += 1
-                        self.stdout.write(f"   # Template {action_tpl} : {filename}")
-
-                    except Exception as e:
-                         self.stdout.write(self.style.ERROR(f"Erreur Template {filename}: {e}"))
-
-                    continue
-
-                try:
-                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f_read:
-                        content_seq = f_read.read()
-
-                    plasmid = Plasmid.objects.filter(identifier=identifier).first()
-
-                    if plasmid:
-                        action = "Updated"
-                        plasmid.name = identifier
-                        plasmid.sequence = content_seq[:200] + "..."
-                    else:
-                        action = "Created"
-                        plasmid = Plasmid(
-                            identifier=identifier,
-                            name=identifier,
-                            sequence=content_seq[:200] + "..."
-                        )
-
-                    with open(file_path, 'rb') as f_byte:
-                        plasmid.genbank_file.save(filename, File(f_byte), save=True)
-
-                    if collection:
-                        plasmid.collections.add(collection)
-                        collection_msg = f"(dans {collection.name})"
-                    else:
-                        collection_msg = "(Sans collection)"
-
-                    if action == "Created":
-                        count_plasmids += 1
-                        self.stdout.write(f"   + Plasmide {filename} {collection_msg}")
-                    else:
-                        count_plasmids += 1
-                        self.stdout.write(f"   ~ Plasmide {filename} {collection_msg}")
-
-                except Exception as e:
-                    self.stdout.write(self.style.ERROR(f"Erreur Plasmide {filename}: {e}"))
-
-        self.stdout.write(self.style.SUCCESS(f"--- FINI : {count_plasmids} plasmides traités, {count_templates} templates xlsx importés ---"))
+        self.stdout.write(self.style.SUCCESS(f"OK : Template 'Template_Example' créé avec 3 parties (input Plasmid 1 à 3)."))
