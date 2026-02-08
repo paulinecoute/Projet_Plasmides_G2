@@ -376,3 +376,19 @@ class Simulation(models.Model):
     )
     def __str__(self):
         return f"Simu #{self.id} ({self.date_run})"
+
+# ==============================================================================
+# 5. RESSOURCES PUBLIQUES (Campagnes exemples)
+# ==============================================================================
+
+class PublicCampaign(models.Model):
+    name = models.CharField(max_length=255, verbose_name="Nom de la campagne")
+    description = models.TextField(blank=True, verbose_name="Description")
+    file = models.FileField(upload_to="public_campaigns/", verbose_name="Fichier Excel (.xlsx)")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    # Seul un admin peut créer ça, mais on peut stocker qui l'a fait
+    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+
+    def __str__(self):
+        return self.name

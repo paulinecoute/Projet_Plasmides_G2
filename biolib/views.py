@@ -5,8 +5,8 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.http import FileResponse, HttpResponse, Http404, HttpResponseForbidden
 from django.conf import settings
 from django.db.models import Q
-from .forms import CustomUserCreationForm, SimulationForm, CampaignTemplateForm, TemplatePartFormSet, CorrespondenceForm, PlasmidForm, FeatureFormSet, CopyPlasmidForm, PlasmidCollectionForm
-from .models import Simulation, CampaignTemplate, Plasmid, Team, User, Correspondence, PlasmidCollection
+from .forms import CustomUserCreationForm, SimulationForm, CampaignTemplateForm, TemplatePartFormSet, CorrespondenceForm, PlasmidForm, FeatureFormSet, CopyPlasmidForm, PlasmidCollectionForm, PublicCampaignForm
+from .models import Simulation, CampaignTemplate, Plasmid, Team, User, Correspondence, PlasmidCollection, PublicCampaign
 import traceback
 import pathlib
 import glob
@@ -76,42 +76,53 @@ def search_view(request):
         # DÉFINITION DES FILTRES D'ACCÈS (Q Objects)
 
         if request.user.is_authenticated:
-            # Pour les objets "Collection"
+            # 1. Collections : Mes privées + Mon équipe + Publiques
             col_access = Q(owner=request.user) | \
                          Q(team__members=request.user) | \
                          Q(publication_status='approved')
 
-            # Pour les objets "Plasmide" (on traverse la relation 'collections__')
+            # 2. Plasmids : Contenus dans des collections accessibles
             plasmid_access = Q(collections__owner=request.user) | \
                              Q(collections__team__members=request.user) | \
                              Q(collections__publication_status='approved')
 
-            # Templates & Simulations
-            tmpl_access = Q(owner=request.user) | Q(visibility='team', team__members=request.user) | Q(visibility='public')
-            sim_access = Q(user=request.user) | Q(visibility='team', team__members=request.user)
+            # 3. Templates : Mes privés + Mon équipe + Publics
+            tmpl_access = Q(owner=request.user) | \
+                          Q(visibility='team', team__members=request.user) | \
+                          Q(visibility='public')
+
+            # 4. Simulations : Mes privées + Mon équipe
+            sim_access = Q(user=request.user) | \
+                         Q(visibility='team', team__members=request.user)
 
         else:
+            # Invité : Uniquement le contenu public
             col_access = Q(publication_status='approved')
-
             plasmid_access = Q(collections__publication_status='approved')
-
             tmpl_access = Q(visibility='public')
+            sim_access = Q(pk__in=[]) # Aucune simulation accessible
 
         # 2. EXÉCUTION DE LA RECHERCHE
 
+        # Templates
         templates = CampaignTemplate.objects.filter(tmpl_access).filter(
             Q(name__icontains=query) | Q(description__icontains=query)
         ).distinct()
 
+        # Simulations
+        # Note: Même si sim_access est défini pour un invité (vide), 
+        # on garde le check is_authenticated par sécurité pour éviter des requêtes inutiles.
         if request.user.is_authenticated:
             simulations = Simulation.objects.filter(sim_access).filter(
                 name__icontains=query
             ).distinct()
 
+        # Collections
         collections = PlasmidCollection.objects.filter(col_access).filter(
             name__icontains=query
         ).distinct()
 
+        # Plasmids
         plasmids = Plasmid.objects.filter(plasmid_access).filter(
             Q(name__icontains=query) |
             Q(identifier__icontains=query) |
@@ -441,10 +452,17 @@ def simulation_list(request):
         simulations = source_qs.order_by('-date_run')
         title = "Mes simulations"
 
+    # --- AJOUT POUR LES CAMPAGNES PUBLIQUES ---
+    public_campaigns = PublicCampaign.objects.all().order_by('-uploaded_at')
+    campaign_form = PublicCampaignForm() if request.user.is_staff else None
+    # ------------------------------------------
+
     return render(request, 'biolib/simulation_list.html', {
         'simulations': simulations,
         'current_view': view_type,
-        'page_title': title
+        'page_title': title,
+        'public_campaigns': public_campaigns, # Nouvelle variable
+        'campaign_form': campaign_form,       # Nouvelle variable
     })
 
 def create_simulation(request):
@@ -621,7 +639,7 @@ def create_simulation(request):
 
                 # Petit message bonus pour confirmer que les plasmides des collections sélectionnées sont inclus
                 if not simulation.zip_file and len(raw_paths_list) > 0:
-                     messages.success(request, f"Collection créée par fusion des {len(raw_paths_list)} plasmides sélectionnés.")
+                      messages.success(request, f"Collection créée par fusion des {len(raw_paths_list)} plasmides sélectionnés.")
 
 
             staging_dir = os.path.join(output_folder, 'staging_plasmids')
@@ -2211,6 +2229,11 @@ def plasmid_copy(request, pk):
         # GET : On affiche le formulaire vide
         form = CopyPlasmidForm(request.user)
 
+    return render(request, 'biolib/plasmid_copy.html', {
+        'form': form,
+        'plasmid': original_plasmid
+    })
+
 @login_required
 def delete_simulation(request, pk):
     simulation = get_object_or_404(Simulation, pk=pk)
@@ -2256,7 +2279,28 @@ def share_simulation_team(request, pk):
             messages.success(request, "Simulation repassée en privé.")
 
     return redirect('simulation_result', pk=pk)
-    return render(request, 'biolib/plasmid_copy.html', {
-        'form': form,
-        'plasmid': original_plasmid
-    })
+
+# ==============================================================================
+# GESTION DES CAMPAGNES PUBLIQUES (ADMIN)
+# ==============================================================================
+
+@staff_member_required
+def add_public_campaign(request):
+    if request.method == 'POST':
+        form = PublicCampaignForm(request.POST, request.FILES)
+        if form.is_valid():
+            campaign = form.save(commit=False)
+            campaign.uploaded_by = request.user
+            campaign.save()
+            messages.success(request, f"Campagne '{campaign.name}' ajoutée aux ressources publiques.")
+        else:
+            messages.error(request, "Erreur lors de l'ajout.")
+    return redirect('simulation_list')
+
+@staff_member_required
+def delete_public_campaign(request, pk):
+    campaign = get_object_or_404(PublicCampaign, pk=pk)
+    if request.method == 'POST':
+        campaign.delete()
+        messages.success(request, "Campagne publique supprimée.")
+    return redirect('simulation_list')

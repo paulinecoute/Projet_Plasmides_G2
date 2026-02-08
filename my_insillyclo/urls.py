@@ -73,7 +73,13 @@ urlpatterns = [
     # --- NOUVEAU : Suppression et Partage Simulation ---
     path('simulation/<int:pk>/delete/', views.delete_simulation, name='delete_simulation'),
     path('simulation/<int:pk>/share/', views.share_simulation_team, name='share_simulation_team'),
-    # ---------------------------------------------------
+
+    # ============================================================
+    # CAMPAGNES PUBLIQUES (ADMIN) - NOUVEAU !
+    # ============================================================
+    path('campaigns/public/add/', views.add_public_campaign, name='add_public_campaign'),
+    path('campaigns/public/<int:pk>/delete/', views.delete_public_campaign, name='delete_public_campaign'),
+
 
     # ============================================================
     # ESPACE PERSONNEL
