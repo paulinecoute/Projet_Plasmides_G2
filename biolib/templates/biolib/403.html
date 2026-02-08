@@ -1,0 +1,45 @@
+{% extends 'biolib/base.html' %}
+
+{% block title %}Accès Refusé{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+
+            <div class="mb-4 text-danger">
+                <i class="bi bi-shield-lock-fill" style="font-size: 5rem;"></i>
+            </div>
+
+            <h1 class="fw-bold mb-3">Zone Interdite</h1>
+
+            <p class="lead text-muted mb-4">
+                {% if exception %}
+                    {{ exception }}
+                {% else %}
+                    Désolé, vous n'avez pas les droits nécessaires pour accéder à cette page.
+                {% endif %}
+            </p>
+
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <a href="javascript:history.back()" class="btn btn-outline-secondary btn-lg px-4 gap-3">
+                    <i class="bi bi-arrow-left"></i> Retour
+                </a>
+
+                <a href="{% url 'home' %}" class="btn btn-primary btn-lg px-4">
+                    <i class="bi bi-house-door"></i> Accueil
+                </a>
+            </div>
+
+            <div class="mt-5 p-3 bg-light rounded border text-start">
+                <small class="text-muted d-block fw-bold mb-1"><i class="bi bi-info-circle"></i> Pourquoi je vois ça ?</small>
+                <small class="text-muted">
+                    Cette ressource est privée. Pour y accéder, vous devez soit être le propriétaire, soit faire partie de l'équipe autorisée.
+                    Si vous pensez qu'il s'agit d'une erreur, contactez l'administrateur.
+                </small>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

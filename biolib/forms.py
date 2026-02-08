@@ -196,6 +196,7 @@ class PlasmidCollectionForm(forms.ModelForm):
         ('private', '🔒 Privée (Moi uniquement)'),
         ('team', '👥 Équipe (Partagée avec mes membres)')
     ]
+
     scope = forms.ChoiceField(
         choices=SCOPE_CHOICES,
         widget=forms.RadioSelect(attrs={'class': 'list-unstyled'}),
@@ -203,18 +204,9 @@ class PlasmidCollectionForm(forms.ModelForm):
         initial='private'
     )
 
-    new_team_name = forms.CharField(
-        required=False,
-        label="Ou créer une nouvelle équipe",
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Nom de la nouvelle équipe...'
-        })
-    )
     class Meta:
         model = PlasmidCollection
         fields = ['name', 'description', 'team']
-
         labels = {
             'name': 'Nom de la collection',
             'description': 'Description',
@@ -227,45 +219,61 @@ class PlasmidCollectionForm(forms.ModelForm):
         }
 
     def __init__(self, user, *args, **kwargs):
-        """
-        On surcharge __init__ pour récupérer l'utilisateur connecté ('user')
-        et filtrer les équipes.
-        """
         super().__init__(*args, **kwargs)
         self.user = user
 
-        # On ne propose que les équipes dont l'utilisateur est le CHEF/LEADER
+        # On propose toutes les équipes dont l'user est membre
         if user.is_authenticated:
-            try:
-                self.fields['team'].queryset = Team.objects.filter(leader=user)
-            except:
-                self.fields['team'].queryset = Team.objects.none()
+            self.fields['team'].queryset = Team.objects.filter(members=user)
         else:
             self.fields['team'].queryset = Team.objects.none()
 
-        self.fields['team'].required = False # On gère la validation manuellement dans clean()
+        self.fields['team'].required = False
 
         if self.instance.pk and self.instance.team:
+
             self.fields['scope'].initial = 'team'
 
+            # Si l'utilisateur actuel N'EST PAS le propriétaire de la collection
+            if self.instance.owner != user:
+
+                # On empêche de passer en "Privé"
+                self.fields['scope'].choices = [
+                    ('team', '👥 Équipe (Fixé par le propriétaire)')
+                ]
+
+                # On empêche de changer d'équipe
+                current_team_id = self.instance.team.id
+                self.fields['team'].queryset = Team.objects.filter(id=current_team_id)
+
+                self.fields['team'].widget.attrs.update({
+                    'readonly': 'readonly',
+                    'style': 'pointer-events: none; background-color: #e9ecef;'
+                })
+
     def clean(self):
-        """
-        Nettoyage et Validation personnalisée
-        """
         cleaned_data = super().clean()
         scope = cleaned_data.get('scope')
         team = cleaned_data.get('team')
-        new_team_name = cleaned_data.get('new_team_name')
+
+        if self.instance.pk and self.instance.team:
+
+            if self.instance.owner != self.user:
+
+                # SÉCURITÉ 1 : Interdiction de passer en privé
+                if scope == 'private':
+                    raise forms.ValidationError("Seul le propriétaire peut rendre cette collection privée.")
+
+                # SÉCURITÉ 2 : Interdiction de changer d'équipe
+                # Si l'équipe envoyée est différente de l'équipe d'origine
+                if team != self.instance.team:
+                    raise forms.ValidationError("Vous n'avez pas le droit de déplacer cette collection vers une autre équipe.")
 
         if scope == 'team':
-            if team and new_team_name:
-                raise forms.ValidationError("Veuillez choisir une seule option : soit une équipe existante, soit une nouvelle. Pas les deux.")
-            if not team and not new_team_name:
-                self.add_error('team', "Veuillez sélectionner une équipe ou en créer une nouvelle.")
-
-        if scope == 'private':
+            if not team:
+                self.add_error('team', "Veuillez sélectionner une équipe.")
+        elif scope == 'private':
             cleaned_data['team'] = None
-            cleaned_data['new_team_name'] = ""
 
         return cleaned_data
 

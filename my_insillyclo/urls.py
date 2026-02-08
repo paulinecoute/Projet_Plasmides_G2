@@ -58,11 +58,6 @@ urlpatterns = [
     ),
 
 
-    path('library/', views.plasmid_collection_list, name='plasmid_collection_list'),
-    path('library/<int:pk>/', views.plasmid_collection_detail, name='plasmid_collection_detail'),
-    path('plasmide_visualize/<int:plasmid_id>/', views.plasmid_visualize, name='plasmid_visualize'),
-    path('plasmids/<int:pk>/copy/', views.plasmid_copy, name='plasmid_copy'),
-
     # simulations
     path('simulation/new/', views.create_simulation, name='create_simulation'),
     path('simulation/<int:pk>/', views.simulation_result, name='simulation_result'),
@@ -74,8 +69,8 @@ urlpatterns = [
     path('simulation/<int:pk>/update_gel/', views.update_simulation_gel, name='update_simulation_gel'),
     path("teams/<int:team_id>/simulations/", views.team_simulations, name="team_simulations"),
     path('simulation/<int:simulation_id>/save/', views.save_generated_plasmid, name='save_generated_plasmid'),
-    
-    # --- Suppression et Partage Simulation ---
+
+    # --- NOUVEAU : Suppression et Partage Simulation ---
     path('simulation/<int:pk>/delete/', views.delete_simulation, name='delete_simulation'),
     path('simulation/<int:pk>/share/', views.share_simulation_team, name='share_simulation_team'),
 
@@ -104,32 +99,45 @@ urlpatterns = [
     path("teams/<int:team_id>/delete/", views.team_delete, name="team_delete"),
     path("teams/<int:team_id>/leave/", views.team_leave, name="team_leave"),
     path("teams/<int:team_id>/change_leader/<int:user_id>/", views.team_change_leader, name="team_change_leader"),
+    # ============================================================
+    # 1. GESTION DES COLLECTIONS (Perso & Équipe unifiés)
+    # ============================================================
+    path('collections/', views.plasmid_collection_list, name='plasmid_collection_list'),
+
+    path('collections/create/', views.collection_create, name='collection_create'),
+
+    path('collections/<int:pk>/', views.plasmid_collection_detail, name='plasmid_collection_detail'),
+
+    path('collections/<int:pk>/edit/', views.collection_update, name='collection_update'),
+
+    # Suppression
+    path('collections/<int:pk>/delete/', views.plasmid_collection_delete, name='plasmid_collection_delete'),
+
+    # Demande de publication
+    path('collections/<int:pk>/publish/', views.request_publication, name='request_publication'),
 
 
     # ============================================================
-    # COLLECTIONS (UTILISATEUR)
+    # 2. ACTIONS SUR LE CONTENU DES COLLECTIONS
     # ============================================================
 
-    path("collections/", views.collections_view, name="collections"),
-    path("collections/new/", views.collection_create, name="collection_create"),
-    path("collections/<int:collection_id>/", views.collection_detail, name="collection_detail"),
-    path("collections/<int:collection_id>/upload/", views.plasmid_upload, name="plasmid_upload"),
-    path("collections/<int:collection_id>/delete/", views.collection_delete, name="collection_delete"),
-    path("plasmids/<int:plasmid_id>/delete/", views.plasmid_delete, name="plasmid_delete"),
-    path("library/<int:pk>/delete/",views.plasmid_collection_delete,name="plasmid_collection_delete"),
-    path('collections/<int:pk>/request-publish/', views.request_publication, name='request_publication'),
+    path('collections/<int:collection_id>/upload/', views.plasmid_upload, name='plasmid_upload'),
 
-
-    # ============================================================
-    # COLLECTIONS (ÉQUIPE)
-    # ============================================================
-
-    path("teams/<int:team_id>/collections/", views.team_collections, name="team_collections"),
-    path("teams/<int:team_id>/collections/create/", views.team_collection_create, name="team_collection_create"),
-    path("teams/<int:team_id>/collections/<int:collection_id>/", views.team_collection_detail, name="team_collection_detail"),
-    path("plasmids/teams/", views.choose_team_for_plasmids, name="choose_team_for_plasmids"),
     path('collections/<int:collection_id>/remove/<int:plasmid_id>/', views.remove_plasmid_from_collection, name='remove_plasmid_from_collection'),
+
+
+    # ============================================================
+    # 3. GESTION DES PLASMIDES INDIVIDUELS
+    # ============================================================
+
+    # Visualisation (GenBank, carte, etc.)
+    path('plasmids/<int:plasmid_id>/', views.plasmid_visualize, name='plasmid_visualize'),
+
+    # Édition (Annotations, Séquence)
     path('plasmids/<int:pk>/edit/', views.plasmid_edit, name='plasmid_edit'),
+
+    # Copier un plasmide (depuis une collection publique/équipe vers mes collections)
+    path('plasmids/<int:pk>/copy/', views.plasmid_copy, name='plasmid_copy'),
 
     # ============================================================
     # CORRESPONDANCES (UTILISATEUR)
@@ -146,7 +154,7 @@ urlpatterns = [
     path('correspondence/<int:pk>/request-publication/', views.correspondence_request_publication, name='correspondence_request_publication'),
     path('correspondence/', views.correspondence_list, name='correspondence_list'),
     path('correspondence/new/', views.correspondence_create, name='correspondence_create'),
-    
+
     # ============================================================
     # CORRESPONDANCES (ÉQUIPE)
     # ============================================================
@@ -163,17 +171,17 @@ urlpatterns = [
     # ACTIONS ADMIN
     # ============================================================
     path('admin-panel/requests/', views.admin_publication_list, name='admin_publication_list'),
-    
+
     # Collections
     path('admin-panel/requests/<int:pk>/approve/', views.admin_approve_collection, name='admin_approve_collection'),
     path('admin-panel/requests/<int:pk>/reject/', views.admin_reject_collection, name='admin_reject_collection'),
-    
+
     # Tables de correspondance
     path('admin-panel/correspondence/<int:pk>/review/', views.admin_correspondence_review, name='admin_correspondence_review'),
     path('admin-panel/correspondence/<int:pk>/approve/', views.admin_approve_correspondence, name='admin_approve_correspondence'),
     path('admin-panel/correspondence/<int:pk>/reject/', views.admin_reject_correspondence, name='admin_reject_correspondence'),
 
-    # Templates 
+    # Templates
     path('admin-panel/templates/<int:pk>/approve/', views.admin_approve_template, name='admin_approve_template'),
     path('admin-panel/templates/<int:pk>/reject/', views.admin_reject_template, name='admin_reject_template'),
 ]

@@ -101,16 +101,15 @@ class Command(BaseCommand):
 
             if os.path.exists(file_path):
                 try:
-                    # Nettoyage préalable (pour éviter les doublons si on relance le script)
+                    # Nettoyage préalable
                     Correspondence.objects.filter(name=filename, owner=admin_user).delete()
 
                     # Création de l'objet Correspondence
-                    # On le met directement en 'approved' pour qu'il soit public
                     mapping = Correspondence(
                         name=filename,
                         description=f"Table de mapping publique importée ({filename})",
                         owner=admin_user,
-                        publication_status='approved',  # <--- Rends le fichier Public immédiatement
+                        publication_status='approved',
                         team=None
                     )
 
