@@ -5,7 +5,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.http import FileResponse, HttpResponse, Http404, HttpResponseForbidden
 from django.conf import settings
 from django.db.models import Q
-from .forms import CustomUserCreationForm, SimulationForm, CampaignTemplateForm, TemplatePartFormSet, CorrespondenceForm, PlasmidForm, FeatureFormSet, CopyPlasmidForm
+from .forms import CustomUserCreationForm, SimulationForm, CampaignTemplateForm, TemplatePartFormSet, CorrespondenceForm, PlasmidForm, FeatureFormSet, CopyPlasmidForm, PlasmidCollectionForm
 from .models import Simulation, CampaignTemplate, Plasmid, Team, User, Correspondence, PlasmidCollection
 import traceback
 import pathlib
@@ -89,7 +89,7 @@ def search_view(request):
             # Invité : Uniquement le contenu public
             tmpl_access = Q(visibility='public')
             sim_access = Q(pk__in=[])
-            
+
             # CORRECTION ICI AUSSI
             col_access = Q(publication_status='approved')
 
@@ -329,7 +329,7 @@ def request_template_publication(request, pk):
     Permet à l'utilisateur de demander la publication d'un template.
     """
     template = get_object_or_404(CampaignTemplate, pk=pk)
-    
+
     # Sécurité : Seul le propriétaire peut demander
     if template.owner != request.user:
         return HttpResponse("Accès refusé.", status=403)
@@ -1240,16 +1240,31 @@ def collections_view(request):
 @login_required
 def collection_create(request):
     if request.method == "POST":
-        collection = PlasmidCollection.objects.create(
-            name=request.POST["name"],
-            description=request.POST.get("description", ""),
-            owner=request.user
-        )
+        form = PlasmidCollectionForm(request.user, request.POST)
 
-        return redirect("plasmid_collection_detail", pk=collection.id)
+        if form.is_valid():
+            collection = form.save(commit=False)
+            collection.owner = request.user
 
-    return render(request, "biolib/collection_create.html")
+            scope = form.cleaned_data.get('scope')
+            new_team_name = form.cleaned_data.get('new_team_name')
 
+            if scope == 'team' and new_team_name:
+                # Création de l'équipe
+                new_team = Team.objects.create(
+                    name=new_team_name,
+                    leader=request.user # Adaptez selon votre modèle (leader/owner)
+                )
+                collection.team = new_team
+
+                new_team.members.add(request.user)
+
+            collection.save()
+            return redirect("plasmid_collection_detail", pk=collection.id)
+    else:
+        form = PlasmidCollectionForm(request.user)
+
+    return render(request, "biolib/collection_create.html", {'form': form})
 
 @login_required
 def collection_detail(request, collection_id):
@@ -1741,40 +1756,35 @@ def choose_team_for_correspondences(request):
 
 # VISUALISATION DE PLASMIDES
 
-
 def plasmid_collection_list(request):
-    if not request.user.is_authenticated:
-        public_collections = PlasmidCollection.objects.filter(
-            publication_status='approved'
-        ).order_by('-id')
 
-        return render(request, 'biolib/plasmid_collection_list.html', {
-            'public_collections': public_collections,
-            'my_collections': [],
-            'team_collections': [],
-            'page_title': "Collections publiques"
-        })
+    my_collections = PlasmidCollection.objects.none()
+    team_collections = PlasmidCollection.objects.none()
 
+    # 2. On remplit les collections privées SEULEMENT si l'utilisateur est connecté
+    if request.user.is_authenticated:
 
-    my_collections = PlasmidCollection.objects.filter(
-        owner=request.user
-    ).distinct().order_by('-id')
+        # Onglet "Personnelles" : Uniquement mes brouillons, pas d'équipe
+        my_collections = PlasmidCollection.objects.filter(
+            owner=request.user,
+            team__isnull=True,          # Exclut les collections d'équipe
+            publication_status='draft'  # Exclut les collections publiques
+        ).order_by('-updated_at')
 
-    team_collections = PlasmidCollection.objects.filter(
-        team__members=request.user
-    ).distinct().order_by('-id')
+        # Onglet "Équipes"
+        team_collections = PlasmidCollection.objects.filter(
+            team__members=request.user
+        ).distinct().order_by('-updated_at')
 
     public_collections = PlasmidCollection.objects.filter(
         publication_status='approved'
-    ).order_by('-id')
+    ).order_by('-updated_at')
 
     return render(request, 'biolib/plasmid_collection_list.html', {
         'my_collections': my_collections,
         'team_collections': team_collections,
         'public_collections': public_collections,
-        'page_title': "Mes Collections"
     })
-
 
 def plasmid_collection_detail(request, pk):
     collection = get_object_or_404(PlasmidCollection, pk=pk)
