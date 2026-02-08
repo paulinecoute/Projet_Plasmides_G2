@@ -82,13 +82,16 @@ def search_view(request):
             sim_access = Q(user=request.user) | Q(visibility='team', team__members=request.user)
 
             # Collections : Mes privées + Mon équipe + Publiques
-            col_access = Q(owner=request.user) | Q(team__members=request.user) | Q(is_public=True)
+            # CORRECTION ICI : on utilise publication_status='approved' au lieu de is_public=True
+            col_access = Q(owner=request.user) | Q(team__members=request.user) | Q(publication_status='approved')
 
         else:
             # Invité : Uniquement le contenu public
             tmpl_access = Q(visibility='public')
             sim_access = Q(pk__in=[])
-            col_access = Q(is_public=True)
+            
+            # CORRECTION ICI AUSSI
+            col_access = Q(publication_status='approved')
 
         # 2. EXÉCUTION DE LA RECHERCHE
 
