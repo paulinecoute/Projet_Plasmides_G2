@@ -100,6 +100,12 @@
                                                     <i class="fas fa-plus-circle"></i> Ajouter à une collection
                                                 </button>
 
+                                            <!-- NOUVEAU : Lien vers la visualisation -->
+                                            <a href="{% url 'visualize_simulation_plasmid' simulation_id=simulation.id filename=filename %}"
+                                            class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i> Visualiser
+                                            </a>
+
                                                 <div class="modal fade text-start" id="saveModal-{{ forloop.counter }}" tabindex="-1" aria-hidden="true">
                                                     <div class="modal-dialog">
                                                         <div class="modal-content">

@@ -15,7 +15,8 @@
             <a href="{% url 'plasmid_edit' plasmid.id %}" class="btn btn-warning">
                 <i class="bi bi-pencil"></i> Modifier les annotations
             </a>
-        {% else %}
+        {% endif %}
+        {% if can_edit and plasmid.id %}
             <a href="{% url 'plasmid_copy' plasmid.id %}" class="btn btn-success">
                 <i class="bi bi-hdd-network"></i> Sauvegarder dans mes collections...
             </a>

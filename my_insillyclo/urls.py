@@ -62,7 +62,10 @@ urlpatterns = [
     path('library/<int:pk>/', views.plasmid_collection_detail, name='plasmid_collection_detail'),
     path('plasmide_visualize/<int:plasmid_id>/', views.plasmid_visualize, name='plasmid_visualize'),
     path('plasmids/<int:pk>/copy/', views.plasmid_copy, name='plasmid_copy'),
-
+    path('simulation/<int:simulation_id>/visualize/<str:filename>/',
+     views.visualize_simulation_plasmid,
+     name='visualize_simulation_plasmid'),
+     
     # simulations
     path('simulation/new/', views.create_simulation, name='create_simulation'),
     path('simulation/<int:pk>/', views.simulation_result, name='simulation_result'),

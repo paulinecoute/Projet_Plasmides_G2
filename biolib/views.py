@@ -1751,7 +1751,6 @@ def plasmid_collection_detail(request, pk):
     })
 
 # visualisation plasmide
-
 def plasmid_visualize(request, plasmid_id):
     plasmid = get_object_or_404(Plasmid, pk=plasmid_id)
 
@@ -1774,6 +1773,28 @@ def plasmid_visualize(request, plasmid_id):
         'plasmid': plasmid,
         'genbank_content': genbank_content,
         'can_edit': can_edit,
+    })
+
+from types import SimpleNamespace
+def visualize_simulation_plasmid(request, simulation_id, filename):
+    # Construit le chemin vers le fichier .gb
+    file_path = os.path.join(settings.MEDIA_ROOT, 'simulations', str(simulation_id), filename)
+
+    # Vérifie si le fichier existe
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Le fichier {filename} n'existe pas pour la simulation {simulation_id}.")
+
+    # Lit le contenu du fichier
+    with open(file_path, 'r') as f:
+        genbank_content = f.read()
+
+    # Crée un objet avec un attribut .id
+    plasmid_obj = SimpleNamespace(id=None, name=filename, identifier=filename, genbank_file=None)
+
+    return render(request, 'biolib/plasmid_visualize.html', {
+        'plasmid': plasmid_obj,
+        'genbank_content': genbank_content,
+        'can_edit': False,  # Désactive les boutons d'édition si nécessaire
     })
 
 @login_required
