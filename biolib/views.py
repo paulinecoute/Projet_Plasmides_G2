@@ -278,8 +278,8 @@ def create_template(request):
                 'enzyme': original.enzyme,
                 'output_separator': original.output_separator,
                 'description': original.description,
-                'visibility': 'private', # Reset visibilité par sécurité
-                'team': None             # Reset équipe
+                'visibility': 'private', 
+                'team': None             
             })
 
             original_parts = original.parts.all().order_by('order')
@@ -1379,6 +1379,27 @@ def plasmid_upload(request, collection_id):
         "next": next_url
     })
 
+def plasmid_collection_detail(request, pk):
+    collection = get_object_or_404(PlasmidCollection, pk=pk)
+
+    is_owner = (request.user == collection.owner)
+
+    is_team_member = False
+    if collection.team:
+        is_team_member = collection.team.members.filter(id=request.user.id).exists()
+
+    if not collection.is_public:
+        if not (is_owner or is_team_member):
+            raise PermissionDenied("Accès refusé : Cette collection est privée.")
+
+    plasmids = collection.plasmids.all()
+
+    return render(request, 'biolib/plasmid_collection_detail.html', {
+        'collection': collection,
+        'plasmids': plasmids,
+        'has_write_access': is_owner or is_team_member
+    })
+
 
 @login_required
 def plasmid_delete(request, plasmid_id):
@@ -1839,26 +1860,6 @@ def plasmid_collection_list(request):
         'public_collections': public_collections,
     })
 
-def plasmid_collection_detail(request, pk):
-    collection = get_object_or_404(PlasmidCollection, pk=pk)
-
-    is_owner = (request.user == collection.owner)
-
-    is_team_member = False
-    if collection.team:
-        is_team_member = collection.team.members.filter(id=request.user.id).exists()
-
-    if not collection.is_public:
-        if not (is_owner or is_team_member):
-            raise PermissionDenied("Accès refusé : Cette collection est privée.")
-
-    plasmids = collection.plasmids.all()
-
-    return render(request, 'biolib/plasmid_collection_detail.html', {
-        'collection': collection,
-        'plasmids': plasmids,
-        'has_write_access': is_owner or is_team_member
-    })
 
 # visualisation plasmide
 
@@ -1979,38 +1980,49 @@ def admin_reject_collection(request, pk):
     return redirect('admin_publication_list')
 
 
+
 def correspondence_list(request):
 
-    if not request.user.is_authenticated:
+    team_id = request.GET.get("team")
+
+    my_tables = Correspondence.objects.none()
+    team_tables = Correspondence.objects.none()
+    public_tables = Correspondence.objects.none()
+
+    if request.user.is_authenticated:
+
+        if team_id:
+            team_tables = Correspondence.objects.filter(
+                team_id=team_id
+            ).order_by('-uploaded_at')
+
+        else:
+            my_tables = Correspondence.objects.filter(
+                owner=request.user,
+                team__isnull=True,
+                publication_status='draft'
+            ).order_by('-uploaded_at')
+
+            team_tables = Correspondence.objects.filter(
+                team__members=request.user
+            ).distinct().order_by('-uploaded_at')
+
+            public_tables = Correspondence.objects.filter(
+                publication_status='approved'
+            ).order_by('-uploaded_at')
+
+    else:
         public_tables = Correspondence.objects.filter(
             publication_status='approved'
-        ).order_by('-id')
+        ).order_by('-uploaded_at')
 
-        return render(request, 'biolib/correspondence_list.html', {
-            'my_tables': [],
-            'team_tables': [],
-            'public_tables': public_tables,
-        })
-
-    my_tables = Correspondence.objects.filter(
-        owner=request.user
-    ).order_by('-id')
-
-    team_tables = Correspondence.objects.filter(
-        team__members=request.user
-    ).exclude(owner=request.user).distinct().order_by('-id')
-
-    public_tables = Correspondence.objects.filter(
-        publication_status='approved'
-    ).order_by('-id')
-
-    context = {
+    return render(request, 'biolib/correspondence_list.html', {
+        'page_title': 'Tables de correspondance',
         'my_tables': my_tables,
         'team_tables': team_tables,
         'public_tables': public_tables,
-    }
-
-    return render(request, 'biolib/correspondence_list.html', context)
+        'filtered_team_id': team_id,
+    })
 
 
 @login_required
@@ -2129,12 +2141,17 @@ def admin_reject_correspondence(request, pk):
         table.admin_feedback = reason
         table.save()
     return redirect('admin_publication_list')
+
+
 def correspondence_create(request):
     if request.method == 'POST':
         form = CorrespondenceForm(request.user, request.POST, request.FILES)
         if form.is_valid():
             table = form.save(commit=False)
             table.owner = request.user
+
+            table.publication_status = 'draft'
+
             table.save()
             return redirect('correspondence_list')
     else:
@@ -2143,17 +2160,14 @@ def correspondence_create(request):
     return render(request, 'biolib/correspondence_form.html', {'form': form})
 
 
-# --- AJOUTS POUR LA GESTION ADMIN DES TEMPLATES ---
-
 @staff_member_required
 def admin_approve_template(request, pk):
     template = get_object_or_404(CampaignTemplate, pk=pk)
     if request.method == 'POST':
-        # On valide : ça devient Public
         template.visibility = 'public'
-        template.is_public = True # Pour compatibilité avec l'ancien champ si utilisé
-        template.publication_requested = False # La demande est traitée
-        template.admin_feedback = "" # On nettoie les vieux messages
+        template.is_public = True 
+        template.publication_requested = False 
+        template.admin_feedback = "" 
         template.save()
         messages.success(request, f"Le template '{template.name}' est maintenant PUBLIC.")
     return redirect('admin_publication_list')
