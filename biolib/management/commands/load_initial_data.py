@@ -2,10 +2,10 @@ import os
 from django.core.management.base import BaseCommand
 from django.conf import settings
 from django.core.files import File
-from biolib.models import User, CampaignTemplate, TemplatePart, PublicCampaign
+from biolib.models import User, CampaignTemplate, TemplatePart, PublicCampaign, Correspondence
 
 class Command(BaseCommand):
-    help = 'Crée le Template_Example et charge UNIQUEMENT Campaign_Venus et Campaign_display_L1'
+    help = 'Initialise : Template_Example, Campagnes Publiques (Venus, L1) et Tables de Correspondance (iP_mapping)'
 
     def handle(self, *args, **kwargs):
         self.stdout.write("--- Démarrage de l'initialisation ---")
@@ -13,13 +13,18 @@ class Command(BaseCommand):
         # 1. Récupération de l'Admin (Propriétaire)
         admin_user = User.objects.filter(is_superuser=True).first()
         if not admin_user:
-            self.stdout.write(self.style.ERROR("ERREUR : Aucun administrateur trouvé."))
+            self.stdout.write(self.style.ERROR("ERREUR : Aucun administrateur trouvé. Créez un superuser d'abord."))
+            return
+
+        data_dir = os.path.join(settings.BASE_DIR, 'data_web')
+        if not os.path.exists(data_dir):
+            self.stdout.write(self.style.WARNING(" > Dossier 'data_web' introuvable."))
             return
 
         # ==================================================================
         # ETAPE 1 : CRÉATION DU "Template_Example" (Manuel, 3 inputs)
         # ==================================================================
-        self.stdout.write(" > Création du Template_Example...")
+        self.stdout.write(" > 1. Création du Template_Example...")
 
         CampaignTemplate.objects.filter(name="Template_Example", owner=admin_user).delete()
 
@@ -44,51 +49,80 @@ class Command(BaseCommand):
                 is_separable=False
             )
 
-        self.stdout.write(self.style.SUCCESS(f"   [OK] Template 'Template_Example' créé."))
+        self.stdout.write(self.style.SUCCESS(f"   [OK] Template créé."))
 
 
         # ==================================================================
-        # ETAPE 2 : CHARGEMENT DES 2 CAMPAGNES CIBLES
+        # ETAPE 2 : CHARGEMENT DES CAMPAGNES PUBLIQUES (Excel)
         # ==================================================================
+        self.stdout.write(" > 2. Chargement des Campagnes Publiques...")
         
-        data_dir = os.path.join(settings.BASE_DIR, 'data_web')
-        
-        # LISTE STRICTE DES FICHIERS À IMPORTER
-        target_files = [
+        target_campaigns = [
             'Campaign_Venus.xlsx',
             'Campaign_display_L1.xlsx'
         ]
 
-        if os.path.exists(data_dir):
-            self.stdout.write(" > Chargement des fichiers spécifiques dans 'Campagnes Publiques'...")
+        for filename in target_campaigns:
+            file_path = os.path.join(data_dir, filename)
             
-            for filename in target_files:
-                file_path = os.path.join(data_dir, filename)
-                
-                if os.path.exists(file_path):
-                    try:
-                        # 1. Nettoyage si existe déjà
-                        PublicCampaign.objects.filter(name=filename).delete()
+            if os.path.exists(file_path):
+                try:
+                    PublicCampaign.objects.filter(name=filename).delete()
 
-                        # 2. Création
-                        campaign = PublicCampaign(
-                            name=filename,
-                            description=f"Fichier exemple : {filename}",
-                            uploaded_by=admin_user
-                        )
+                    campaign = PublicCampaign(
+                        name=filename,
+                        description=f"Fichier exemple : {filename}",
+                        uploaded_by=admin_user
+                    )
 
-                        # 3. Attachement fichier
-                        with open(file_path, 'rb') as f:
-                            campaign.file.save(filename, File(f), save=True)
-                        
-                        self.stdout.write(f"   + Campagne ajoutée : {filename}")
+                    with open(file_path, 'rb') as f:
+                        campaign.file.save(filename, File(f), save=True)
+                    
+                    self.stdout.write(f"   + Campagne ajoutée : {filename}")
 
-                    except Exception as e:
-                        self.stdout.write(self.style.ERROR(f"   ! Erreur sur {filename}: {e}"))
-                else:
-                    self.stdout.write(self.style.WARNING(f"   ! Fichier introuvable dans data_web : {filename}"))
+                except Exception as e:
+                    self.stdout.write(self.style.ERROR(f"   ! Erreur sur {filename}: {e}"))
+            else:
+                self.stdout.write(self.style.WARNING(f"   ! Fichier introuvable : {filename}"))
 
-            self.stdout.write(self.style.SUCCESS(f"--- TERMINE ---"))
-        
-        else:
-            self.stdout.write(self.style.WARNING(" > Dossier 'data_web' introuvable."))
+
+        # ==================================================================
+        # ETAPE 3 : CHARGEMENT DES TABLES DE CORRESPONDANCE (CSV)
+        # ==================================================================
+        self.stdout.write(" > 3. Chargement des Tables de Correspondance Publiques...")
+
+        target_mappings = [
+            'iP_mapping_typed.csv',
+            'iP_mapping_Simple.csv'
+        ]
+
+        for filename in target_mappings:
+            file_path = os.path.join(data_dir, filename)
+
+            if os.path.exists(file_path):
+                try:
+                    # Nettoyage préalable (pour éviter les doublons si on relance le script)
+                    Correspondence.objects.filter(name=filename, owner=admin_user).delete()
+
+                    # Création de l'objet Correspondence
+                    # On le met directement en 'approved' pour qu'il soit public
+                    mapping = Correspondence(
+                        name=filename,
+                        description=f"Table de mapping publique importée ({filename})",
+                        owner=admin_user,
+                        publication_status='approved',  # <--- Rends le fichier Public immédiatement
+                        team=None
+                    )
+
+                    # Attachement du fichier
+                    with open(file_path, 'rb') as f:
+                        mapping.file.save(filename, File(f), save=True)
+
+                    self.stdout.write(f"   + Table ajoutée : {filename}")
+
+                except Exception as e:
+                    self.stdout.write(self.style.ERROR(f"   ! Erreur sur {filename}: {e}"))
+            else:
+                self.stdout.write(self.style.WARNING(f"   ! Fichier introuvable : {filename}"))
+
+        self.stdout.write(self.style.SUCCESS(f"--- INITIALISATION TERMINÉE ---"))
