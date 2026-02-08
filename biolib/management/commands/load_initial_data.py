@@ -6,12 +6,11 @@ from django.core.files import File
 from biolib.models import Plasmid, PlasmidCollection, User, CampaignTemplate, TemplatePart
 
 class Command(BaseCommand):
-    help = 'Charge les plasmides et les templates récursivement et PARSE les fichiers Excel'
+    help = 'Import robuste : Recherche automatique des coordonnées dans le fichier Excel'
 
     def handle(self, *args, **kwargs):
         data_dir = os.path.join(settings.BASE_DIR, 'data_web')
-
-        self.stdout.write("--- Démarrage de l'import Intelligent (Correctif Colonnes) ---")
+        self.stdout.write("--- Démarrage de l'import 'Smart Search' ---")
 
         if not os.path.exists(data_dir):
             self.stdout.write(self.style.ERROR(f"ERREUR : '{data_dir}' n'existe pas !"))
@@ -28,7 +27,7 @@ class Command(BaseCommand):
         for root, dirs, files in os.walk(data_dir):
             folder_name = os.path.basename(root)
 
-            # --- 1. GESTION DE LA COLLECTION ---
+            # 1. Collection
             collection = None
             if folder_name != 'data_web':
                 collection_name = f"Collection {folder_name}"
@@ -36,12 +35,8 @@ class Command(BaseCommand):
                     name=collection_name,
                     defaults={'owner': admin_user, 'publication_status': 'approved'}
                 )
-                if created:
-                    self.stdout.write(self.style.SUCCESS(f" > Collection créée : {collection_name}"))
-            else:
-                self.stdout.write(f" > Racine '{folder_name}' : Pas de collection créée.")
 
-            # --- 2. TRAITEMENT DES FICHIERS ---
+            # 2. Fichiers
             valid_files = [f for f in files if f.lower().endswith(('.gb', '.dna', '.fasta', '.xlsx'))]
             
             for filename in valid_files:
@@ -49,14 +44,11 @@ class Command(BaseCommand):
                 identifier = os.path.splitext(filename)[0]
 
                 # ==========================================================
-                # BRANCHE A : TEMPLATE EXCEL (.xlsx)
+                # TRAITEMENT TEMPLATE (.xlsx)
                 # ==========================================================
                 if filename.lower().endswith('.xlsx'):
                     try:
                         template = CampaignTemplate.objects.filter(name=identifier, owner=admin_user).first()
-                        
-                        action_tpl = "Updated" if template else "Created"
-                        
                         if not template:
                             template = CampaignTemplate(
                                 name=identifier,
@@ -66,57 +58,68 @@ class Command(BaseCommand):
                                 is_public=True
                             )
                         else:
-                            # On force le nettoyage de la description pour les anciens
                             template.description = ""
 
-                        # Sauvegarde physique
                         with open(file_path, 'rb') as f_byte:
                             template.file.save(filename, File(f_byte), save=True)
 
-                        # -----------------------------------------------------------
-                        # PARSING EXCEL (CORRIGÉ)
-                        # -----------------------------------------------------------
+                        # --- PARSING INTELLIGENT ---
                         wb = openpyxl.load_workbook(file_path, data_only=True)
                         ws = wb.active
 
-                        # Métadonnées
+                        # 1. Lire Enzyme/Séparateur (Positions fixes généralement)
                         enzyme_val = ws['B2'].value
                         separator_val = ws['B4'].value
-
-                        if enzyme_val:
-                            template.enzyme = str(enzyme_val).strip()
-                        if separator_val:
-                            template.output_separator = str(separator_val).strip()
-                        
+                        if enzyme_val: template.enzyme = str(enzyme_val).strip()
+                        if separator_val: template.output_separator = str(separator_val).strip()
                         template.save()
 
-                        # On vide les anciennes parties
-                        template.parts.all().delete()
+                        # 2. TROUVER L'ORIGINE DU TABLEAU
+                        # On cherche "Part name ->" pour savoir où ça commence
+                        start_row = 9  # Fallback
+                        start_col = 3  # Fallback (Colonne C)
+                        found_anchor = False
 
-                        # --- CORRECTION ICI : ON COMMENCE COLONNE 3 (C) ---
-                        # Col A = Titre section
-                        # Col B = Libellés ("Part name ->")
-                        # Col C = Première donnée ("Input Plasmid 1")
-                        col_idx = 3 
+                        # On scanne les 20 premières lignes et 5 premières colonnes
+                        for r in range(1, 20):
+                            for c in range(1, 6):
+                                cell_val = str(ws.cell(row=r, column=c).value).strip()
+                                if "Part name" in cell_val and "->" in cell_val:
+                                    start_row = r
+                                    start_col = c + 1 # La donnée commence juste après le label
+                                    found_anchor = True
+                                    self.stdout.write(f"   > Ancre trouvée en Ligne {r}, Colonne {c}. Données en Col {start_col}")
+                                    break
+                            if found_anchor: break
+                        
+                        if not found_anchor:
+                            self.stdout.write(self.style.WARNING(f"   ! Attention : 'Part name ->' non trouvé dans {filename}. Tentative en 9,3."))
+
+                        # 3. LECTURE DES DONNÉES
+                        template.parts.all().delete()
+                        
+                        # Les lignes sont relatives à start_row
+                        row_name = start_row
+                        row_type = start_row + 1
+                        row_opt = start_row + 2
+                        row_incl = start_row + 3
+
+                        col_idx = start_col
                         order_counter = 1
 
                         while True:
-                            # Ligne 9 : Nom de la partie
-                            part_name = ws.cell(row=9, column=col_idx).value
+                            part_name = ws.cell(row=row_name, column=col_idx).value
 
-                            # Arrêt si vide ou si on tombe sur la section Output (souvent en bas)
+                            # Condition d'arrêt
                             if not part_name or str(part_name).strip() == "" or "output" in str(part_name).lower():
                                 break
 
-                            # Ligne 10 : Type
-                            part_type = ws.cell(row=10, column=col_idx).value or "1"
+                            part_type = ws.cell(row=row_type, column=col_idx).value or "1"
                             
-                            # Ligne 11 : Optionnel ?
-                            val_opt = str(ws.cell(row=11, column=col_idx).value).lower()
+                            val_opt = str(ws.cell(row=row_opt, column=col_idx).value).lower()
                             is_mandatory = False if val_opt == 'true' else True
 
-                            # Ligne 12 : Inclus dans le nom ?
-                            val_inc = str(ws.cell(row=12, column=col_idx).value).lower()
+                            val_inc = str(ws.cell(row=row_incl, column=col_idx).value).lower()
                             include_in_output = True if val_inc == 'true' else False
 
                             TemplatePart.objects.create(
@@ -132,51 +135,39 @@ class Command(BaseCommand):
                             order_counter += 1
 
                         count_templates += 1
-                        self.stdout.write(f"   # Template {action_tpl} : {filename} ({order_counter-1} parties)")
+                        self.stdout.write(f"   # Template OK : {filename} ({order_counter-1} parties)")
 
                     except Exception as e:
                          self.stdout.write(self.style.ERROR(f"Erreur Template {filename}: {e}"))
-                    
                     continue
 
                 # ==========================================================
-                # BRANCHE B : PLASMIDE
+                # TRAITEMENT PLASMIDE
                 # ==========================================================
                 try:
+                    # Lecture séquentielle pour éviter de laisser des fichiers ouverts
+                    content_seq = ""
                     with open(file_path, 'r', encoding='utf-8', errors='ignore') as f_read:
                         content_seq = f_read.read()
 
                     plasmid = Plasmid.objects.filter(identifier=identifier).first()
+                    action = "Updated" if plasmid else "Created"
 
-                    if plasmid:
-                        action = "Updated"
-                        plasmid.name = identifier
-                        plasmid.sequence = content_seq[:200] + "..."
-                    else:
-                        action = "Created"
-                        plasmid = Plasmid(
-                            identifier=identifier,
-                            name=identifier,
-                            sequence=content_seq[:200] + "..."
-                        )
-
+                    if not plasmid:
+                        plasmid = Plasmid(identifier=identifier, name=identifier)
+                    
+                    plasmid.sequence = content_seq[:200] + "..."
+                    
                     with open(file_path, 'rb') as f_byte:
                         plasmid.genbank_file.save(filename, File(f_byte), save=True)
 
                     if collection:
                         plasmid.collections.add(collection)
-                        collection_msg = f"(dans {collection.name})"
-                    else:
-                        collection_msg = "(Sans collection)"
 
-                    if action == "Created":
-                        count_plasmids += 1
-                        self.stdout.write(f"   + Plasmide {filename} {collection_msg}")
-                    else:
-                        count_plasmids += 1
-                        self.stdout.write(f"   ~ Plasmide {filename} {collection_msg}")
+                    count_plasmids += 1
+                    self.stdout.write(f"   + Plasmide {action} : {filename}")
 
                 except Exception as e:
                     self.stdout.write(self.style.ERROR(f"Erreur Plasmide {filename}: {e}"))
 
-        self.stdout.write(self.style.SUCCESS(f"--- FINI : {count_plasmids} plasmides, {count_templates} templates parsés ---"))
+        self.stdout.write(self.style.SUCCESS(f"--- TERMINE : {count_plasmids} plasmides, {count_templates} templates ---"))
