@@ -3,98 +3,56 @@
 {% block title %}Collections · {{ team.name }}{% endblock %}
 
 {% block content %}
-<style>
-  :root { --bg-main: #fcfcfc; --border-color: #eee; }
-  .content-wrapper { max-width: 850px; margin: 0 auto; padding-bottom: 100px; }
-  
-  /* Header & Back */
-  .btn-back-square { width: 42px; height: 42px; background: #fff; border: 1px solid var(--border-color); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #000; transition: 0.2s; text-decoration: none; margin-bottom: 25px; }
-  .btn-back-square:hover { border-color: #000; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-
-  .page-header { margin-bottom: 40px; }
-  .page-title { font-weight: 900; font-size: 2.8rem; letter-spacing: -0.06em; color: #000; }
-  .team-tag { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #2563eb; background: #eff6ff; padding: 4px 12px; border-radius: 20px; display: inline-block; margin-bottom: 10px; }
-
-  /* Vertical List Styling */
-  .collection-list-container { display: flex; flex-direction: column; gap: 12px; }
-  
-  .collection-row {
-    background: #fff;
-    border: 1px solid var(--border-color);
-    border-radius: 18px;
-    padding: 20px 25px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    text-decoration: none;
-    color: inherit;
-    transition: 0.2s;
-  }
-  .collection-row:hover {
-    border-color: #000;
-    transform: translateX(5px);
-    box-shadow: 0 5px 20px rgba(0,0,0,0.03);
-  }
-
-  .c-info-box { display: flex; align-items: center; gap: 20px; }
-  .c-icon-circle { width: 45px; height: 45px; background: #f8f8f8; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: #000; border: 1px solid #eee; }
-  
-  .c-text-main { display: flex; flex-direction: column; }
-  .c-name { font-weight: 800; font-size: 1.15rem; color: #000; margin-bottom: 2px; }
-  .c-owner-email { font-size: 0.85rem; color: #888; font-weight: 500; }
-
-  /* Action Button */
-  .btn-create-list {
-    background: #000; color: #fff; border-radius: 14px; padding: 10px 20px;
-    font-weight: 700; font-size: 0.9rem; text-decoration: none; transition: 0.2s;
-    display: inline-flex; align-items: center; gap: 8px; border: none;
-  }
-  .btn-create-list:hover { background: #333; color: #fff; }
-
-  .arrow-indicator { color: #ddd; font-size: 1.2rem; transition: 0.2s; }
-  .collection-row:hover .arrow-indicator { color: #000; transform: translateX(3px); }
-</style>
-
-<div class="container mt-5">
-  <div class="content-wrapper">
+<div class="container py-5">
+  <div class="mx-auto" style="max-width: 850px;">
     
-    <a href="{{ next|default:request.META.HTTP_REFERER|default:request.path }}" class="btn-back-square shadow-sm">
-      <i class="bi bi-arrow-left"></i>
-    </a>
-    <div class="page-header d-flex justify-content-between align-items-center">
+    <div class="mb-4">
+      <a href="{{ next|default:request.META.HTTP_REFERER|default:'/' }}" class="btn btn-outline-secondary btn-sm rounded-3">
+        <i class="bi bi-arrow-left me-1"></i> Retour
+      </a>
+    </div>
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-5">
       <div>
-        <span class="team-tag">{{ team.name }}</span>
-        <h1 class="page-title">Collections</h1>
+        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-2 mb-2 text-uppercase fw-bold" style="font-size: 0.7rem;">
+          <i class="bi bi-people-fill me-1"></i> {{ team.name }}
+        </span>
+        <h1 class="display-5 fw-bold text-dark mb-0">Collections</h1>
       </div>
       
       {% if is_leader %}
-        <a href="{% url 'team_collection_create' team.id %}" class="btn-create-list shadow-sm">
-          <i class="bi bi-plus-lg"></i> Ajouter
+        <a href="{% url 'team_collection_create' team.id %}" class="btn btn-primary btn-lg rounded-pill px-4 fw-bold shadow-sm">
+          <i class="bi bi-plus-lg me-1"></i> Ajouter
         </a>
       {% endif %}
     </div>
 
-    <div class="collection-list-container">
+    <div class="row g-3">
       {% for collection in collections %}
-        <a href="{% url 'team_collection_detail' team.id collection.id %}" class="collection-row shadow-sm">
-          <div class="c-info-box">
-            <div class="c-icon-circle">
-              <i class="bi bi-folder2"></i>
+        <div class="col-12">
+          <a href="{% url 'team_collection_detail' team.id collection.id %}" class="card border-0 shadow-sm rounded-4 text-decoration-none list-group-item-action p-4">
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="d-flex align-items-center gap-3">
+                <div class="bg-light text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                  <i class="bi bi-folder2-open fs-4"></i>
+                </div>
+                <div>
+                  <h5 class="fw-bold text-dark mb-1">{{ collection.name }}</h5>
+                  <div class="text-muted small fw-medium">
+                    <i class="bi bi-person me-1"></i> {{ collection.owner.email }}
+                  </div>
+                </div>
+              </div>
+              
+              <i class="bi bi-chevron-right text-muted fs-5"></i>
             </div>
-            <div class="c-text-main">
-              <span class="c-name">{{ collection.name }}</span>
-              <span class="c-owner-email">{{ collection.owner.email }}</span>
-            </div>
-          </div>
-          
-          <div class="arrow-indicator">
-            <i class="bi bi-chevron-right"></i>
-          </div>
-        </a>
+          </a>
+        </div>
       {% empty %}
-        <div class="text-center py-5" style="border: 2px dashed #eee; border-radius: 20px; background: #fff;">
-          <i class="bi bi-inbox text-muted fs-2 mb-2 d-block"></i>
-          <p class="text-muted small mb-0">Aucune collection dans cette équipe.</p>
+        <div class="col-12 text-center py-5 bg-white rounded-4 border border-dashed shadow-sm">
+          <i class="bi bi-inbox text-muted opacity-25 display-1 mb-3 d-block"></i>
+          <h5 class="fw-bold text-dark">L'archive est vide</h5>
+          <p class="text-muted small mb-0">Aucune collection n'a encore été partagée avec l'équipe {{ team.name }}.</p>
         </div>
       {% endfor %}
     </div>

@@ -5,8 +5,8 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.http import FileResponse, HttpResponse, Http404, HttpResponseForbidden
 from django.conf import settings
 from django.db.models import Q
-from .forms import CustomUserCreationForm, SimulationForm, CampaignTemplateForm, TemplatePartFormSet, CorrespondenceForm, PlasmidForm, FeatureFormSet, CopyPlasmidForm
-from .models import Simulation, CampaignTemplate, Plasmid, Team, User, Correspondence, PlasmidCollection
+from .forms import CustomUserCreationForm, SimulationForm, CampaignTemplateForm, TemplatePartFormSet, CorrespondenceForm, PlasmidForm, FeatureFormSet, CopyPlasmidForm, PlasmidCollectionForm, PublicCampaignForm
+from .models import Simulation, CampaignTemplate, Plasmid, Team, User, Correspondence, PlasmidCollection, PublicCampaign
 import traceback
 import pathlib
 import glob
@@ -63,7 +63,7 @@ def home(request):
 
 def search_view(request):
     """
-    Moteur de recherche global (Templates, Simulations, Collections, Plasmides + Séquences)
+    Moteur de recherche global
     """
     query = request.GET.get('q', '')
 
@@ -73,45 +73,57 @@ def search_view(request):
     collections = PlasmidCollection.objects.none()
 
     if query:
-        # 1. DÉFINITION DES DROITS D'ACCÈS
+        # DÉFINITION DES FILTRES D'ACCÈS (Q Objects)
+
         if request.user.is_authenticated:
-            # Templates : Mes privés + Mon équipe + Publics
-            tmpl_access = Q(owner=request.user) | Q(visibility='team', team__members=request.user) | Q(visibility='public')
+            # 1. Collections : Mes privées + Mon équipe + Publiques
+            col_access = Q(owner=request.user) | \
+                         Q(team__members=request.user) | \
+                         Q(publication_status='approved')
 
-            # Simulations : Mes privées + Mon équipe
-            sim_access = Q(user=request.user) | Q(visibility='team', team__members=request.user)
+            # 2. Plasmids : Contenus dans des collections accessibles
+            plasmid_access = Q(collections__owner=request.user) | \
+                             Q(collections__team__members=request.user) | \
+                             Q(collections__publication_status='approved')
 
-            # Collections : Mes privées + Mon équipe + Publiques
-            col_access = Q(owner=request.user) | Q(team__members=request.user) | Q(is_public=True)
+            # 3. Templates : Mes privés + Mon équipe + Publics
+            tmpl_access = Q(owner=request.user) | \
+                          Q(visibility='team', team__members=request.user) | \
+                          Q(visibility='public')
+
+            # 4. Simulations : Mes privées + Mon équipe
+            sim_access = Q(user=request.user) | \
+                         Q(visibility='team', team__members=request.user)
 
         else:
             # Invité : Uniquement le contenu public
+            col_access = Q(publication_status='approved')
+            plasmid_access = Q(collections__publication_status='approved')
             tmpl_access = Q(visibility='public')
-            sim_access = Q(pk__in=[])
-            col_access = Q(is_public=True)
+            sim_access = Q(pk__in=[]) # Aucune simulation accessible
 
         # 2. EXÉCUTION DE LA RECHERCHE
 
-        # Templates (Nom ou Description)
+        # Templates
         templates = CampaignTemplate.objects.filter(tmpl_access).filter(
             Q(name__icontains=query) | Q(description__icontains=query)
         ).distinct()
 
-        # Simulations (Nom) - Seulement si connecté pour l'instant
+        # Simulations
+        # Note: Même si sim_access est défini pour un invité (vide), 
+        # on garde le check is_authenticated par sécurité pour éviter des requêtes inutiles.
         if request.user.is_authenticated:
             simulations = Simulation.objects.filter(sim_access).filter(
                 name__icontains=query
             ).distinct()
 
-        # Collections (Nom)
+        # Collections
         collections = PlasmidCollection.objects.filter(col_access).filter(
             name__icontains=query
         ).distinct()
 
-        # Plasmides (Nom, ID, OU SÉQUENCE ADN)
-        # On ne cherche que dans les collections accessibles
-        accessible_col_ids = PlasmidCollection.objects.filter(col_access).values_list('id', flat=True)
-        plasmids = Plasmid.objects.filter(collections__id__in=accessible_col_ids).filter(
+        # Plasmids
+        plasmids = Plasmid.objects.filter(plasmid_access).filter(
             Q(name__icontains=query) |
             Q(identifier__icontains=query) |
             Q(sequence__icontains=query)
@@ -138,15 +150,38 @@ def signup(request):
 
 @login_required
 def dashboard(request):
-    collections_count = PlasmidCollection.objects.filter(owner=request.user).count()
-    correspondences_count = Correspondence.objects.filter(owner=request.user).count()
-    teams_count = request.user.teams.count()
+    user = request.user
+
+    collections_count = PlasmidCollection.objects.filter(owner=user).count()
+    collections_team_count = PlasmidCollection.objects.filter(
+        team__members=user
+    ).exclude(owner=user).count()
+
+    teams_count = user.teams.count()
+
+    productions_count = Simulation.objects.filter(user=user).count()
+    productions_team_count = Simulation.objects.filter(
+        visibility='team',
+        team__members=user
+    ).exclude(user=user).distinct().count()
+
+    templates_count = CampaignTemplate.objects.filter(owner=user).count()
+    templates_team_count = CampaignTemplate.objects.filter(
+        visibility='team',
+        team__members=user
+    ).exclude(owner=user).distinct().count()
 
     return render(request, "biolib/dashboard.html", {
         "collections_count": collections_count,
-        "correspondences_count": correspondences_count,
+        "collections_team_count": collections_team_count,
         "teams_count": teams_count,
+        "productions_count": productions_count,
+        "productions_team_count": productions_team_count,
+        "templates_count": templates_count,
+        "templates_team_count": templates_team_count,
     })
+
+
 
 # ==============================================================================
 # 2. GESTION DES TEMPLATES
@@ -303,7 +338,7 @@ def request_template_publication(request, pk):
     Permet à l'utilisateur de demander la publication d'un template.
     """
     template = get_object_or_404(CampaignTemplate, pk=pk)
-    
+
     # Sécurité : Seul le propriétaire peut demander
     if template.owner != request.user:
         return HttpResponse("Accès refusé.", status=403)
@@ -417,10 +452,17 @@ def simulation_list(request):
         simulations = source_qs.order_by('-date_run')
         title = "Mes simulations"
 
+    # --- AJOUT POUR LES CAMPAGNES PUBLIQUES ---
+    public_campaigns = PublicCampaign.objects.all().order_by('-uploaded_at')
+    campaign_form = PublicCampaignForm() if request.user.is_staff else None
+    # ------------------------------------------
+
     return render(request, 'biolib/simulation_list.html', {
         'simulations': simulations,
         'current_view': view_type,
-        'page_title': title
+        'page_title': title,
+        'public_campaigns': public_campaigns, # Nouvelle variable
+        'campaign_form': campaign_form,       # Nouvelle variable
     })
 
 def create_simulation(request):
@@ -597,7 +639,7 @@ def create_simulation(request):
 
                 # Petit message bonus pour confirmer que les plasmides des collections sélectionnées sont inclus
                 if not simulation.zip_file and len(raw_paths_list) > 0:
-                     messages.success(request, f"Collection créée par fusion des {len(raw_paths_list)} plasmides sélectionnés.")
+                      messages.success(request, f"Collection créée par fusion des {len(raw_paths_list)} plasmides sélectionnés.")
 
 
             staging_dir = os.path.join(output_folder, 'staging_plasmids')
@@ -1091,28 +1133,27 @@ def team_delete(request, team_id):
         return render(request, 'biolib/team_confirm_delete.html', {'team': team})
     return HttpResponse("Accès refusé", status=403)
 
+
 @login_required
 def team_list(request):
     teams = Team.objects.filter(members=request.user)
 
     for team in teams:
         team.members_count = team.members.count()
-
         team.collections_count = team.plasmidcollection_set.count()
+        team.tables_count = team.correspondence_set.count()
+        team.campaigns_count = team.simulations.count()
+        team.templates_count = team.templates.count()
 
-        team.plasmids_count = Plasmid.objects.filter(collections__team=team).distinct().count()
-
-        team.simulations_count = team.simulations.count()
-
-    context = {
+    return render(request, 'biolib/teams.html', {
         'teams': teams,
-    }
+    })
 
-    return render(request, 'biolib/teams.html', context)
 
 # ============================================================
 # COLLECTIONS UTILISATEUR (équipe)
 # ============================================================
+
 
 @login_required
 def team_collections(request, team_id):
@@ -1182,6 +1223,7 @@ def team_collection_create(request, team_id):
         "members": team.members.all()
     })
 
+
 @login_required
 def choose_team_for_plasmids(request):
     teams = request.user.teams.all()
@@ -1209,21 +1251,53 @@ def collections_view(request):
     )
     return render(request, "biolib/collections.html", {"collections": collections})
 
+@login_required
+def collection_update(request, pk):
+    collection = get_object_or_404(PlasmidCollection, pk=pk)
 
+
+    is_team_member = collection.team and request.user in collection.team.members.all()
+
+    if collection.owner != request.user and not is_team_member:
+        raise PermissionDenied("Vous n'avez pas le droit de modifier cette collection.")
+    if request.method == "POST":
+        form = PlasmidCollectionForm(request.user, request.POST, instance=collection)
+        if form.is_valid():
+            form.save()
+            return redirect('plasmid_collection_detail', pk=collection.pk)
+    else:
+        form = PlasmidCollectionForm(request.user, instance=collection)
+
+    return render(request, 'biolib/collection_create.html', {'form': form})
 
 @login_required
 def collection_create(request):
     if request.method == "POST":
-        collection = PlasmidCollection.objects.create(
-            name=request.POST["name"],
-            description=request.POST.get("description", ""),
-            owner=request.user
-        )
+        form = PlasmidCollectionForm(request.user, request.POST)
 
-        return redirect("plasmid_collection_detail", pk=collection.id)
+        if form.is_valid():
+            collection = form.save(commit=False)
+            collection.owner = request.user
 
-    return render(request, "biolib/collection_create.html")
+            scope = form.cleaned_data.get('scope')
+            new_team_name = form.cleaned_data.get('new_team_name')
 
+            if scope == 'team' and new_team_name:
+                # Création de l'équipe
+                new_team = Team.objects.create(
+                    name=new_team_name,
+                    leader=request.user # Adaptez selon votre modèle (leader/owner)
+                )
+                collection.team = new_team
+
+                new_team.members.add(request.user)
+
+            collection.save()
+            return redirect("plasmid_collection_detail", pk=collection.id)
+    else:
+        form = PlasmidCollectionForm(request.user)
+
+    return render(request, "biolib/collection_create.html", {'form': form})
 
 @login_required
 def collection_detail(request, collection_id):
@@ -1242,10 +1316,18 @@ def collection_detail(request, collection_id):
 def plasmid_upload(request, collection_id):
     collection = get_object_or_404(
         PlasmidCollection,
-        id=collection_id,
-        owner=request.user,
-        publication_status='draft'
+        pk=collection_id
     )
+
+    is_owner = collection.owner == request.user
+    is_team_member = collection.team and request.user in collection.team.members.all()
+
+    if not (is_owner or is_team_member):
+        raise PermissionDenied("Vous n'avez pas le droit d'ajouter des fichiers ici.")
+
+    # On empêche l'upload si la collection est déjà validée/publique
+    if collection.publication_status == 'approved':
+        raise PermissionDenied("Cette collection est publiée et verrouillée.")
 
     next_url = request.GET.get("next")
 
@@ -1303,87 +1385,120 @@ def plasmid_delete(request, plasmid_id):
     plasmid = get_object_or_404(
         Plasmid,
         id=plasmid_id,
-        collections__owner=request.user
     )
 
     collection = plasmid.collections
 
+    has_rights = plasmid.collections.filter(
+        Q(owner=request.user) |
+        Q(team__members=request.user)
+    ).exists()
+
+    if not has_rights:
+        raise PermissionDenied("Vous n'avez pas les droits sur ce plasmide.")
+
     if request.method == "POST":
+        # On récupère l'URL précédente pour savoir où rediriger après suppression
         next_url = request.POST.get("next")
+
+        # Suppression définitive
         plasmid.delete()
+
+        messages.success(request, "Plasmide supprimé définitivement.")
+
+        # Si on sait d'où on vient, on y retourne
         if next_url and next_url != "None":
             return redirect(next_url)
 
-        return redirect("plasmid_collection_detail", pk=collection.id)
+        # Sinon, redirection par défaut vers la liste des collections
+        return redirect("plasmid_collection_list")
 
-    return redirect("plasmid_collection_detail", pk=collection.id)
+    # Si on arrive ici en GET (par erreur), on renvoie vers la liste
+    return redirect("plasmid_collection_list")
 
 @login_required
 def remove_plasmid_from_collection(request, collection_id, plasmid_id):
-    # On récupère la collection
-    collection = get_object_or_404(PlasmidCollection, id=collection_id, owner=request.user)
+    collection = get_object_or_404(PlasmidCollection, pk=collection_id)
+    plasmid = get_object_or_404(Plasmid, pk=plasmid_id)
 
-    plasmid = get_object_or_404(Plasmid, id=plasmid_id)
+    is_owner = collection.owner == request.user
+    is_team_member = collection.team and request.user in collection.team.members.all()
 
-    # ON LE DÉTACHE (On coupe le lien sans supprimer l'objet)
-    collection.plasmids.remove(plasmid)
+    if not (is_owner or is_team_member):
+         raise PermissionDenied("Droit insuffisant pour modifier le contenu de cette collection.")
 
-    messages.success(request, f"Le plasmide '{plasmid.name}' a été retiré de la collection.")
+    # On compte dans combien de collections ce plasmide est présent
+    count = plasmid.collections.count()
+
+    if count <= 1:
+        #Le plasmide n'est QUE dans cette collection (ou aucune autre).
+        name_backup = plasmid.identifier
+        plasmid.delete()
+        messages.warning(request, f"Le plasmide '{name_backup}' a été supprimé définitivement car il n'était plus utilisé ailleurs.")
+
+    else:
+        collection.plasmids.remove(plasmid)
+        remaining = count - 1
+        messages.info(request, f"Le plasmide '{plasmid.identifier}' a été retiré de ce dossier. Il reste disponible dans {remaining} autre(s) collection(s).")
+
     return redirect('plasmid_collection_detail', pk=collection.id)
 
 @login_required
-def collection_delete(request, collection_id):
-    collection = get_object_or_404(
-        PlasmidCollection,
-        id=collection_id,
-        owner=request.user
-    )
-
-    if request.method == "POST":
-        next_url = request.POST.get("next")
-        team = collection.team
-        collection.delete()
-
-        if next_url:
-            return redirect(next_url)
-
-        if team:
-            return redirect("team_collections", team_id=team.id)
-        return redirect("collections")
-
-@login_required
 def plasmid_collection_delete(request, pk):
-    collection = get_object_or_404(
-        PlasmidCollection,
-        pk=pk,
-        owner=request.user
-    )
+    collection = get_object_or_404(PlasmidCollection, pk=pk)
+
+    is_owner = collection.owner == request.user
+    is_team_leader = collection.team and collection.team.leader == request.user
+
+    if not (is_owner or is_team_leader):
+        raise PermissionDenied("Seul le propriétaire peut supprimer cette collection.")
 
     if request.method == "POST":
         collection.delete()
-        return redirect("plasmid_collection_list")
+        messages.success(request, "Collection supprimée avec succès.")
+        return redirect('plasmid_collection_list')
 
-    return redirect("plasmid_collection_detail", pk=pk)
+    return redirect('plasmid_collection_detail', pk=pk)
 
 
 # ============================================================
 # CORRESPONDENCES UTILISATEUR (hors équipe)
 # ============================================================
 
-@login_required
+
 def correspondences_view(request):
     view_type = request.GET.get('view', 'my')
 
+    # CAS UTILISATEUR NON CONNECTÉ
+    if not request.user.is_authenticated:
+        correspondences = Correspondence.objects.filter(
+            publication_status='approved',
+            team__isnull=True
+        ).order_by('-uploaded_at')
+
+        title = "Tables de correspondance publiques"
+
+        return render(request, "biolib/correspondences.html", {
+            "correspondences": correspondences,
+            "current_view": "public",
+            "page_title": title,
+        })
+
+    #  CAS UTILISATEUR CONNECTÉ
     if view_type == 'my':
         correspondences = Correspondence.objects.filter(
             owner=request.user,
             team__isnull=True
         ).order_by('-uploaded_at')
+
         title = "Mes tables de correspondance"
 
     else:
-        # fallback sécurité
-        correspondences = Correspondence.objects.none()
+        correspondences = Correspondence.objects.filter(
+            Q(publication_status='approved') |
+            Q(owner=request.user)
+        ).order_by('-uploaded_at')
+
         title = "Tables de correspondance"
 
     return render(request, "biolib/correspondences.html", {
@@ -1676,6 +1791,7 @@ def team_correspondence_delete(request, team_id, correspondence_id):
         table.delete()
         return redirect("team_correspondences", team_id=team.id)
 
+
 @login_required
 def choose_team_for_correspondences(request):
     teams = request.user.teams.all()
@@ -1694,40 +1810,35 @@ def choose_team_for_correspondences(request):
 
 # VISUALISATION DE PLASMIDES
 
-
 def plasmid_collection_list(request):
-    if not request.user.is_authenticated:
-        public_collections = PlasmidCollection.objects.filter(
-            publication_status='approved'
-        ).order_by('-id')
 
-        return render(request, 'biolib/plasmid_collection_list.html', {
-            'public_collections': public_collections,
-            'my_collections': [],
-            'team_collections': [],
-            'page_title': "Collections publiques"
-        })
+    my_collections = PlasmidCollection.objects.none()
+    team_collections = PlasmidCollection.objects.none()
 
+    # 2. On remplit les collections privées SEULEMENT si l'utilisateur est connecté
+    if request.user.is_authenticated:
 
-    my_collections = PlasmidCollection.objects.filter(
-        owner=request.user
-    ).distinct().order_by('-id')
+        # Onglet "Personnelles" : Uniquement mes brouillons, pas d'équipe
+        my_collections = PlasmidCollection.objects.filter(
+            owner=request.user,
+            team__isnull=True,          # Exclut les collections d'équipe
+            publication_status='draft'  # Exclut les collections publiques
+        ).order_by('-updated_at')
 
-    team_collections = PlasmidCollection.objects.filter(
-        team__members=request.user
-    ).distinct().order_by('-id')
+        # Onglet "Équipes"
+        team_collections = PlasmidCollection.objects.filter(
+            team__members=request.user
+        ).distinct().order_by('-updated_at')
 
     public_collections = PlasmidCollection.objects.filter(
         publication_status='approved'
-    ).order_by('-id')
+    ).order_by('-updated_at')
 
     return render(request, 'biolib/plasmid_collection_list.html', {
         'my_collections': my_collections,
         'team_collections': team_collections,
         'public_collections': public_collections,
-        'page_title': "Mes Collections"
     })
-
 
 def plasmid_collection_detail(request, pk):
     collection = get_object_or_404(PlasmidCollection, pk=pk)
@@ -1753,6 +1864,35 @@ def plasmid_collection_detail(request, pk):
 # visualisation plasmide
 def plasmid_visualize(request, plasmid_id):
     plasmid = get_object_or_404(Plasmid, pk=plasmid_id)
+
+    has_access = False
+
+    is_public = plasmid.collections.filter(publication_status='approved').exists()
+
+    if is_public:
+        has_access = True
+
+    # Si l'utilisateur est connecté, vérifier ses droits
+    elif request.user.is_authenticated:
+        # On cherche s'il existe une collection contenant ce plasmide
+        user_has_rights = plasmid.collections.filter(
+            Q(owner=request.user) |
+            Q(team__members=request.user)
+        ).exists()
+
+        if user_has_rights:
+            has_access = True
+
+    if not has_access:
+        # Si l'utilisateur n'est pas connecté -> Login
+        if not request.user.is_authenticated:
+            from django.contrib.auth.views import redirect_to_login
+            return redirect_to_login(request.get_full_path())
+
+        # Sinon, On affiche le message d'erreur dans la page 403 personnalisée
+        return render(request, 'biolib/403.html', {
+            'exception': "Accès refusé : Ce plasmide est privé et vous ne faites pas partie de l'équipe."
+        }, status=403)
 
     can_edit = False
     if request.user.is_authenticated:
@@ -1860,7 +2000,19 @@ def admin_reject_collection(request, pk):
 
     return redirect('admin_publication_list')
 
+
 def correspondence_list(request):
+
+    if not request.user.is_authenticated:
+        public_tables = Correspondence.objects.filter(
+            publication_status='approved'
+        ).order_by('-id')
+
+        return render(request, 'biolib/correspondence_list.html', {
+            'my_tables': [],
+            'team_tables': [],
+            'public_tables': public_tables,
+        })
 
     my_tables = Correspondence.objects.filter(
         owner=request.user
@@ -1879,7 +2031,9 @@ def correspondence_list(request):
         'team_tables': team_tables,
         'public_tables': public_tables,
     }
+
     return render(request, 'biolib/correspondence_list.html', context)
+
 
 @login_required
 def correspondence_request_publication(request, pk):
@@ -1891,7 +2045,6 @@ def correspondence_request_publication(request, pk):
     if table.publication_status in ['draft', 'rejected']:
         table.publication_status = 'pending'
         table.save()
-        # Redirection vers la page de détail de la table
         return redirect('correspondence_detail', pk=pk)
 
     return redirect('correspondence_list')
@@ -2101,3 +2254,74 @@ def plasmid_copy(request, pk):
         'form': form,
         'plasmid': original_plasmid
     })
+
+@login_required
+def delete_simulation(request, pk):
+    simulation = get_object_or_404(Simulation, pk=pk)
+    user = request.user
+    is_owner = (simulation.user == user)
+    is_team_leader = (simulation.team and simulation.team.leader == user)
+
+    if not (is_owner or is_team_leader):
+        return HttpResponseForbidden("Vous n'avez pas le droit de supprimer cette simulation.")
+
+    if request.method == 'POST':
+        import shutil
+        sim_dir = os.path.join(settings.MEDIA_ROOT, 'simulations', str(simulation.id))
+        if os.path.exists(sim_dir):
+            shutil.rmtree(sim_dir)
+
+        simulation.delete()
+        messages.success(request, "Simulation supprimée avec succès.")
+        return redirect('simulation_list')
+
+    return redirect('simulation_result', pk=pk)
+
+@login_required
+def share_simulation_team(request, pk):
+    simulation = get_object_or_404(Simulation, pk=pk)
+
+    if simulation.user != request.user:
+        return HttpResponseForbidden("Seul le propriétaire peut partager cette simulation.")
+
+    if request.method == 'POST':
+        team_id = request.POST.get('team_id')
+
+        if team_id:
+            team = get_object_or_404(Team, id=team_id, members=request.user)
+            simulation.team = team
+            simulation.visibility = 'team'
+            simulation.save()
+            messages.success(request, f"Simulation partagée avec l'équipe '{team.name}'.")
+        else:
+            simulation.team = None
+            simulation.visibility = 'private'
+            simulation.save()
+            messages.success(request, "Simulation repassée en privé.")
+
+    return redirect('simulation_result', pk=pk)
+
+# ==============================================================================
+# GESTION DES CAMPAGNES PUBLIQUES (ADMIN)
+# ==============================================================================
+
+@staff_member_required
+def add_public_campaign(request):
+    if request.method == 'POST':
+        form = PublicCampaignForm(request.POST, request.FILES)
+        if form.is_valid():
+            campaign = form.save(commit=False)
+            campaign.uploaded_by = request.user
+            campaign.save()
+            messages.success(request, f"Campagne '{campaign.name}' ajoutée aux ressources publiques.")
+        else:
+            messages.error(request, "Erreur lors de l'ajout.")
+    return redirect('simulation_list')
+
+@staff_member_required
+def delete_public_campaign(request, pk):
+    campaign = get_object_or_404(PublicCampaign, pk=pk)
+    if request.method == 'POST':
+        campaign.delete()
+        messages.success(request, "Campagne publique supprimée.")
+    return redirect('simulation_list')

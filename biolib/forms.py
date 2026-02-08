@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
-from .models import CampaignTemplate, TemplatePart, Simulation, Team, PlasmidCollection, Correspondence, Plasmid
+from .models import CampaignTemplate, TemplatePart, Simulation, Team, PlasmidCollection, Correspondence, Plasmid, PublicCampaign
 from django.forms import inlineformset_factory
 from django.db.models import Q
 import os
@@ -61,39 +61,80 @@ class CampaignTemplateForm(forms.ModelForm):
         self.fields['team'].required = False
         self.fields['team'].empty_label = "--- Sélectionner une équipe ---"
 
+# ==============================================================================
+# MODIFICATION ICI : Gestion Équipe pour Correspondance
+# ==============================================================================
 class CorrespondenceForm(forms.ModelForm):
+    SCOPE_CHOICES = [
+        ('private', '🔒 Privée (Moi uniquement)'),
+        ('team', '👥 Équipe (Partagée avec mes membres)')
+    ]
+    scope = forms.ChoiceField(
+        choices=SCOPE_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'list-unstyled', 'id': 'id_scope'}),
+        label="Visibilité",
+        initial='private'
+    )
+
     class Meta:
         model = Correspondence
-        fields = ['name', 'description', 'file']
+        fields = ['name', 'description', 'file', 'team'] # On ajoute 'team' ici
 
         labels = {
             'name': 'Nom de la table',
             'description': 'Description',
-            'file': 'Fichier de correspondance (.csv, .xlsx)'
+            'file': 'Fichier de correspondance (.csv, .xlsx)',
+            'team': 'Choisir l\'équipe'
         }
 
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Table conversion A'}),
             'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
-
             'file': forms.FileInput(attrs={
                 'class': 'form-control',
                 'accept': '.csv, .xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, text/csv'
             }),
+            'team': forms.Select(attrs={'class': 'form-select', 'id': 'id_team_select'}),
         }
 
-    # 3. Validation de sécurité (Backend)
-    def clean_file(self):
-        file = self.cleaned_data.get('file')
+    def __init__(self, user, *args, **kwargs):
+        """
+        On surcharge __init__ pour récupérer l'utilisateur connecté ('user')
+        et filtrer les équipes.
+        """
+        super().__init__(*args, **kwargs)
+        self.user = user
 
+        # On ne propose que les équipes dont l'utilisateur est membre
+        if user.is_authenticated:
+            self.fields['team'].queryset = Team.objects.filter(members=user)
+        else:
+            self.fields['team'].queryset = Team.objects.none()
+
+        self.fields['team'].required = False # On gère la validation manuellement dans clean()
+        self.fields['team'].empty_label = "--- Sélectionner une équipe ---"
+
+    def clean(self):
+        cleaned_data = super().clean()
+        scope = cleaned_data.get('scope')
+        team = cleaned_data.get('team')
+        file = cleaned_data.get('file')
+
+        # 1. Validation Fichier
         if file:
             ext = os.path.splitext(file.name)[1].lower()
             valid_extensions = ['.csv', '.xlsx']
-
             if ext not in valid_extensions:
-                raise ValidationError("Format non supporté. Veuillez utiliser uniquement .csv ou .xlsx")
+                self.add_error('file', "Format non supporté. Veuillez utiliser uniquement .csv ou .xlsx")
 
-        return file
+        # 2. Validation Équipe
+        if scope == 'team' and not team:
+            self.add_error('team', "Veuillez sélectionner une équipe pour le partage.")
+        
+        if scope == 'private':
+            cleaned_data['team'] = None
+
+        return cleaned_data
 
 class TemplatePartForm(forms.ModelForm):
     class Meta:
@@ -149,6 +190,93 @@ class PlasmidForm(forms.ModelForm):
                 raise ValidationError("Format non supporté. Utilisez : .gb, .fasta ou .zip")
 
         return file
+
+class PlasmidCollectionForm(forms.ModelForm):
+    SCOPE_CHOICES = [
+        ('private', '🔒 Privée (Moi uniquement)'),
+        ('team', '👥 Équipe (Partagée avec mes membres)')
+    ]
+
+    scope = forms.ChoiceField(
+        choices=SCOPE_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'list-unstyled'}),
+        label="Visibilité de la collection",
+        initial='private'
+    )
+
+    class Meta:
+        model = PlasmidCollection
+        fields = ['name', 'description', 'team']
+        labels = {
+            'name': 'Nom de la collection',
+            'description': 'Description',
+            'team': 'Choisir l\'équipe'
+        }
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Projet Vaccin 2026'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'team': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+    def __init__(self, user, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+        # On propose toutes les équipes dont l'user est membre
+        if user.is_authenticated:
+            self.fields['team'].queryset = Team.objects.filter(members=user)
+        else:
+            self.fields['team'].queryset = Team.objects.none()
+
+        self.fields['team'].required = False
+
+        if self.instance.pk and self.instance.team:
+
+            self.fields['scope'].initial = 'team'
+
+            # Si l'utilisateur actuel N'EST PAS le propriétaire de la collection
+            if self.instance.owner != user:
+
+                # On empêche de passer en "Privé"
+                self.fields['scope'].choices = [
+                    ('team', '👥 Équipe (Fixé par le propriétaire)')
+                ]
+
+                # On empêche de changer d'équipe
+                current_team_id = self.instance.team.id
+                self.fields['team'].queryset = Team.objects.filter(id=current_team_id)
+
+                self.fields['team'].widget.attrs.update({
+                    'readonly': 'readonly',
+                    'style': 'pointer-events: none; background-color: #e9ecef;'
+                })
+
+    def clean(self):
+        cleaned_data = super().clean()
+        scope = cleaned_data.get('scope')
+        team = cleaned_data.get('team')
+
+        if self.instance.pk and self.instance.team:
+
+            if self.instance.owner != self.user:
+
+                # SÉCURITÉ 1 : Interdiction de passer en privé
+                if scope == 'private':
+                    raise forms.ValidationError("Seul le propriétaire peut rendre cette collection privée.")
+
+                # SÉCURITÉ 2 : Interdiction de changer d'équipe
+                # Si l'équipe envoyée est différente de l'équipe d'origine
+                if team != self.instance.team:
+                    raise forms.ValidationError("Vous n'avez pas le droit de déplacer cette collection vers une autre équipe.")
+
+        if scope == 'team':
+            if not team:
+                self.add_error('team', "Veuillez sélectionner une équipe.")
+        elif scope == 'private':
+            cleaned_data['team'] = None
+
+        return cleaned_data
+
 class SimulationForm(forms.ModelForm):
 
     custom_enzymes = forms.MultipleChoiceField(
@@ -318,3 +446,14 @@ class CopyPlasmidForm(forms.Form):
             raise forms.ValidationError("Vous devez choisir une collection existante OU entrer un nom pour une nouvelle.")
 
         return cleaned_data
+
+class PublicCampaignForm(forms.ModelForm):
+    class Meta:
+        model = PublicCampaign
+        fields = ['name', 'description', 'file']
+        
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Campagne Venus'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Petite description...'}),
+            'file': forms.FileInput(attrs={'class': 'form-control', 'accept': '.xlsx,.xls,.csv'})
+        }

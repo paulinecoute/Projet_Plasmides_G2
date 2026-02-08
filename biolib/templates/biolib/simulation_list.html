@@ -2,36 +2,79 @@
 
 {% block content %}
 <div class="container mt-5">
-    
     <div class="row g-4">
         
         <div class="col-md-4 col-lg-3">
             
             <div class="d-grid mb-4">
-                <a href="{% url 'create_simulation' %}" class="btn btn-success btn-lg shadow-sm">
-                    <i class="bi bi-plus-lg me-2"></i> Nouvelle simulation
+                <a href="{% url 'create_simulation' %}" class="btn btn-primary btn-lg shadow-sm">
+                    <i class="bi bi-play-circle-fill me-2"></i> Nouvelle Simulation
                 </a>
             </div>
 
-            <div class="list-group shadow-sm mb-4">
-                
-                <a href="?view=recent" 
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+                    <span class="small text-uppercase text-muted">Ressources Publiques</span>
+                    {% if user.is_staff %}
+                        <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#addCampaignModal" title="Ajouter un fichier">
+                            <i class="bi bi-plus-lg"></i>
+                        </button>
+                    {% endif %}
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for camp in public_campaigns %}
+                        <div class="list-group-item p-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="me-2" style="width: 100%;">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <i class="bi bi-file-earmark-spreadsheet text-success me-2 fs-5"></i>
+                                        <span class="fw-bold text-dark small">{{ camp.name }}</span>
+                                    </div>
+                                    <p class="mb-2 text-muted" style="font-size: 0.75rem; line-height: 1.2;">
+                                        {{ camp.description|default:"Pas de description" }}
+                                    </p>
+                                    <a href="{{ camp.file.url }}" class="btn btn-sm btn-light border w-100 text-start" download>
+                                        <i class="bi bi-download me-2"></i> Télécharger (.xlsx)
+                                    </a>
+                                </div>
+                                {% if user.is_staff %}
+                                    <form action="{% url 'delete_public_campaign' camp.id %}" method="POST" onsubmit="return confirm('Supprimer cette ressource publique ?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-link text-danger p-0 ms-1" title="Supprimer">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="p-3 text-center text-muted small bg-light">
+                            <i class="bi bi-folder2-open d-block fs-4 mb-1"></i>
+                            Aucune ressource disponible.
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="list-group shadow-sm">
+                <a href="{% url 'simulation_list' %}?view=recent" 
                    class="list-group-item list-group-item-action py-3 d-flex align-items-center {% if current_view == 'recent' %}active fw-bold{% endif %}">
                     <i class="bi bi-clock-history fs-5 me-3"></i>
-                    <div>Récents</div>
+                    <div>Récentes</div>
                 </a>
 
-                <a href="?view=mine" 
+                <a href="{% url 'simulation_list' %}?view=mine" 
                    class="list-group-item list-group-item-action py-3 d-flex align-items-center {% if current_view == 'mine' %}active fw-bold{% endif %}">
-                    <i class="bi bi-lock fs-5 me-3"></i>
+                    <i class="bi bi-person-workspace fs-5 me-3"></i>
                     <div>Mes simulations</div>
                 </a>
 
-                <a href="?view=team" 
+                {% if user.is_authenticated %}
+                <a href="{% url 'simulation_list' %}?view=team" 
                    class="list-group-item list-group-item-action py-3 d-flex align-items-center {% if current_view == 'team' %}active fw-bold{% endif %}">
                     <i class="bi bi-people fs-5 me-3"></i>
                     <div>Simulations d'équipe</div>
                 </a>
+                {% endif %}
             </div>
         </div>
 
@@ -43,53 +86,45 @@
             </div>
 
             <div class="row">
-                {% for simu in simulations %}
+                {% for sim in simulations %}
                     <div class="col-12 mb-3">
                         <div class="card shadow-sm border h-100 hover-shadow transition-all">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-start">
-                                    
                                     <div>
                                         <h5 class="fw-bold text-primary mb-1">
-                                            <a href="{% url 'simulation_result' pk=simu.id %}" class="text-decoration-none text-primary stretched-link">
-                                                {% if simu.name %}{{ simu.name }}{% else %}Simulation #{{ simu.id }}{% endif %}
+                                            <a href="{% url 'simulation_result' sim.id %}" class="text-decoration-none text-primary stretched-link">
+                                                {{ sim.name }}
                                             </a>
                                         </h5>
-                                        
                                         <div class="text-muted small mb-2">
-                                            <i class="bi bi-calendar3 me-1"></i> {{ simu.date_run|date:"d M Y à H:i" }} 
+                                            <i class="bi bi-calendar3 me-1"></i> {{ sim.date_run|date:"d M Y à H:i" }}
                                             <span class="mx-2">•</span>
-                                            <i class="bi bi-person me-1"></i> {{ simu.user.username|default:"Invité" }}
-                                            
-                                            {% if simu.team %}
-                                                <span class="ms-2 badge bg-info text-dark">
-                                                    {{ simu.team.name }}
-                                                </span>
+                                            {% if sim.status == 'COMPLETED' %}
+                                                <span class="badge bg-success bg-opacity-10 text-success border border-success">Terminée</span>
+                                            {% elif sim.status == 'FAILED' %}
+                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger">Échec</span>
                                             {% else %}
-                                                <span class="ms-2 badge bg-warning text-dark">
-                                                    Privé
-                                                </span>
+                                                <span class="badge bg-warning text-dark">En cours</span>
                                             {% endif %}
+                                            
+                                            <span class="ms-2 badge {% if sim.visibility == 'private' %}bg-secondary{% else %}bg-info text-dark{% endif %}">
+                                                {{ sim.get_visibility_display }}
+                                            </span>
                                         </div>
-                                        
-                                        <div class="mt-1">
-                                            <span class="badge bg-light text-dark border fw-normal">Enzyme : {{ simu.enzyme }}</span>
-                                            {% if simu.template_file %}
-                                                <span class="badge bg-light text-dark border fw-normal">Template : {{ simu.template_file.name|truncatechars:25 }}</span>
-                                            {% endif %}
-                                        </div>
+                                        <p class="text-secondary small mb-0">
+                                            Enzyme : <strong>{{ sim.enzyme }}</strong>
+                                            {% if sim.team %} | Équipe : {{ sim.team.name }}{% endif %}
+                                        </p>
                                     </div>
-
-                                    <div>
-                                        {% if simu.status == 'COMPLETED' %}
-                                            <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Terminé</span>
-                                        {% elif simu.status == 'FAILED' %}
-                                            <span class="badge bg-danger"><i class="bi bi-exclamation-triangle me-1"></i> Échec</span>
-                                        {% else %}
-                                            <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> En cours</span>
+                                    
+                                    <div class="d-flex flex-column gap-2" style="z-index: 2; position: relative;">
+                                        {% if sim.status == 'COMPLETED' %}
+                                        <a href="{% url 'download_simulation_zip' sim.id %}" class="btn btn-outline-primary btn-sm" title="Télécharger ZIP">
+                                            <i class="bi bi-download"></i>
+                                        </a>
                                         {% endif %}
                                     </div>
-
                                 </div>
                             </div>
                         </div>
@@ -99,10 +134,8 @@
                         <div class="text-center py-5 bg-light rounded border border-dashed">
                             <i class="bi bi-inbox fs-1 text-muted mb-3"></i>
                             <h4>Aucune simulation trouvée</h4>
-                            <p class="text-muted">Il n'y a rien à afficher dans cette catégorie pour le moment.</p>
-                            {% if current_view == 'mine' or current_view == 'recent' %}
-                                <a href="{% url 'create_simulation' %}" class="btn btn-primary mt-2">Lancer une simulation</a>
-                            {% endif %}
+                            <p class="text-muted">Lancez votre première simulation dès maintenant !</p>
+                            <a href="{% url 'create_simulation' %}" class="btn btn-primary mt-2">Démarrer</a>
                         </div>
                     </div>
                 {% endfor %}
@@ -112,14 +145,44 @@
     </div>
 </div>
 
+{% if user.is_staff %}
+<div class="modal fade" id="addCampaignModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="bi bi-upload"></i> Ajouter une campagne publique</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{% url 'add_public_campaign' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nom</label>
+                        {{ campaign_form.name }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Description</label>
+                        {{ campaign_form.description }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Fichier Excel (.xlsx)</label>
+                        {{ campaign_form.file }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-success">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <style>
-    /* Style harmonisé */
     .hover-shadow:hover {
         transform: translateY(-2px);
         box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
-        transition: all 0.2s ease-in-out;
-    }
-    .transition-all {
         transition: all 0.2s ease-in-out;
     }
 </style>

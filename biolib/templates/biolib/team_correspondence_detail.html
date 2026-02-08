@@ -2,72 +2,33 @@
 {% block title %}Table · {{ table.name }}{% endblock %}
 
 {% block content %}
-<style>
-  :root { --bg-main: #fcfcfc; --border-color: #eee; }
-  body { background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  .content-wrapper { max-width: 900px; margin: 0 auto; padding-bottom: 60px; }
+<div class="container py-5">
+  <div class="mx-auto" style="max-width: 900px;">
 
-  /* Bouton retour carré */
-  .btn-back-square {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 42px; height: 42px; background: #fff;
-    border: 1px solid var(--border-color); border-radius: 12px;
-    color: #000; transition: 0.2s; text-decoration: none; margin-bottom: 20px;
-  }
-  .btn-back-square:hover { border-color: #000; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    <div class="mb-4">
+      <a href="{% url 'team_correspondences' team.id %}" class="btn btn-outline-secondary btn-sm rounded-3">
+        <i class="bi bi-arrow-left me-1"></i> Retour
+      </a>
+    </div>
 
-  .hero-section { margin-bottom: 40px; margin-top: 10px; }
-  .table-title { font-weight: 900; font-size: 3.2rem; letter-spacing: -0.06em; color: #000; line-height: 1.1; margin-bottom: 12px; }
-  .table-desc { font-size: 1.15rem; color: #666; font-weight: 500; max-width: 650px; line-height: 1.5; }
-
-  /* Card de fichier */
-  .card-box {
-    background: #fff; border: 1px solid var(--border-color);
-    border-radius: 24px; padding: 25px; margin-bottom: 30px;
-  }
-
-  .file-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .file-left { display: flex; align-items: center; gap: 15px; font-weight: 700; color: #111; }
-
-  /* Boutons Pilules */
-  .btn-pill {
-    border-radius: 999px; padding: 10px 22px; font-weight: 800; font-size: 0.85rem;
-    transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border-color);
-    text-decoration: none; cursor: pointer;
-  }
-  .btn-pill-dark { background: #000; color: #fff; border: none; }
-  .btn-pill-dark:hover { background: #333; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); color: #fff; }
-  
-  .btn-pill-outline { background: #fff; color: #666; }
-  .btn-pill-outline:hover { border-color: #000; color: #000; }
-
-  .btn-pill-danger { background: #fff; color: #ef4444; border-color: #fee2e2; }
-  .btn-pill-danger:hover { background: #ef4444; color: #fff; border-color: #ef4444; }
-</style>
-
-<div class="container mt-4">
-  <div class="content-wrapper">
-
-    <a href="{% url 'team_correspondences' team.id %}" class="btn-back-square shadow-sm">
-      <i class="bi bi-arrow-left"></i>
-    </a>
-
-
-    <div class="hero-section">
-      <div class="row align-items-end">
-        <div class="col">
-          <h1 class="table-title">{{ table.name }}</h1>
+    <div class="mb-5">
+      <div class="row align-items-end g-4">
+        <div class="col-md">
+          <span class="badge bg-primary bg-opacity-10 text-primary mb-2 px-3 py-2 rounded-pill fw-bold text-uppercase" style="font-size: 0.7rem;">
+            <i class="bi bi-table me-1"></i> Table de correspondance
+          </span>
+          <h1 class="display-5 fw-bold text-dark mb-2">{{ table.name }}</h1>
           {% if table.description %}
-            <p class="table-desc">{{ table.description }}</p>
+            <p class="text-muted fs-5 mb-0">{{ table.description }}</p>
           {% endif %}
         </div>
         
         {% if is_owner %}
-        <div class="col-auto">
-          <form method="post" action="{% url 'team_correspondence_delete' team.id table.id %}" onsubmit="return confirm('Supprimer définitivement ?');">
+        <div class="col-md-auto">
+          <form method="post" action="{% url 'team_correspondence_delete' team.id table.id %}" onsubmit="return confirm('Supprimer définitivement cette table ?');">
             {% csrf_token %}
-            <button type="submit" class="btn-pill btn-pill-danger shadow-sm">
-              <i class="bi bi-trash3"></i> Supprimer la table
+            <button type="submit" class="btn btn-outline-danger rounded-pill px-4 fw-bold">
+              <i class="bi bi-trash3 me-1"></i> Supprimer
             </button>
           </form>
         </div>
@@ -75,50 +36,52 @@
       </div>
     </div>
 
-    <div class="card-box shadow-sm">
-      <div class="file-row">
-        <div class="file-left">
-          <div style="width: 48px; height: 48px; background: #f8f8f8; border-radius: 14px; display: flex; align-items: center; justify-content: center; border: 1px solid #eee;">
-            <i class="bi bi-file-earmark-spreadsheet text-dark fs-4"></i>
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="bg-light text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
+            <i class="bi bi-file-earmark-spreadsheet-fill fs-3"></i>
           </div>
           <div class="d-flex flex-column">
-            <span class="fw-bold" style="font-size: 1.05rem;">
-              {% if table.file %}{{ table.file.name|cut:"correspondences/" }}{% else %}Aucun fichier associé{% endif %}
+            <span class="fw-bold text-dark fs-5">
+              {% if table.file %}{{ table.file.name|cut:"correspondences/" }}{% else %}En attente de données...{% endif %}
             </span>
-            <span class="text-muted small fw-medium">Feuille de calcul (.xlsx, .csv)</span>
+            <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">
+                Format CSV ou Excel requis
+            </span>
           </div>
         </div>
 
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap">
           {% if table.file %}
-            {# ACTIONS SI FICHIER EXISTE #}
-            <a href="{% url 'team_correspondence_view_file' team.id table.id %}" class="btn-pill btn-pill-outline">
-              <i class="bi bi-eye"></i> Voir
+            <a href="{% url 'team_correspondence_view_file' team.id table.id %}" class="btn btn-outline-primary rounded-pill px-3 fw-bold">
+              <i class="bi bi-eye me-1"></i> Aperçu
             </a>
             
-            <a href="{{ table.file.url }}" download class="btn-pill btn-pill-outline">
+            <a href="{{ table.file.url }}" download class="btn btn-outline-primary rounded-pill px-3 fw-bold">
               <i class="bi bi-download"></i>
             </a>
 
             {% if is_owner %}
-              <button type="button" class="btn-pill btn-pill-dark shadow-sm" id="btn-replace-file">
-                <i class="bi bi-pencil-square"></i> Modifier
+              <button type="button" class="btn btn-primary rounded-pill px-3 fw-bold shadow-sm" id="btn-replace-file">
+                <i class="bi bi-arrow-repeat me-1"></i> Remplacer
               </button>
 
               <form id="replace-file-form" method="post" enctype="multipart/form-data" 
                     action="{% url 'team_correspondence_attach_file' team.id table.id %}" style="display:none;">
                 {% csrf_token %}
-                <input type="file" name="file" id="replace-file-input" required>
+                <input type="file" name="file" id="replace-file-input" accept=".csv, .xlsx, .xls">
               </form>
             {% endif %}
 
           {% else %}
-            {# ACTION SI PAS DE FICHIER #}
             {% if is_owner %}
-              <form method="post" enctype="multipart/form-data" action="{% url 'team_correspondence_attach_file' team.id table.id %}" class="d-flex gap-2 align-items-center">
+              <form method="post" enctype="multipart/form-data" action="{% url 'team_correspondence_attach_file' team.id table.id %}" class="d-flex gap-2 align-items-center flex-wrap">
                 {% csrf_token %}
-                <input type="file" name="file" required class="form-control form-control-sm rounded-3" style="max-width: 200px;">
-                <button class="btn-pill btn-pill-dark shadow-sm">Ajouter</button>
+                <input type="file" name="file" required class="form-control form-control-sm border-light bg-light rounded-3 w-auto" accept=".csv, .xlsx, .xls">
+                <button class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                    Importer
+                </button>
               </form>
             {% endif %}
           {% endif %}
@@ -129,7 +92,6 @@
   </div>
 </div>
 
-{# SCRIPT LOGIQUE MODIFIER #}
 {% if table.file and is_owner %}
 <script>
   (function () {

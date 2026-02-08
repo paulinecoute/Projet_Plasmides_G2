@@ -16,7 +16,7 @@
   }
 
   .nav-header { padding: 20px 0; margin-bottom: 20px; }
-  
+
   .btn-back {
     display: inline-flex;
     align-items: center;
@@ -34,7 +34,7 @@
 
   .hero-section { margin-bottom: 40px; }
   .page-title { font-weight: 850; font-size: 2.8rem; letter-spacing: -0.05em; margin-bottom: 10px; }
-  
+
   /* Formulaire */
   .form-container {
     background: #fff;
@@ -50,15 +50,19 @@
     letter-spacing: 0.05em;
     color: #aaa;
     margin-bottom: 8px;
+    display: block; /* Assure que le label prend toute la ligne */
   }
 
-  .form-control {
+  /* On cible les inputs générés par Django qui ont la classe form-control */
+  .form-control, select.form-control {
     border: 1px solid #f0f0f0;
     background: #fbfbfb;
     border-radius: 12px;
     padding: 12px 16px;
     font-size: 1rem;
+    width: 100%; /* Important pour les widgets Django */
     transition: all 0.2s;
+    box-sizing: border-box;
   }
 
   .form-control:focus {
@@ -68,13 +72,41 @@
     outline: none;
   }
 
+  /* Style personnalisé pour les boutons radio de la visibilité */
+  .visibility-options {
+    background: #fbfbfb;
+    border: 1px solid #f0f0f0;
+    border-radius: 12px;
+    padding: 15px;
+  }
+
+  .form-check {
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+  }
+
+  .form-check:last-child { margin-bottom: 0; }
+
+  .form-check-input {
+    margin-right: 10px;
+    cursor: pointer;
+  }
+
+  .form-check-label {
+    font-size: 0.95rem;
+    color: #333;
+    cursor: pointer;
+  }
+
   .info-box {
     background: #f8f9fa;
     border-radius: 12px;
     padding: 16px;
     font-size: 0.9rem;
     color: #666;
-    margin-top: 24px;
+    margin-top: 10px;
+    border: 1px solid var(--border-color);
   }
 
   .btn-submit {
@@ -85,6 +117,7 @@
     font-weight: 600;
     border: none;
     transition: 0.2s;
+    cursor: pointer;
   }
   .btn-submit:hover { background: #333; }
 
@@ -96,11 +129,14 @@
     transition: 0.2s;
   }
   .btn-cancel:hover { color: #000; }
+
+  /* Helper pour les erreurs */
+  .text-danger { color: #dc3545; font-size: 0.85rem; margin-top: 5px; }
 </style>
 
 <div class="container pb-5">
   <div class="content-wrapper">
-    
+
     <div class="nav-header">
       <a href="{% url 'plasmid_collection_list' %}" class="btn-back shadow-sm">
         <i class="bi bi-arrow-left"></i>
@@ -108,34 +144,70 @@
     </div>
 
     <div class="hero-section">
-      <h1 class="page-title">Nouvelle collection</h1>
+      <h1 class="page-title">
+          {% if form.instance.pk %}Modifier la{% else %}Nouvelle{% endif %} collection
+      </h1>
     </div>
 
     <div class="form-container shadow-sm">
       <form method="post">
         {% csrf_token %}
 
-        <div class="mb-4">
-          <label class="form-label">Nom de la collection</label>
-          <input type="text" name="name" class="form-control" placeholder="ex: Plasmides CRISPR 2026" required>
-        </div>
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger mb-4">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
 
         <div class="mb-4">
-          <label class="form-label">Description</label>
-          <textarea name="description" class="form-control" rows="4" placeholder="Optionnel..."></textarea>
+          <label class="form-label">{{ form.name.label }}</label>
+          {{ form.name }}
+          {% if form.name.errors %}
+            <div class="text-danger">{{ form.name.errors }}</div>
+          {% endif %}
         </div>
 
-        <div class="info-box border">
-          <i class="bi bi-shield-lock-fill me-2"></i>
-          La collection sera <strong>privée</strong> par défaut. Vous pourrez modifier sa visibilité plus tard.
+        <div class="mb-4">
+          <label class="form-label">{{ form.description.label }}</label>
+          {{ form.description }}
         </div>
 
-        <div class="d-flex align-items-center justify-content-end gap-4 mt-5">
-          <a href="{% url 'collections' %}" class="btn-cancel">
+        <hr style="border-color: var(--border-color); margin: 30px 0;">
+
+        <div class="mb-4">
+            <label class="form-label">Visibilité de la collection</label>
+            <div class="visibility-options">
+                {% for radio in form.scope %}
+                    <div class="form-check">
+                        {{ radio.tag }} <label class="form-check-label" for="{{ radio.id_for_label }}">
+                            {{ radio.choice_label }}
+                        </label>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="mb-4" id="team-selector-div" style="display: none;">
+
+            <label class="form-label" style="color: #000;">
+                <i class="bi bi-people-fill me-1"></i> Choisir une équipe existante
+            </label>
+            {{ form.team }}
+            {% if form.team.errors %}
+                <div class="text-danger">{{ form.team.errors }}</div>
+            {% endif %}
+
+            <div class="info-box mt-2">
+                <i class="bi bi-info-circle-fill me-2"></i>
+                Seules les équipes dont vous êtes membre apparaissent ici.
+            </div>
+
+        </div> <div class="d-flex align-items-center justify-content-end gap-4 mt-5">
+          <a href="{% url 'plasmid_collection_list' %}" class="btn-cancel">
             Annuler
           </a>
           <button type="submit" class="btn-submit">
-            Créer
+            {% if form.instance.pk %}Enregistrer{% else %}Créer la collection{% endif %}
           </button>
         </div>
 
@@ -144,4 +216,28 @@
 
   </div>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const scopeRadios = document.querySelectorAll('input[name="scope"]');
+    const teamDiv = document.getElementById('team-selector-div');
+
+    function toggleTeamSelect() {
+        const checkedRadio = document.querySelector('input[name="scope"]:checked');
+
+        if (checkedRadio && checkedRadio.value === 'team') {
+            teamDiv.style.display = 'block';
+        } else {
+            teamDiv.style.display = 'none';
+        }
+    }
+
+    scopeRadios.forEach(radio => {
+        radio.addEventListener('change', toggleTeamSelect);
+    });
+
+    toggleTeamSelect();
+});
+</script>
+
 {% endblock %}

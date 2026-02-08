@@ -3,50 +3,57 @@
 {% block title %}Nouvelle collection · {{ team.name }}{% endblock %}
 
 {% block content %}
-<style>
-  :root { --bg-main: #fcfcfc; --border-color: #eee; }
-  .form-container { max-width: 650px; margin: 60px auto; padding-bottom: 100px; }
-  .btn-back-square { width: 42px; height: 42px; background: #fff; border: 1px solid var(--border-color); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #000; transition: 0.2s; text-decoration: none; margin-bottom: 30px; }
-  .setup-section { background: #fff; border: 1px solid var(--border-color); border-radius: 28px; padding: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
-  .form-label { font-weight: 700; color: #000; font-size: 0.9rem; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #bbb; display: block; }
-  input, select, textarea { border-radius: 14px; border: 1px solid #eee; padding: 14px 18px; background: #fcfcfc; width: 100%; transition: 0.2s; margin-bottom: 5px; }
-  .btn-bio-submit { background: #000; color: #fff; border: none; border-radius: 18px; padding: 18px; font-weight: 800; width: 100%; margin-top: 30px; transition: 0.2s; }
-  .btn-bio-submit:hover { background: #333; transform: translateY(-2px); }
-</style>
-
-<div class="container">
-  <div class="form-container">
-    <a href="{% url 'team_collections' team.id %}" class="btn-back-square shadow-sm">
-      <i class="bi bi-arrow-left"></i>
-    </a>
+<div class="container py-5">
+  <div class="mx-auto" style="max-width: 650px;">
     
-    <div class="text-center mb-4">
-      <h1 style="font-weight: 900; letter-spacing: -0.06em;">Nouvelle Collection</h1>
-      <p class="text-muted">Équipe : {{ team.name }}</p>
+    <div class="mb-4">
+      <a href="{% url 'team_collections' team.id %}" class="btn btn-outline-secondary btn-sm rounded-3">
+        <i class="bi bi-arrow-left me-1"></i> Retour
+      </a>
+    </div>
+
+    <div class="text-center mb-5">
+      <h1 class="display-5 fw-bold text-dark mb-1">Nouvelle Collection</h1>
+      <p class="text-muted text-uppercase fw-bold small" style="letter-spacing: 0.1em;">
+        Équipe : <span class="text-primary">{{ team.name }}</span>
+      </p>
     </div>
 
     <form method="post">
       {% csrf_token %}
-      <div class="setup-section">
+      <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+        
         <div class="mb-4">
-          <label class="form-label">Nom</label>
-          <input type="text" name="name" required placeholder="Nom de la collection">
+          <label class="form-label small fw-bold text-primary text-uppercase">Nom de la collection</label>
+          <input type="text" name="name" class="form-control form-control-lg border-light bg-light rounded-3" required placeholder="Ex: Séquences CRISPR 2026">
         </div>
+
         <div class="mb-4">
-          <label class="form-label">Description</label>
-          <textarea name="description" placeholder="Description optionnelle"></textarea>
+          <label class="form-label small fw-bold text-primary text-uppercase">Description (optionnelle)</label>
+          <textarea name="description" class="form-control border-light bg-light rounded-3" rows="3" placeholder="À quoi servira cette collection ?"></textarea>
         </div>
+
         <div class="mb-0">
-          <label class="form-label">Propriétaire</label>
-          <select name="owner" required>
+          <label class="form-label small fw-bold text-primary text-uppercase">Propriétaire référent</label>
+          <select name="owner" class="form-select form-select-lg border-light bg-light rounded-3" required>
             {% for member in members %}
-              <option value="{{ member.id }}">{{ member.email }}</option>
+              <option value="{{ member.id }}" {% if member == user %}selected{% endif %}>
+                {{ member.email }}
+              </option>
             {% endfor %}
           </select>
+          <div class="form-text mt-2">
+            <i class="bi bi-info-circle me-1"></i> Le propriétaire aura les droits de gestion sur les fichiers de cette collection.
+          </div>
         </div>
+
       </div>
-      <button type="submit" class="btn-bio-submit shadow">Créer la collection</button>
+
+      <button type="submit" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold shadow-sm mt-4 py-3">
+        <i class="bi bi-check-circle-fill me-2"></i> Créer la collection
+      </button>
     </form>
+    
   </div>
 </div>
 {% endblock %}

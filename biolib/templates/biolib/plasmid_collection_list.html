@@ -78,7 +78,7 @@
                             </div>
 
                             <div class="card-footer bg-transparent border-top-0 text-end">
-                                <small class="text-muted">Propriétaire : Vous</small>
+                                <small class="text-muted">Crée par : Vous</small>
                             </div>
                         </div>
                     </div>
@@ -113,8 +113,15 @@
                                     </div>
                                 </div>
                                 <div class="card-footer bg-transparent border-top-0 text-end">
-                                    <small class="text-muted">Propriétaire : {{ col.owner.username }}</small>
+                                    <small class="text-muted">
+                                        <i class="fas fa-user"></i> Crée par : {{ col.owner.username }}
+                                    </small>
+
+                                    <small class="text-primary fw-bold">
+                                        Equipe : {{ col.team.name }}
+                                    </small>
                                 </div>
+
                             </div>
                         </div>
                     {% endfor %}
