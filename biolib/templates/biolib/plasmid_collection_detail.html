@@ -29,6 +29,10 @@
                     {% elif collection.publication_status == 'rejected' %}
                         <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Refusé</span>
                     {% endif %}
+
+                    {% if collection.team %}
+                        <span class="badge bg-info text-dark ms-1"><i class="bi bi-people-fill"></i> {{ collection.team.name }}</span>
+                    {% endif %}
                 </div>
             </div>
 
@@ -48,31 +52,36 @@
 
             <div class="d-flex gap-2 flex-wrap">
 
-                {% if collection.owner == user %}
+                {% with can_edit_collection=False %}
+                    {% if collection.owner == user or user in collection.team.members.all %}
 
-                    <a href="{% url 'plasmid_upload' collection.id %}?next={{ request.path }}"
-                       class="btn btn-success btn-sm">
-                        <i class="bi bi-cloud-upload"></i> Ajouter des plasmides
-                    </a>
-
-                    {% if collection.publication_status == 'draft' or collection.publication_status == 'rejected' %}
-                        <a href="{% url 'request_publication' collection.id %}"
-                           class="btn btn-primary btn-sm">
-                            <i class="bi bi-megaphone"></i> Demander la publication
+                        <a href="{% url 'plasmid_upload' collection.id %}?next={{ request.path }}"
+                           class="btn btn-success btn-sm">
+                            <i class="bi bi-cloud-upload"></i> Ajouter des plasmides
                         </a>
+
+                        {% if collection.publication_status == 'draft' or collection.publication_status == 'rejected' %}
+                            <a href="{% url 'request_publication' collection.id %}"
+                               class="btn btn-primary btn-sm">
+                                <i class="bi bi-megaphone"></i> Demander la publication
+                            </a>
+                        {% endif %}
+
+                        <a href="{% url 'collection_update' collection.id %}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-pencil"></i> Modifier infos
+                        </a>
+
+                        {% if collection.owner == user or collection.team.leader == user %}
+                            <form method="post"
+                                  action="{% url 'plasmid_collection_delete' collection.id %}"
+                                  onsubmit="return confirm('Sur ?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger">Supprimer</button>
+                            </form>
+                        {% endif %}
+
                     {% endif %}
-
-                    <form method="post"
-                          action="{% url 'plasmid_collection_delete' collection.id %}"
-                          onsubmit="return confirm('Êtes-vous sûr ? Cette action est irréversible.');">
-                        {% csrf_token %}
-                        <input type="hidden" name="next" value="{{ request.path }}">
-                        <button type="submit" class="btn btn-outline-danger btn-sm">
-                            <i class="bi bi-trash"></i> Supprimer
-                        </button>
-                    </form>
-
-                {% endif %}
+                {% endwith %}
             </div>
         </div>
     </div>
@@ -128,34 +137,34 @@
                             </a>
                             {% endif %}
 
-                            {% if collection.owner != user %}
+                            {% if collection.owner != user and user not in collection.team.members.all %}
                                 <a href="{% url 'plasmid_copy' plasmid.id %}"
                                    class="btn btn-sm btn-outline-success"
                                    title="Sauvegarder dans mes collections...">
                                     <i class="bi bi-hdd-network"></i>
                                 </a>
                             {% endif %}
-                            {% if has_write_access %}
+
+                            {% if collection.owner == user or user in collection.team.members.all %}
 
                                 <a href="{% url 'plasmid_edit' plasmid.id %}"
                                    class="btn btn-sm btn-outline-warning"
                                    title="Modifier">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                            {% endif %}
-                            {% if collection.owner == user %}
+
                                 <form method="post"
-                                      action="{% url 'plasmid_delete' plasmid.id %}"
+                                      action="{% url 'remove_plasmid_from_collection' collection.id plasmid.id %}"
                                       class="d-inline">
                                     {% csrf_token %}
-                                    <input type="hidden" name="next" value="{{ request.path }}">
                                     <button type="submit"
                                             class="btn btn-sm btn-outline-danger"
-                                            title="Supprimer"
-                                            onclick="return confirm('Supprimer ce plasmide ?');">
+                                            title="Supprimer / Retirer"
+                                            onclick="return confirm('Retirer ce plasmide ?\n\nATTENTION : S\'il n\'est présent dans aucune autre collection, il sera définitivement supprimé de la base de données.');">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
+
                             {% endif %}
 
                         </div>
