@@ -2,369 +2,350 @@
 
 {% block content %}
 <div class="container mt-5">
-    <h1>Résultats de la simulation #{{ simulation.id }}</h1>
-
-    <div class="card mb-4">
-        <div class="card-header">
-            <h3>Résumé de la simulation</h3>
-        </div>
-        <div class="card-body">
-            <p><strong>Date de création :</strong> {{ simulation.date_run|date:"d F Y à H:i" }}</p>
-
-            <p><strong>Statut :</strong>
-                {% if simulation.status == 'COMPLETED' %}
-                    <span class="badge bg-success">Terminée avec succès</span>
-                {% elif simulation.status == 'FAILED' %}
-                    <span class="badge bg-danger">Échec</span>
-                {% elif simulation.status == 'RUNNING' %}
-                    <span class="badge bg-warning text-dark">En cours</span>
-                {% else %}
-                    <span class="badge bg-secondary">En attente</span>
-                {% endif %}
-            </p>
-
-            <p>
-                <strong>Fichier Template :</strong>
-                {% if simulation.template_file %}
-                    {{ simulation.template_file.name }}
-                {% else %}
-                    <em>Inconnu</em>
-                {% endif %}
-                <br>
-                <strong>Enzyme :</strong> {{ simulation.enzyme }}
-            </p>
-        </div>
-    </div>
-
-    <div class="card mb-4">
-        <div class="card-header">
-            <h3>Fichiers de sortie générés</h3>
-        </div>
-        <div class="card-body">
-
-            {% if simulation.status == 'COMPLETED' %}
-            <div class="accordion" id="resultFilesAccordion">
-
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="headingZip">
-                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#zipFiles" aria-expanded="true" aria-controls="zipFiles">
-                            <i class="fas fa-file-archive me-2"></i> <strong>Tout télécharger (.zip)</strong>
-                        </button>
-                    </h2>
-                    <div id="zipFiles" class="accordion-collapse collapse show" aria-labelledby="headingZip" data-bs-parent="#resultFilesAccordion">
-                        <div class="accordion-body">
-                            <div class="row align-items-center">
-                                <div class="col-md-8">
-                                    <p class="mb-0">Ce dossier compressé contient uniquement les résultats (inputs exclus) :</p>
-                                    <ul class="mb-0 text-muted small">
-                                        <li>🧬 Les plasmides assemblés (.gb)</li>
-                                        <li>📊 Les fichiers de dilutions (.csv)</li>
-                                        <li>🖼️ L'image du gel (si générée)</li>
-                                    </ul>
-                                </div>
-                                <div class="col-md-4 text-end">
-                                    <a href="{% url 'download_simulation_zip' pk=simulation.id %}" class="btn btn-primary btn-lg">
-                                        <i class="fas fa-download"></i> Télécharger le ZIP
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="headingPlasmids">
-                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#plasmidFiles" aria-expanded="true" aria-controls="plasmidFiles">
-                            <i class="fas fa-dna me-2"></i> <strong>Plasmides Générés (.gb)</strong>
-                        </button>
-                    </h2>
-                    <div id="plasmidFiles" class="accordion-collapse collapse show" aria-labelledby="headingPlasmids" data-bs-parent="#resultFilesAccordion">
-                        <div class="accordion-body">
-
-                            {% if results %}
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Nom du fichier</th>
-                                            <th class="text-end">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for filename in results %}
-                                        <tr>
-                                            <td>
-                                                <i class="fas fa-file-code text-primary me-2"></i> {{ filename }}
-                                            </td>
-                                            <td class="text-end">
-                                                <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#saveModal-{{ forloop.counter }}">
-                                                    <i class="fas fa-plus-circle"></i> Ajouter à une collection
-                                                </button>
-
-                                                <div class="modal fade text-start" id="saveModal-{{ forloop.counter }}" tabindex="-1" aria-hidden="true">
-                                                    <div class="modal-dialog">
-                                                        <div class="modal-content">
-                                                            <form method="POST" action="{% url 'save_generated_plasmid' simulation.id %}">
-                                                                {% csrf_token %}
-
-                                                                <div class="modal-header bg-success text-white">
-                                                                    <h5 class="modal-title"><i class="fas fa-save"></i> Sauvegarder le plasmide</h5>
-                                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                                </div>
-                                                                <div class="modal-body">
-                                                                    <div class="alert alert-light border">
-                                                                        <i class="fas fa-file-code text-primary"></i> <strong>{{ filename }}</strong>
-                                                                    </div>
-
-                                                                    <input type="hidden" name="filename" value="{{ filename }}">
-
-                                                                    <div class="mb-3">
-                                                                        <label class="form-label fw-bold">Option A : Choisir une collection existante</label>
-                                                                        <select name="collection_id" class="form-select collection-select" id="select-{{ forloop.counter }}">
-                                                                            <option value="" selected>-- Sélectionner --</option>
-                                                                            {% for col in my_collections %}
-                                                                                <option value="{{ col.id }}">{{ col.name }}</option>
-                                                                            {% endfor %}
-                                                                        </select>
-                                                                    </div>
-
-                                                                    <div class="text-center text-muted my-2">- OU -</div>
-
-                                                                    <div class="mb-3">
-                                                                        <label class="form-label fw-bold">Option B : Créer une nouvelle collection</label>
-                                                                        <div class="input-group">
-                                                                            <span class="input-group-text"><i class="fas fa-folder-plus"></i></span>
-                                                                            <input type="text" name="new_collection_name" class="form-control new-collection-input"
-                                                                                   id="input-{{ forloop.counter }}" placeholder="Nom du nouveau dossier...">
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <p class="small text-muted mt-3">
-                                                                        <i class="fas fa-info-circle"></i> Le plasmide conservera ses annotations (.gb).
-                                                                    </p>
-                                                                </div>
-
-                                                                <script>
-                                                                    document.addEventListener('DOMContentLoaded', function() {
-                                                                        // Quand on tape dans le champ "Nouveau", on désélectionne la liste
-                                                                        document.getElementById('input-{{ forloop.counter }}').addEventListener('input', function() {
-                                                                            if(this.value.length > 0) {
-                                                                                document.getElementById('select-{{ forloop.counter }}').value = "";
-                                                                                document.getElementById('select-{{ forloop.counter }}').disabled = true;
-                                                                            } else {
-                                                                                document.getElementById('select-{{ forloop.counter }}').disabled = false;
-                                                                            }
-                                                                        });
-                                                                    });
-                                                                </script>
-
-                                                                <div class="modal-footer">
-                                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                                                                    <button type="submit" class="btn btn-success" {% if not my_collections %}disabled{% endif %}>Enregistrer</button>
-                                                                </div>
-                                                            </form>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                            {% else %}
-                                <div class="alert alert-info">
-                                    Aucun fichier GenBank (.gb) n'a été détecté dans les résultats.
-                                </div>
-                            {% endif %}
-
-                        </div>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="headingDilution">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#dilutionFiles" aria-expanded="false" aria-controls="dilutionFiles">
-                            <i class="fas fa-file-csv me-2"></i> Fichiers de Dilutions (CSV)
-                        </button>
-                    </h2>
-                    <div id="dilutionFiles" class="accordion-collapse collapse" aria-labelledby="headingDilution" data-bs-parent="#resultFilesAccordion">
-                        <div class="accordion-body">
-                            <p class="text-muted mb-3">Choisissez votre protocole de pipetage :</p>
-
-                            <div class="row">
-                                <div class="col-md-6 border-end">
-                                    <h5 class="text-primary"><i class="fas fa-flask"></i> Méthode Directe</h5>
-                                    <p class="small text-muted">Pipetage sans dilution intermédiaire.</p>
-                                    <div class="d-grid gap-2">
-                                        <a href="{% url 'download_specific_file' pk=simulation.id filename='dilution-direct.csv' %}" class="btn btn-outline-primary btn-sm">
-                                            <i class="fas fa-download"></i> Télécharger dilution-direct.csv
-                                        </a>
-                                        <a href="{% url 'download_specific_file' pk=simulation.id filename='dilution-direct_mastermix.csv' %}" class="btn btn-outline-secondary btn-sm">
-                                            <i class="fas fa-download"></i> Télécharger Mastermix Direct
-                                        </a>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <h5 class="text-success"><i class="fas fa-vial"></i> Méthode 10x</h5>
-                                    <p class="small text-muted">Avec dilution au 1/10ème.</p>
-                                    <div class="d-grid gap-2">
-                                        <a href="{% url 'download_specific_file' pk=simulation.id filename='dilution-10x.csv' %}" class="btn btn-outline-success btn-sm">
-                                            <i class="fas fa-download"></i> Télécharger dilution-10x.csv
-                                        </a>
-                                        <a href="{% url 'download_specific_file' pk=simulation.id filename='dilution-10x_mastermix.csv' %}" class="btn btn-outline-secondary btn-sm">
-                                            <i class="fas fa-download"></i> Télécharger Mastermix 10x
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {% if csv_data %}
-                            <hr class="my-4">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="mb-0"><i class="fas fa-table"></i> Aperçu (Méthode Directe)</h6>
-                                <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#csvPreview" aria-expanded="false">
-                                    Afficher / Masquer le tableau
-                                </button>
-                            </div>
-
-                            <div class="collapse show" id="csvPreview">
-                                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                                    <table class="table table-sm table-striped table-hover table-bordered" style="font-size: 0.85rem;">
-                                        <thead class="table-light sticky-top">
-                                            <tr>
-                                                {% for header in csv_data.0 %}
-                                                    <th>{{ header }}</th>
-                                                {% endfor %}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for row in csv_data|slice:"1:" %}
-                                            <tr>
-                                                {% for cell in row %}
-                                                    <td>{{ cell }}</td>
-                                                {% endfor %}
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            {% else %}
-                                <p class="text-muted text-center mt-3"><small>Aucun aperçu disponible.</small></p>
-                            {% endif %}
-                            </div>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="headingGel">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#gelSimulation" aria-expanded="false" aria-controls="gelSimulation">
-                            <i class="fas fa-image me-2"></i> Gel Virtuel (Digestion)
-                        </button>
-                    </h2>
-                    <div id="gelSimulation" class="accordion-collapse collapse" aria-labelledby="headingGel" data-bs-parent="#resultFilesAccordion">
-                        <div class="accordion-body">
-                            <p class="text-muted">Visualisation de la digestion in silico.</p>
-
-                            <div class="text-center mb-3">
-                                {% if simulation.result_file %}
-                                    {% if ".csv" not in simulation.result_file %}
-
-                                        <div class="d-inline-block border rounded p-2 bg-white shadow-sm">
-                                            <img src="/media/{{ simulation.result_file }}?v={% now 'U' %}"
-                                            alt="Résultat Digestion"
-                                            class="img-fluid border rounded shadow-sm"
-                                            style="max-height: 500px;">
-                                        </div>
-
-                                        <br><br>
-
-                                        <div class="btn-group">
-                                            <a href="/media/{{ simulation.result_file }}" target="_blank" class="btn btn-primary btn-sm">
-                                                <i class="fas fa-search-plus"></i> Zoomer
-                                            </a>
-                                            <a href="{% url 'download_specific_file' pk=simulation.id filename='digestion.png' %}"
-                                               class="btn btn-success mt-2">
-                                               📥 Télécharger l'image
-                                            </a>
-                                        </div>
-
-                                    {% else %}
-                                        <div class="alert alert-info">
-                                            <i class="fas fa-info-circle"></i> Aucune image de gel n'a été générée pour cette simulation.
-                                        </div>
-                                    {% endif %}
-                                {% else %}
-                                    <div class="alert alert-warning">
-                                        <i class="fas fa-exclamation-triangle"></i> Résultat visuel non disponible.
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-            {% else %}
-                <div class="alert alert-warning">
-                    <i class="fas fa-hourglass-half"></i> Les fichiers ne sont pas encore disponibles.
-                    {% if simulation.status == 'FAILED' %}
-                    <br><strong>La simulation a rencontré une erreur. Veuillez vérifier vos fichiers d'entrée.</strong>
-                    {% endif %}
-                </div>
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Résultats de la simulation #{{ simulation.id }}</h1>
+        
+        <div class="btn-group">
+            {% if user.is_authenticated and simulation.user == user %}
+            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#shareModal">
+                <i class="fas fa-users"></i> Visibilité / Partager
+            </button>
             {% endif %}
 
+            {% if user.is_authenticated %}
+                {% if simulation.user == user or simulation.team.leader == user %}
+                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteSimModal">
+                    <i class="fas fa-trash-alt"></i> Supprimer
+                </button>
+                {% endif %}
+            {% endif %}
         </div>
     </div>
-    <div class="card mt-4 shadow-sm">
-        <div class="card-header bg-light">
-            <h5 class="mb-0"><i class="fas fa-edit"></i> Modifier le Gel</h5>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="modal fade" id="deleteSimModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Confirmer la suppression</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Êtes-vous sûr de vouloir supprimer définitivement la simulation <strong>#{{ simulation.id }}</strong> ?</p>
+                    <p class="text-danger small mb-0"><i class="fas fa-exclamation-triangle"></i> Cette action est irréversible. Tous les fichiers générés seront effacés.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                    <form action="{% url 'delete_simulation' simulation.id %}" method="POST">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Supprimer</button>
+                    </form>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <form method="post" action="{% url 'update_simulation_gel' simulation.id %}">
-                {% csrf_token %}
+    </div>
 
-                <p class="text-muted small">Sélectionnez de nouvelles enzymes pour redessiner le gel sans refaire l'assemblage.</p>
-
-               <div class="mb-3" style="max-height: 200px; overflow-y: auto;">
-
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="gel_enzymes" value="BsaI" id="gel_BsaI">
-                    <label class="form-check-label" for="gel_BsaI">BsaI</label>
+    <div class="modal fade" id="shareModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Modifier la visibilité</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
+                <form action="{% url 'share_simulation_team' simulation.id %}" method="POST">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <p class="mb-3">Actuellement : 
+                            {% if simulation.visibility == 'private' %}
+                                <span class="badge bg-secondary">Privé</span>
+                            {% else %}
+                                <span class="badge bg-info text-dark">Partagé avec {{ simulation.team.name }}</span>
+                            {% endif %}
+                        </p>
 
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="gel_enzymes" value="BsmBI" id="gel_BsmBI">
-                    <label class="form-check-label" for="gel_BsmBI">BsmBI</label>
+                        <label class="form-label fw-bold">Choisir une équipe :</label>
+                        <select name="team_id" class="form-select mb-3">
+                            <option value="" {% if simulation.visibility == 'private' %}selected{% endif %}>-- Garder Privé --</option>
+                            {% for team in user.teams.all %}
+                                <option value="{{ team.id }}" {% if simulation.team == team %}selected{% endif %}>
+                                    {{ team.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">En sélectionnant une équipe, tous ses membres pourront voir les résultats.</div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0 text-primary">Fichiers de sortie générés</h5>
                 </div>
+                <div class="card-body">
 
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="gel_enzymes" value="BbsI" id="gel_BbsI">
-                    <label class="form-check-label" for="gel_BbsI">BbsI</label>
+                    {% if simulation.status == 'COMPLETED' %}
+                    <div class="accordion" id="resultFilesAccordion">
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingZip">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#zipFiles">
+                                    <i class="fas fa-file-archive me-2 text-warning"></i> <strong>Tout télécharger (.zip)</strong>
+                                </button>
+                            </h2>
+                            <div id="zipFiles" class="accordion-collapse collapse show" data-bs-parent="#resultFilesAccordion">
+                                <div class="accordion-body">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-8">
+                                            <small class="text-muted">Contient : Plasmides (.gb), Dilutions (.csv) et Image (.png)</small>
+                                        </div>
+                                        <div class="col-md-4 text-end">
+                                            <a href="{% url 'download_simulation_zip' pk=simulation.id %}" class="btn btn-warning btn-sm text-dark fw-bold">
+                                                <i class="fas fa-download"></i> Télécharger
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingPlasmids">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#plasmidFiles">
+                                    <i class="fas fa-dna me-2 text-success"></i> <strong>Plasmides Générés (.gb)</strong>
+                                </button>
+                            </h2>
+                            <div id="plasmidFiles" class="accordion-collapse collapse" data-bs-parent="#resultFilesAccordion">
+                                <div class="accordion-body p-0">
+                                    {% if results %}
+                                    <div class="list-group list-group-flush">
+                                        {% for filename in results %}
+                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                            <span><i class="fas fa-file-code text-muted me-2"></i> {{ filename }}</span>
+                                            
+                                            {% if user.is_authenticated %}
+                                            <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#saveModal-{{ forloop.counter }}">
+                                                <i class="fas fa-plus"></i> Bibliothèque
+                                            </button>
+
+                                            <div class="modal fade" id="saveModal-{{ forloop.counter }}" tabindex="-1">
+                                                <div class="modal-dialog">
+                                                    <form method="POST" action="{% url 'save_generated_plasmid' simulation.id %}">
+                                                        {% csrf_token %}
+                                                        <div class="modal-content">
+                                                            <div class="modal-header bg-success text-white">
+                                                                <h6 class="modal-title">Sauvegarder {{ filename }}</h6>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <input type="hidden" name="filename" value="{{ filename }}">
+                                                                <label class="form-label small fw-bold">Choisir une collection :</label>
+                                                                <select name="collection_id" class="form-select mb-3" id="select-{{ forloop.counter }}">
+                                                                    <option value="" selected>-- Sélectionner --</option>
+                                                                    {% for col in my_collections %}
+                                                                        <option value="{{ col.id }}">{{ col.name }}</option>
+                                                                    {% endfor %}
+                                                                </select>
+                                                                <div class="text-center small text-muted my-2">- OU -</div>
+                                                                <input type="text" name="new_collection_name" class="form-control" id="input-{{ forloop.counter }}" placeholder="Nouveau nom de collection...">
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="submit" class="btn btn-success">Enregistrer</button>
+                                                            </div>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% else %}
+                                        <div class="p-3 text-muted">Aucun fichier généré.</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingDilution">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#dilutionFiles">
+                                    <i class="fas fa-file-csv me-2 text-primary"></i> <strong>Fichiers de Dilutions (CSV)</strong>
+                                </button>
+                            </h2>
+                            <div id="dilutionFiles" class="accordion-collapse collapse" data-bs-parent="#resultFilesAccordion">
+                                <div class="accordion-body">
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <a href="{% url 'download_specific_file' pk=simulation.id filename='dilution-direct.csv' %}" class="btn btn-outline-primary btn-sm w-100 mb-1">
+                                                Direct
+                                            </a>
+                                            <a href="{% url 'download_specific_file' pk=simulation.id filename='dilution-direct_mastermix.csv' %}" class="btn btn-outline-secondary btn-sm w-100">
+                                                Mastermix Direct
+                                            </a>
+                                        </div>
+                                        <div class="col-6">
+                                            <a href="{% url 'download_specific_file' pk=simulation.id filename='dilution-10x.csv' %}" class="btn btn-outline-success btn-sm w-100 mb-1">
+                                                Dilution 10x
+                                            </a>
+                                            <a href="{% url 'download_specific_file' pk=simulation.id filename='dilution-10x_mastermix.csv' %}" class="btn btn-outline-secondary btn-sm w-100">
+                                                Mastermix 10x
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    {% if csv_data %}
+                                    <hr>
+                                    <h6 class="small fw-bold">Aperçu (Direct) :</h6>
+                                    <div class="table-responsive" style="max-height: 200px;">
+                                        <table class="table table-sm table-striped table-bordered" style="font-size: 0.75rem;">
+                                            <thead>
+                                                <tr>{% for h in csv_data.0 %}<th>{{ h }}</th>{% endfor %}</tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for row in csv_data|slice:"1:" %}
+                                                <tr>{% for c in row %}<td>{{ c }}</td>{% endfor %}</tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingGel">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#gelSimulation">
+                                    <i class="fas fa-image me-2 text-danger"></i> <strong>Gel Virtuel</strong>
+                                </button>
+                            </h2>
+                            <div id="gelSimulation" class="accordion-collapse collapse" data-bs-parent="#resultFilesAccordion">
+                                <div class="accordion-body text-center">
+                                    {% if simulation.result_file and ".csv" not in simulation.result_file %}
+                                        <img src="/media/{{ simulation.result_file }}?v={% now 'U' %}" class="img-fluid border rounded shadow-sm mb-3" style="max-height: 400px;">
+                                        <br>
+                                        <a href="/media/{{ simulation.result_file }}" target="_blank" class="btn btn-primary btn-sm">Zoom</a>
+                                        <a href="{% url 'download_specific_file' pk=simulation.id filename='digestion.png' %}" class="btn btn-secondary btn-sm">Télécharger</a>
+                                    {% else %}
+                                        <div class="alert alert-light">Pas d'image disponible.</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-hourglass-half"></i> Simulation en cours ou échouée.
+                            {% if simulation.status == 'FAILED' %}<br><strong>Erreur détectée.</strong>{% endif %}
+                        </div>
+                    {% endif %}
+
                 </div>
+            </div>
+        </div>
 
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="gel_enzymes" value="SapI" id="gel_SapI">
-                    <label class="form-check-label" for="gel_SapI">SapI</label>
+        <div class="col-md-4">
+            
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Détails</h6>
                 </div>
-
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="gel_enzymes" value="NotI" id="gel_NotI">
-                    <label class="form-check-label" for="gel_NotI">NotI</label>
+                <div class="card-body small">
+                    <p class="mb-1"><strong>Date :</strong> {{ simulation.date_run|date:"d/m/Y H:i" }}</p>
+                    <p class="mb-1"><strong>Statut :</strong> 
+                        {% if simulation.status == 'COMPLETED' %}<span class="text-success">Terminée</span>
+                        {% elif simulation.status == 'FAILED' %}<span class="text-danger">Échec</span>
+                        {% else %}<span class="text-warning">En cours</span>{% endif %}
+                    </p>
+                    <p class="mb-1"><strong>Enzyme :</strong> {{ simulation.enzyme }}</p>
+                    <p class="mb-0"><strong>Visibilité :</strong> 
+                        {% if simulation.visibility == 'team' %}Équipe{% else %}Privé{% endif %}
+                    </p>
                 </div>
-
-
             </div>
 
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="fas fa-sync-alt"></i> Mettre à jour l'image
-                </button>
-            </form>
+            <div class="card shadow-sm border-warning">
+                <div class="card-header bg-warning bg-opacity-10 text-dark">
+                    <h6 class="mb-0"><i class="fas fa-sync-alt"></i> Recalculer le Gel</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'update_simulation_gel' simulation.id %}">
+                        {% csrf_token %}
+                        <p class="small text-muted mb-2">Cochez les enzymes pour simuler une nouvelle digestion :</p>
+                        <div class="mb-3" style="max-height: 150px; overflow-y: auto;">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="gel_enzymes" value="BsaI" id="gel_BsaI">
+                                <label class="form-check-label small" for="gel_BsaI">BsaI</label>
+                            </div>
+
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="gel_enzymes" value="BsmBI" id="gel_BsmBI">
+                                <label class="form-check-label small" for="gel_BsmBI">BsmBI</label>
+                            </div>
+
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="gel_enzymes" value="BbsI" id="gel_BbsI">
+                                <label class="form-check-label small" for="gel_BbsI">BbsI</label>
+                            </div>
+
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="gel_enzymes" value="SapI" id="gel_SapI">
+                                <label class="form-check-label small" for="gel_SapI">SapI</label>
+                            </div>
+
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="gel_enzymes" value="NotI" id="gel_NotI">
+                                <label class="form-check-label small" for="gel_NotI">NotI</label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-warning btn-sm w-100">Mettre à jour</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="text-center mt-3">
+                <a href="{% url 'simulation_list' %}" class="text-decoration-none text-muted small">← Retour à la liste</a>
+            </div>
+
         </div>
     </div>
-    <div class="text-center mb-4">
-        <a href="{% url 'simulation_list' %}" class="btn btn-link">← Retour à la liste des simulations</a>
-    </div>
 </div>
+
+<script>
+    // Petit script pour gérer l'input "Nouvelle Collection" dans les modals
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputs = document.querySelectorAll('input[name="new_collection_name"]');
+        inputs.forEach(input => {
+            input.addEventListener('input', function() {
+                // Trouve le select correspondant dans le même formulaire
+                const form = this.closest('form');
+                const select = form.querySelector('select[name="collection_id"]');
+                if (this.value.length > 0) {
+                    select.value = "";
+                    select.disabled = true;
+                } else {
+                    select.disabled = false;
+                }
+            });
+        });
+    });
+</script>
 {% endblock %}

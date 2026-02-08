@@ -74,6 +74,11 @@ urlpatterns = [
     path('simulation/<int:pk>/update_gel/', views.update_simulation_gel, name='update_simulation_gel'),
     path("teams/<int:team_id>/simulations/", views.team_simulations, name="team_simulations"),
     path('simulation/<int:simulation_id>/save/', views.save_generated_plasmid, name='save_generated_plasmid'),
+    
+    # --- NOUVEAU : Suppression et Partage Simulation ---
+    path('simulation/<int:pk>/delete/', views.delete_simulation, name='delete_simulation'),
+    path('simulation/<int:pk>/share/', views.share_simulation_team, name='share_simulation_team'),
+    # ---------------------------------------------------
 
     # ============================================================
     # ESPACE PERSONNEL

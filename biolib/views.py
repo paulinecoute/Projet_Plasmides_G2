@@ -2136,6 +2136,51 @@ def plasmid_copy(request, pk):
         # GET : On affiche le formulaire vide
         form = CopyPlasmidForm(request.user)
 
+@login_required
+def delete_simulation(request, pk):
+    simulation = get_object_or_404(Simulation, pk=pk)
+    user = request.user
+    is_owner = (simulation.user == user)
+    is_team_leader = (simulation.team and simulation.team.leader == user)
+
+    if not (is_owner or is_team_leader):
+        return HttpResponseForbidden("Vous n'avez pas le droit de supprimer cette simulation.")
+
+    if request.method == 'POST':
+        import shutil
+        sim_dir = os.path.join(settings.MEDIA_ROOT, 'simulations', str(simulation.id))
+        if os.path.exists(sim_dir):
+            shutil.rmtree(sim_dir)
+        
+        simulation.delete()
+        messages.success(request, "Simulation supprimée avec succès.")
+        return redirect('simulation_list')
+
+    return redirect('simulation_result', pk=pk)
+
+@login_required
+def share_simulation_team(request, pk):
+    simulation = get_object_or_404(Simulation, pk=pk)
+    
+    if simulation.user != request.user:
+        return HttpResponseForbidden("Seul le propriétaire peut partager cette simulation.")
+
+    if request.method == 'POST':
+        team_id = request.POST.get('team_id')
+        
+        if team_id:
+            team = get_object_or_404(Team, id=team_id, members=request.user)
+            simulation.team = team
+            simulation.visibility = 'team'
+            simulation.save()
+            messages.success(request, f"Simulation partagée avec l'équipe '{team.name}'.")
+        else:
+            simulation.team = None
+            simulation.visibility = 'private'
+            simulation.save()
+            messages.success(request, "Simulation repassée en privé.")
+
+    return redirect('simulation_result', pk=pk)
     return render(request, 'biolib/plasmid_copy.html', {
         'form': form,
         'plasmid': original_plasmid
