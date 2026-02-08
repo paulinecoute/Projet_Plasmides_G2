@@ -149,6 +149,85 @@ class PlasmidForm(forms.ModelForm):
                 raise ValidationError("Format non supporté. Utilisez : .gb, .fasta ou .zip")
 
         return file
+
+class PlasmidCollectionForm(forms.ModelForm):
+    SCOPE_CHOICES = [
+        ('private', '🔒 Privée (Moi uniquement)'),
+        ('team', '👥 Équipe (Partagée avec mes membres)')
+    ]
+    scope = forms.ChoiceField(
+        choices=SCOPE_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'list-unstyled'}),
+        label="Visibilité de la collection",
+        initial='private'
+    )
+
+    new_team_name = forms.CharField(
+        required=False,
+        label="Ou créer une nouvelle équipe",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Nom de la nouvelle équipe...'
+        })
+    )
+    class Meta:
+        model = PlasmidCollection
+        fields = ['name', 'description', 'team']
+
+        labels = {
+            'name': 'Nom de la collection',
+            'description': 'Description',
+            'team': 'Choisir l\'équipe'
+        }
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Projet Vaccin 2026'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'team': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+    def __init__(self, user, *args, **kwargs):
+        """
+        On surcharge __init__ pour récupérer l'utilisateur connecté ('user')
+        et filtrer les équipes.
+        """
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+        # On ne propose que les équipes dont l'utilisateur est le CHEF/LEADER
+        if user.is_authenticated:
+            try:
+                self.fields['team'].queryset = Team.objects.filter(leader=user)
+            except:
+                self.fields['team'].queryset = Team.objects.none()
+        else:
+            self.fields['team'].queryset = Team.objects.none()
+
+        self.fields['team'].required = False # On gère la validation manuellement dans clean()
+
+        if self.instance.pk and self.instance.team:
+            self.fields['scope'].initial = 'team'
+
+    def clean(self):
+        """
+        Nettoyage et Validation personnalisée
+        """
+        cleaned_data = super().clean()
+        scope = cleaned_data.get('scope')
+        team = cleaned_data.get('team')
+        new_team_name = cleaned_data.get('new_team_name')
+
+        if scope == 'team':
+            if team and new_team_name:
+                raise forms.ValidationError("Veuillez choisir une seule option : soit une équipe existante, soit une nouvelle. Pas les deux.")
+            if not team and not new_team_name:
+                self.add_error('team', "Veuillez sélectionner une équipe ou en créer une nouvelle.")
+
+        if scope == 'private':
+            cleaned_data['team'] = None
+            cleaned_data['new_team_name'] = ""
+
+        return cleaned_data
+
 class SimulationForm(forms.ModelForm):
 
     custom_enzymes = forms.MultipleChoiceField(
