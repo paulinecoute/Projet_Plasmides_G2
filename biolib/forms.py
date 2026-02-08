@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
-from .models import CampaignTemplate, TemplatePart, Simulation, Team, PlasmidCollection, Correspondence, Plasmid
+from .models import CampaignTemplate, TemplatePart, Simulation, Team, PlasmidCollection, Correspondence, Plasmid, PublicCampaign
 from django.forms import inlineformset_factory
 from django.db.models import Q
 import os
@@ -397,3 +397,18 @@ class CopyPlasmidForm(forms.Form):
             raise forms.ValidationError("Vous devez choisir une collection existante OU entrer un nom pour une nouvelle.")
 
         return cleaned_data
+
+# ==============================================================================
+# FORMULAIRE CAMPAGNES PUBLIQUES (ADMIN)
+# ==============================================================================
+
+class PublicCampaignForm(forms.ModelForm):
+    class Meta:
+        model = PublicCampaign
+        fields = ['name', 'description', 'file']
+        
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Campagne Venus'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Petite description...'}),
+            'file': forms.FileInput(attrs={'class': 'form-control', 'accept': '.xlsx,.xls,.csv'})
+        }
