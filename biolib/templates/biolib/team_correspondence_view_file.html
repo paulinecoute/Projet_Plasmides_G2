@@ -2,83 +2,33 @@
 {% block title %}Voir · {{ table.name }}{% endblock %}
 
 {% block content %}
-<style>
-  :root {
-    --bg-main: #f0f7ff;
-    --app-primary: #007bff;
-    --border-color: rgba(0, 123, 255, 0.1);
-    --text-dark: #004085;
-    --code-bg: #f8fbff;
-  }
-
-  body { background-color: var(--bg-main); }
-  
-  .content-wrapper { max-width: 1000px; margin: 40px auto; padding-bottom: 60px; }
-
-  .btn-back-circle {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 45px; height: 45px; background: #fff;
-    border: 1px solid var(--border-color); border-radius: 15px;
-    color: var(--app-primary); transition: 0.2s; text-decoration: none; margin-bottom: 25px;
-    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.05);
-  }
-  .btn-back-circle:hover { background: var(--app-primary); color: #fff; transform: translateX(-3px); }
-
-  .hero-section { margin-bottom: 35px; }
-  .page-title { font-weight: 800; font-size: 2.8rem; letter-spacing: -0.04em; color: var(--text-dark); line-height: 1.1; margin-bottom: 8px; }
-  .page-subtitle { color: #6c757d; font-size: 1.1rem; font-weight: 500; }
-
-  .preview-card {
-    background: #fff;
-    border: 1px solid var(--border-color);
-    border-radius: 30px;
-    padding: 10px; 
-    box-shadow: 0 10px 40px rgba(0, 123, 255, 0.06);
-    overflow: hidden;
-  }
-
-  .code-container {
-    background: var(--code-bg);
-    border-radius: 22px;
-    padding: 30px;
-    border: 1px solid rgba(0, 123, 255, 0.05);
-  }
-
-  .code-area {
-    font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
-    font-size: 0.9rem;
-    line-height: 1.7;
-    color: #475569;
-    white-space: pre;
-    max-height: 65vh;
-    overflow: auto;
-    margin: 0;
-  }
-
-  .code-area::-webkit-scrollbar { width: 8px; height: 8px; }
-  .code-area::-webkit-scrollbar-track { background: transparent; }
-  .code-area::-webkit-scrollbar-thumb { background: rgba(0, 123, 255, 0.1); border-radius: 20px; }
-  .code-area::-webkit-scrollbar-thumb:hover { background: rgba(0, 123, 255, 0.2); }
-</style>
-
-<div class="container">
-  <div class="content-wrapper">
+<div class="container py-5">
+  <div class="mx-auto" style="max-width: 1000px;">
     
-    <a href="{% url 'team_correspondence_detail' team.id table.id %}" class="btn-back-circle shadow-sm">
-      <i class="bi bi-arrow-left fs-5"></i>
-    </a>
-
-    <div class="hero-section">
-      <span class="badge bg-primary bg-opacity-10 text-primary mb-2 px-3 py-2 rounded-pill fw-bold" style="font-size: 0.7rem;">
-        <i class="bi bi-eye-fill me-1"></i> MODE LECTURE
-      </span>
-      <h1 class="page-title">{{ table.name }}</h1>
-      <p class="page-subtitle">Exploration des données brutes du fichier</p>
+    <div class="mb-4">
+      <a href="{% url 'team_correspondence_detail' team.id table.id %}" class="btn btn-outline-secondary btn-sm rounded-3">
+        <i class="bi bi-arrow-left me-1"></i> Retour
+      </a>
     </div>
 
-    <div class="preview-card">
-      <div class="code-container">
-        <pre class="code-area">{{ content }}</pre>
+    <div class="mb-5">
+      <span class="badge bg-primary bg-opacity-10 text-primary mb-2 px-3 py-2 rounded-pill fw-bold text-uppercase" style="font-size: 0.7rem;">
+        <i class="bi bi-eye-fill me-1"></i> Mode lecture
+      </span>
+      <h1 class="display-5 fw-bold text-dark mb-1">{{ table.name }}</h1>
+      <p class="text-muted fs-5">Exploration des données brutes du fichier</p>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+      <div class="card-body p-0">
+        <div class="bg-light p-4 border-bottom">
+          <div class="d-flex align-items-center text-muted small fw-bold text-uppercase">
+            <i class="bi bi-file-earmark-text me-2"></i> Contenu du fichier
+          </div>
+        </div>
+        <div class="p-4" style="background-color: #f8f9fa;">
+          <pre class="m-0 p-0" style="font-family: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size: 0.9rem; line-height: 1.6; color: #334155; max-height: 65vh; overflow: auto; white-space: pre;">{{ content }}</pre>
+        </div>
       </div>
     </div>
     

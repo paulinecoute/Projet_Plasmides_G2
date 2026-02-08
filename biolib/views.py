@@ -1114,24 +1114,22 @@ def team_delete(request, team_id):
         return render(request, 'biolib/team_confirm_delete.html', {'team': team})
     return HttpResponse("Accès refusé", status=403)
 
+
 @login_required
 def team_list(request):
     teams = Team.objects.filter(members=request.user)
 
     for team in teams:
         team.members_count = team.members.count()
-
         team.collections_count = team.plasmidcollection_set.count()
+        team.tables_count = team.correspondence_set.count()
+        team.campaigns_count = team.simulations.count()
+        team.templates_count = team.templates.count()
 
-        team.plasmids_count = Plasmid.objects.filter(collections__team=team).distinct().count()
-
-        team.simulations_count = team.simulations.count()
-
-    context = {
+    return render(request, 'biolib/teams.html', {
         'teams': teams,
-    }
+    })
 
-    return render(request, 'biolib/teams.html', context)
 
 # ============================================================
 # COLLECTIONS UTILISATEUR (équipe)

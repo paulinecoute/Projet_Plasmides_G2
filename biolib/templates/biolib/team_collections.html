@@ -3,196 +3,54 @@
 {% block title %}Collections · {{ team.name }}{% endblock %}
 
 {% block content %}
-<style>
-  :root {
-    --bg-main: #f0f7ff;
-    --app-primary: #007bff;
-    --border-color: rgba(0, 123, 255, 0.1);
-    --text-dark: #004085;
-  }
-
-  body { background-color: var(--bg-main); }
-
-  .content-wrapper {
-    max-width: 850px;
-    margin: 40px auto;
-    padding-bottom: 100px;
-  }
-  
-  .btn-back-circle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 45px;
-    height: 45px;
-    background: #fff;
-    border: 1px solid var(--border-color);
-    border-radius: 15px;
-    color: var(--app-primary);
-    transition: all 0.2s;
-    text-decoration: none;
-    margin-bottom: 25px;
-  }
-  .btn-back-circle:hover { 
-    background: var(--app-primary); 
-    color: #fff;
-    transform: translateX(-3px);
-  }
-
-  .page-header { margin-bottom: 40px; }
-  
-  .page-title { 
-    font-weight: 800; 
-    font-size: 2.6rem; 
-    color: var(--text-dark);
-    letter-spacing: -0.04em; 
-  }
-
-  .team-tag { 
-    font-size: 0.7rem; 
-    font-weight: 800; 
-    text-transform: uppercase; 
-    color: var(--app-primary); 
-    background: #eef6ff; 
-    padding: 5px 15px; 
-    border-radius: 10px; 
-    display: inline-block; 
-    margin-bottom: 12px; 
-    letter-spacing: 0.05em;
-  }
-
-  .collection-list-container { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 15px; 
-  }
-  
-  .collection-row {
-    background: #fff;
-    border: 1px solid var(--border-color);
-    border-radius: 24px;
-    padding: 22px 30px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    text-decoration: none;
-    color: inherit;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.02);
-  }
-
-  .collection-row:hover {
-    border-color: var(--app-primary);
-    transform: scale(1.01) translateX(5px);
-    box-shadow: 0 10px 30px rgba(0, 123, 255, 0.08);
-  }
-
-  .c-info-box { display: flex; align-items: center; gap: 20px; }
-  
-  .c-icon-circle { 
-    width: 50px; 
-    height: 50px; 
-    background: #f0f7ff; 
-    border-radius: 16px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    font-size: 1.4rem; 
-    color: var(--app-primary); 
-    transition: 0.2s;
-  }
-  
-  .collection-row:hover .c-icon-circle {
-    background: var(--app-primary);
-    color: #fff;
-  }
-  
-  .c-text-main { display: flex; flex-direction: column; }
-  .c-name { font-weight: 800; font-size: 1.2rem; color: var(--text-dark); margin-bottom: 2px; }
-  .c-owner-email { font-size: 0.85rem; color: #6c757d; font-weight: 500; }
-
-  .btn-create-biolib {
-    background: var(--app-primary); 
-    color: #fff; 
-    border-radius: 15px; 
-    padding: 12px 24px;
-    font-weight: 700; 
-    font-size: 0.9rem; 
-    text-decoration: none; 
-    transition: all 0.2s;
-    display: inline-flex; 
-    align-items: center; 
-    gap: 8px; 
-    border: none;
-    box-shadow: 0 8px 20px rgba(0, 123, 255, 0.2);
-  }
-  .btn-create-biolib:hover { 
-    background: #0056b3; 
-    color: #fff; 
-    transform: translateY(-2px);
-  }
-
-  .arrow-indicator { 
-    color: #ced4da; 
-    font-size: 1.2rem; 
-    transition: 0.3s; 
-  }
-  .collection-row:hover .arrow-indicator { 
-    color: var(--app-primary); 
-    transform: translateX(5px); 
-  }
-
-  .empty-state-biolib {
-    background: #fff;
-    border: 2px dashed var(--border-color);
-    border-radius: 30px;
-    padding: 60px 20px;
-    text-align: center;
-  }
-</style>
-
-<div class="container">
-  <div class="content-wrapper">
+<div class="container py-5">
+  <div class="mx-auto" style="max-width: 850px;">
     
-    <a href="{{ next|default:request.META.HTTP_REFERER|default:'/' }}" class="btn-back-circle shadow-sm">
-      <i class="bi bi-arrow-left fs-5"></i>
-    </a>
+    <div class="mb-4">
+      <a href="{{ next|default:request.META.HTTP_REFERER|default:'/' }}" class="btn btn-outline-secondary btn-sm rounded-3">
+        <i class="bi bi-arrow-left me-1"></i> Retour
+      </a>
+    </div>
 
-    <div class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-5">
       <div>
-        <span class="team-tag"><i class="bi bi-people-fill me-1"></i> {{ team.name }}</span>
-        <h1 class="page-title">Collections</h1>
+        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-2 mb-2 text-uppercase fw-bold" style="font-size: 0.7rem;">
+          <i class="bi bi-people-fill me-1"></i> {{ team.name }}
+        </span>
+        <h1 class="display-5 fw-bold text-dark mb-0">Collections</h1>
       </div>
       
       {% if is_leader %}
-        <a href="{% url 'team_collection_create' team.id %}" class="btn-create-biolib">
-          <i class="bi bi-plus-circle-fill"></i> Ajouter
+        <a href="{% url 'team_collection_create' team.id %}" class="btn btn-primary btn-lg rounded-pill px-4 fw-bold shadow-sm">
+          <i class="bi bi-plus-lg me-1"></i> Ajouter
         </a>
       {% endif %}
     </div>
 
-    <div class="collection-list-container">
+    <div class="row g-3">
       {% for collection in collections %}
-        <a href="{% url 'team_collection_detail' team.id collection.id %}" class="collection-row">
-          <div class="c-info-box">
-            <div class="c-icon-circle">
-              <i class="bi bi-folder2-open"></i>
+        <div class="col-12">
+          <a href="{% url 'team_collection_detail' team.id collection.id %}" class="card border-0 shadow-sm rounded-4 text-decoration-none list-group-item-action p-4">
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="d-flex align-items-center gap-3">
+                <div class="bg-light text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                  <i class="bi bi-folder2-open fs-4"></i>
+                </div>
+                <div>
+                  <h5 class="fw-bold text-dark mb-1">{{ collection.name }}</h5>
+                  <div class="text-muted small fw-medium">
+                    <i class="bi bi-person me-1"></i> {{ collection.owner.email }}
+                  </div>
+                </div>
+              </div>
+              
+              <i class="bi bi-chevron-right text-muted fs-5"></i>
             </div>
-            <div class="c-text-main">
-              <span class="c-name">{{ collection.name }}</span>
-              <span class="c-owner-email">
-                <i class="bi bi-person me-1"></i> {{ collection.owner.email }}
-              </span>
-            </div>
-          </div>
-          
-          <div class="arrow-indicator">
-            <i class="bi bi-chevron-right"></i>
-          </div>
-        </a>
+          </a>
+        </div>
       {% empty %}
-        <div class="empty-state-biolib">
-          <i class="bi bi-inbox text-muted opacity-25 fs-1 mb-3 d-block"></i>
+        <div class="col-12 text-center py-5 bg-white rounded-4 border border-dashed shadow-sm">
+          <i class="bi bi-inbox text-muted opacity-25 display-1 mb-3 d-block"></i>
           <h5 class="fw-bold text-dark">L'archive est vide</h5>
           <p class="text-muted small mb-0">Aucune collection n'a encore été partagée avec l'équipe {{ team.name }}.</p>
         </div>

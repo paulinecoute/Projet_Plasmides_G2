@@ -2,84 +2,24 @@
 {% block title %}Table · {{ table.name }}{% endblock %}
 
 {% block content %}
-<style>
-  :root {
-    --bg-main: #f0f7ff;
-    --app-primary: #007bff;
-    --border-color: rgba(0, 123, 255, 0.1);
-    --text-dark: #004085;
-  }
+<div class="container py-5">
+  <div class="mx-auto" style="max-width: 900px;">
 
-  body { background-color: var(--bg-main); }
-  .content-wrapper { max-width: 900px; margin: 40px auto; padding-bottom: 60px; }
+    <div class="mb-4">
+      <a href="{% url 'team_correspondences' team.id %}" class="btn btn-outline-secondary btn-sm rounded-3">
+        <i class="bi bi-arrow-left me-1"></i> Retour
+      </a>
+    </div>
 
-  /* Bouton retour circulaire BioLib */
-  .btn-back-circle {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 45px; height: 45px; background: #fff;
-    border: 1px solid var(--border-color); border-radius: 15px;
-    color: var(--app-primary); transition: 0.2s; text-decoration: none; margin-bottom: 25px;
-  }
-  .btn-back-circle:hover { background: var(--app-primary); color: #fff; transform: translateX(-3px); }
-
-  .hero-section { margin-bottom: 40px; }
-  .table-title { font-weight: 800; font-size: 2.8rem; letter-spacing: -0.04em; color: var(--text-dark); line-height: 1.1; margin-bottom: 12px; }
-  .table-desc { font-size: 1.1rem; color: #6c757d; font-weight: 500; max-width: 650px; line-height: 1.5; }
-
-  /* Card de fichier BioLib */
-  .card-box {
-    background: #fff; border: 1px solid var(--border-color);
-    border-radius: 28px; padding: 30px; margin-bottom: 30px;
-    box-shadow: 0 10px 30px rgba(0, 123, 255, 0.05);
-  }
-
-  .file-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
-  .file-left { display: flex; align-items: center; gap: 18px; }
-
-  .file-icon-box {
-    width: 56px; height: 56px; background: #f0f7ff; border-radius: 18px; 
-    display: flex; align-items: center; justify-content: center; 
-    color: var(--app-primary); font-size: 1.5rem;
-  }
-
-  /* Boutons Pilules BioLib */
-  .btn-pill-biolib {
-    border-radius: 15px; padding: 10px 20px; font-weight: 700; font-size: 0.85rem;
-    transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; 
-    text-decoration: none !important; border: 1px solid transparent;
-  }
-  
-  .btn-pill-primary { background: var(--app-primary); color: #fff; border: none; }
-  .btn-pill-primary:hover { background: #0056b3; transform: translateY(-2px); color: #fff; box-shadow: 0 5px 15px rgba(0, 123, 255, 0.2); }
-  
-  .btn-pill-outline { background: #fff; color: var(--app-primary); border-color: var(--border-color); }
-  .btn-pill-outline:hover { background: #f8fbff; border-color: var(--app-primary); }
-
-  .btn-pill-danger-outline { background: #fff; color: #dc3545; border-color: #f8d7da; }
-  .btn-pill-danger-outline:hover { background: #dc3545; color: #fff; border-color: #dc3545; }
-
-  .custom-file-input {
-    border-radius: 12px; border: 1px solid var(--border-color);
-    padding: 8px 12px; font-size: 0.85rem; background: #fdfdfd;
-  }
-</style>
-
-<div class="container">
-  <div class="content-wrapper">
-
-    <a href="{% url 'team_correspondences' team.id %}" class="btn-back-circle shadow-sm">
-      <i class="bi bi-arrow-left fs-5"></i>
-    </a>
-
-    <div class="hero-section">
+    <div class="mb-5">
       <div class="row align-items-end g-4">
         <div class="col-md">
-          <span class="badge bg-primary bg-opacity-10 text-primary mb-2 px-3 py-2 rounded-pill fw-bold" style="font-size: 0.7rem;">
-            <i class="bi bi-table me-1"></i> TABLE DE CORRESPONDANCE
+          <span class="badge bg-primary bg-opacity-10 text-primary mb-2 px-3 py-2 rounded-pill fw-bold text-uppercase" style="font-size: 0.7rem;">
+            <i class="bi bi-table me-1"></i> Table de correspondance
           </span>
-          <h1 class="table-title">{{ table.name }}</h1>
+          <h1 class="display-5 fw-bold text-dark mb-2">{{ table.name }}</h1>
           {% if table.description %}
-            <p class="table-desc">{{ table.description }}</p>
+            <p class="text-muted fs-5 mb-0">{{ table.description }}</p>
           {% endif %}
         </div>
         
@@ -87,8 +27,8 @@
         <div class="col-md-auto">
           <form method="post" action="{% url 'team_correspondence_delete' team.id table.id %}" onsubmit="return confirm('Supprimer définitivement cette table ?');">
             {% csrf_token %}
-            <button type="submit" class="btn-pill-biolib btn-pill-danger-outline">
-              <i class="bi bi-trash3"></i> Supprimer la table
+            <button type="submit" class="btn btn-outline-danger rounded-pill px-4 fw-bold">
+              <i class="bi bi-trash3 me-1"></i> Supprimer
             </button>
           </form>
         </div>
@@ -96,17 +36,17 @@
       </div>
     </div>
 
-    <div class="card-box">
-      <div class="file-row">
-        <div class="file-left">
-          <div class="file-icon-box">
-            <i class="bi bi-file-earmark-spreadsheet-fill"></i>
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="bg-light text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
+            <i class="bi bi-file-earmark-spreadsheet-fill fs-3"></i>
           </div>
           <div class="d-flex flex-column">
-            <span class="fw-bold text-dark" style="font-size: 1.1rem;">
+            <span class="fw-bold text-dark fs-5">
               {% if table.file %}{{ table.file.name|cut:"correspondences/" }}{% else %}En attente de données...{% endif %}
             </span>
-            <span class="text-muted small fw-bold text-uppercase" style="letter-spacing: 0.05em; font-size: 0.7rem;">
+            <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">
                 Format CSV ou Excel requis
             </span>
           </div>
@@ -114,17 +54,17 @@
 
         <div class="d-flex gap-2 flex-wrap">
           {% if table.file %}
-            <a href="{% url 'team_correspondence_view_file' team.id table.id %}" class="btn-pill-biolib btn-pill-outline">
-              <i class="bi bi-eye"></i> Aperçu
+            <a href="{% url 'team_correspondence_view_file' team.id table.id %}" class="btn btn-outline-primary rounded-pill px-3 fw-bold">
+              <i class="bi bi-eye me-1"></i> Aperçu
             </a>
             
-            <a href="{{ table.file.url }}" download class="btn-pill-biolib btn-pill-outline">
+            <a href="{{ table.file.url }}" download class="btn btn-outline-primary rounded-pill px-3 fw-bold">
               <i class="bi bi-download"></i>
             </a>
 
             {% if is_owner %}
-              <button type="button" class="btn-pill-biolib btn-pill-primary" id="btn-replace-file">
-                <i class="bi bi-arrow-repeat"></i> Remplacer
+              <button type="button" class="btn btn-primary rounded-pill px-3 fw-bold shadow-sm" id="btn-replace-file">
+                <i class="bi bi-arrow-repeat me-1"></i> Remplacer
               </button>
 
               <form id="replace-file-form" method="post" enctype="multipart/form-data" 
@@ -136,10 +76,10 @@
 
           {% else %}
             {% if is_owner %}
-              <form method="post" enctype="multipart/form-data" action="{% url 'team_correspondence_attach_file' team.id table.id %}" class="d-flex gap-2 align-items-center">
+              <form method="post" enctype="multipart/form-data" action="{% url 'team_correspondence_attach_file' team.id table.id %}" class="d-flex gap-2 align-items-center flex-wrap">
                 {% csrf_token %}
-                <input type="file" name="file" required class="custom-file-input" accept=".csv, .xlsx, .xls">
-                <button class="btn-pill-biolib btn-pill-primary">
+                <input type="file" name="file" required class="form-control form-control-sm border-light bg-light rounded-3 w-auto" accept=".csv, .xlsx, .xls">
+                <button class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
                     Importer
                 </button>
               </form>
@@ -152,7 +92,6 @@
   </div>
 </div>
 
-{# Script pour le déclenchement de l'input caché #}
 {% if table.file and is_owner %}
 <script>
   (function () {

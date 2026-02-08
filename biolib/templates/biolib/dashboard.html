@@ -3,265 +3,123 @@
 {% block title %}Mon espace personnel{% endblock %}
 
 {% block content %}
-<style>
-  :root {
-    --bg-main: #f0f7ff;
-    --app-primary: #007bff;
-    --border-color: rgba(0, 123, 255, 0.1);
-  }
+<div class="container py-5">
+  <div class="mx-auto" style="max-width: 900px;">
 
-  body {
-    background-color: var(--bg-main);
-  }
-
-  .content-wrapper {
-    max-width: 900px;
-    margin: 40px auto;
-    padding-bottom: 80px;
-  }
-
-  .hero-section { margin-bottom: 35px; }
-  .page-title {
-    font-weight: 800;
-    font-size: 2.5rem;
-    color: #004085;
-    letter-spacing: -0.04em;
-    margin-bottom: 5px;
-  }
-  .page-subtitle {
-    color: #6c757d;
-    font-size: 1.05rem;
-  }
-
-  .profile-box {
-    background: #fff;
-    border: 1px solid var(--border-color);
-    border-radius: 30px;
-    padding: 30px;
-    margin-bottom: 40px;
-    box-shadow: 0 10px 30px rgba(0, 123, 255, 0.05);
-  }
-
-  .user-avatar {
-    width: 80px;
-    height: 80px;
-    background: linear-gradient(135deg, #007bff, #0056b3);
-    color: #fff;
-    border-radius: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 2rem;
-    box-shadow: 0 8px 20px rgba(0, 123, 255, 0.2);
-  }
-
-  .section-label {
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: #007bff;
-    margin-bottom: 15px;
-    display: block;
-    opacity: 0.8;
-  }
-
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    gap: 15px;
-    margin-bottom: 45px;
-  }
-
-  .stat-card {
-    background: #fff;
-    border: 1px solid var(--border-color);
-    border-radius: 20px;
-    padding: 20px;
-    transition: all 0.2s;
-    text-align: center;
-  }
-
-  .stat-card:hover {
-    transform: translateY(-3px);
-    border-color: var(--app-primary);
-  }
-
-  .stat-card h3 {
-    font-weight: 800;
-    font-size: 1.3rem; 
-    color: #004085;
-    margin: 5px 0 0 0;
-  }
-
-  .stat-card span {
-    font-size: 0.65rem;
-    font-weight: 700;
-    color: #888;
-    text-transform: uppercase;
-  }
-
-  .menu-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .menu-item-row {
-    background: #fff;
-    border: 1px solid var(--border-color);
-    border-radius: 20px;
-    padding: 22px 30px;
-    text-decoration: none;
-    color: inherit;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
-  }
-
-  .menu-item-row:hover {
-    border-color: var(--app-primary);
-    transform: translateX(10px);
-    box-shadow: 0 10px 25px rgba(0, 123, 255, 0.08);
-  }
-
-  .menu-content h5 {
-    font-weight: 700;
-    color: #004085;
-    margin-bottom: 4px;
-  }
-
-  .menu-content p {
-    color: #6c757d;
-    font-size: 0.9rem;
-    margin-bottom: 0;
-  }
-
-  .chevron-icon {
-    font-size: 1.2rem;
-    color: #d1e3f8;
-    transition: 0.3s;
-  }
-
-  .menu-item-row:hover .chevron-icon {
-    color: var(--app-primary);
-    transform: translateX(5px);
-  }
-</style>
-
-<div class="container">
-  <div class="content-wrapper">
-
-    <div class="hero-section text-center text-md-start">
-      <h1 class="page-title">Espace personnel</h1>
-      <p class="page-subtitle">Gérez vos actifs biologiques et vos collaborations</p>
+    <div class="alert alert-danger border-0 shadow-sm rounded-4 p-4 mb-5">
+      <div class="d-flex gap-3">
+        <i class="bi bi-exclamation-octagon-fill fs-4"></i>
+        <div>
+          <p class="mb-2 fw-bold">Tout est presque fini sur cette partie j'ai enlever les bugs, il me reste que quelques css à enlever. Je vais le finir à ma pause dej.</p>
+          <p class="mb-0">La seule chose qui marche pas du coup c'est la page de visualisation des plasmides. Agash t'avais rajouté un bouton "Modifier les annotations" qui est accessible par tout le monde. Si t'as pas le temps de le faire lorsque je finis le taff je vais le faire.</p>
+        </div>
+      </div>
     </div>
 
-    <div class="profile-box shadow-sm">
+    <div class="mb-4">
+      <h1 class="display-5 fw-bold text-primary">Espace personnel</h1>
+      <p class="text-secondary">Gérez vos actifs biologiques et vos collaborations</p>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-5 p-4 bg-white rounded-4">
       <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-        <div class="d-flex align-items-center gap-4">
-          <div class="user-avatar text-uppercase">{{ user.username|first }}</div>
+        <div class="d-flex align-items-center gap-3">
+          <div class="bg-primary text-white d-flex align-items-center justify-content-center rounded-3 fw-bold fs-2" style="width: 64px; height: 64px;">
+            {{ user.username|first|upper }}
+          </div>
           <div>
-            <h3 class="mb-0 fw-bold" style="color: #004085;">{{ user.username }}</h3>
+            <h3 class="mb-0 fw-bold">{{ user.username }}</h3>
             <span class="text-muted">
               <i class="bi bi-envelope me-1"></i> {{ user.email|default:"no-email@biolib.com" }}
             </span>
           </div>
         </div>
-        <div class="text-md-end border-start ps-md-5 ps-0 border-0 border-md-start">
-          <div class="section-label mb-1">Dernière session</div>
-          <div class="fw-bold fs-5" style="color: #004085;">
+        <div class="border-start ps-4 d-none d-md-block">
+          <small class="text-uppercase fw-bold text-primary d-block mb-1">Dernière session</small>
+          <div class="fw-bold fs-5 text-dark">
             {{ user.last_login|date:"d M Y" }}
           </div>
         </div>
       </div>
     </div>
 
-    <span class="section-label">Vos Statistiques</span>
-    <div class="stats-grid">
-
-      <div class="stat-card shadow-sm">
-        <span>Collections</span>
-        <h3>
-          {{ collections_count|default:"0" }}
-          {% if collections_team_count %}
-            ({{ collections_team_count }})
-          {% endif %}
-        </h3>
+    <small class="text-uppercase fw-bold text-primary d-block mb-3">Vos Statistiques</small>
+    <div class="row g-3 mb-5">
+      <div class="col-6 col-md-3">
+        <div class="card h-100 border-0 shadow-sm p-3 text-center rounded-3">
+          <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">Collections</small>
+          <h3 class="fw-bold mb-0">
+            {{ collections_count|default:"0" }}
+          </h3>
+        </div>
       </div>
-
-      <div class="stat-card shadow-sm">
-        <span>Équipes</span>
-        <h3>
-          {{ teams_count|default:"0" }}
-        </h3>
+      <div class="col-6 col-md-3">
+        <div class="card h-100 border-0 shadow-sm p-3 text-center rounded-3">
+          <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">Équipes</small>
+          <h3 class="fw-bold mb-0">{{ teams_count|default:"0" }}</h3>
+        </div>
       </div>
-
-      <div class="stat-card shadow-sm">
-        <span>Simulations</span>
-        <h3>
-          {{ productions_count|default:"0" }}
-          {% if productions_team_count %}
-            ({{ productions_team_count }})
-          {% endif %}
-        </h3>
+      <div class="col-6 col-md-3">
+        <div class="card h-100 border-0 shadow-sm p-3 text-center rounded-3">
+          <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">Simulations</small>
+          <h3 class="fw-bold mb-0">
+            {{ productions_count|default:"0" }}
+          </h3>
+        </div>
       </div>
-
-      <div class="stat-card shadow-sm">
-        <span>Templates</span>
-        <h3>
-          {{ templates_count|default:"0" }}
-          {% if templates_team_count %}
-            ({{ templates_team_count }})
-          {% endif %}
-        </h3>
+      <div class="col-6 col-md-3">
+        <div class="card h-100 border-0 shadow-sm p-3 text-center rounded-3">
+          <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">Templates</small>
+          <h3 class="fw-bold mb-0">
+            {{ templates_count|default:"0" }}
+          </h3>
+        </div>
       </div>
-
     </div>
 
-    <span class="section-label">Outils & Données</span>
-    <div class="menu-list">
-      <a href="{% url 'plasmid_collection_list' %}" class="menu-item-row shadow-sm">
-        <div class="menu-content">
-          <h5><i class="bi bi-folder2-open me-2 text-primary"></i>Collections</h5>
-          <p>Gérez vos bibliothèques de plasmides et vos stocks.</p>
+    <small class="text-uppercase fw-bold text-primary d-block mb-3">Outils & Données</small>
+    <div class="list-group list-group-flush shadow-sm rounded-4 overflow-hidden border">
+      
+      <a href="{% url 'plasmid_collection_list' %}" class="list-group-item list-group-item-action p-4 d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="fw-bold mb-1"><i class="bi bi-folder2-open me-2 text-primary"></i>Collections</h5>
+          <p class="mb-0 text-muted small">Gérez vos bibliothèques de plasmides et vos stocks.</p>
         </div>
-        <i class="bi bi-chevron-right chevron-icon"></i>
+        <i class="bi bi-chevron-right text-light fs-4"></i>
       </a>
 
-      <a href="{% url 'simulation_list' %}" class="menu-item-row shadow-sm">
-        <div class="menu-content">
-          <h5><i class="bi bi-cpu me-2 text-primary"></i>Simulations</h5>
-          <p>Lancez de nouvelles simulations ou consultez l'historique.</p>
+      <a href="{% url 'simulation_list' %}" class="list-group-item list-group-item-action p-4 d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="fw-bold mb-1"><i class="bi bi-cpu me-2 text-primary"></i>Simulations</h5>
+          <p class="mb-0 text-muted small">Lancez de nouvelles simulations ou consultez l'historique.</p>
         </div>
-        <i class="bi bi-chevron-right chevron-icon"></i>
+        <i class="bi bi-chevron-right text-light fs-4"></i>
       </a>
 
-      <a href="{% url 'correspondence_list' %}" class="menu-item-row shadow-sm">
-        <div class="menu-content">
-          <h5><i class="bi bi-map me-2 text-primary"></i>Correspondances</h5>
-          <p>Configurez vos tables de mapping et fichiers de campagne.</p>
+      <a href="{% url 'correspondence_list' %}" class="list-group-item list-group-item-action p-4 d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="fw-bold mb-1"><i class="bi bi-map me-2 text-primary"></i>Correspondances</h5>
+          <p class="mb-0 text-muted small">Configurez vos tables de mapping et fichiers de campagne.</p>
         </div>
-        <i class="bi bi-chevron-right chevron-icon"></i>
+        <i class="bi bi-chevron-right text-light fs-4"></i>
       </a>
 
-      <a href="{% url 'template' %}" class="menu-item-row shadow-sm">
-        <div class="menu-content">
-          <h5><i class="bi bi-layout-three-columns me-2 text-primary"></i>Templates</h5>
-          <p>Définissez et gérez vos modèles de construction biologique.</p>
+      <a href="{% url 'template' %}" class="list-group-item list-group-item-action p-4 d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="fw-bold mb-1"><i class="bi bi-layout-three-columns me-2 text-primary"></i>Templates</h5>
+          <p class="mb-0 text-muted small">Définissez et gérez vos modèles de construction biologique.</p>
         </div>
-        <i class="bi bi-chevron-right chevron-icon"></i>
+        <i class="bi bi-chevron-right text-light fs-4"></i>
       </a>
 
-      <a href="{% url 'teams' %}" class="menu-item-row shadow-sm">
-        <div class="menu-content">
-          <h5><i class="bi bi-people me-2 text-primary"></i>Équipes</h5>
-          <p>Gérez vos accès et collaborez avec vos collègues.</p>
+      <a href="{% url 'teams' %}" class="list-group-item list-group-item-action p-4 d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="fw-bold mb-1"><i class="bi bi-people me-2 text-primary"></i>Équipes</h5>
+          <p class="mb-0 text-muted small">Gérez vos accès et collaborez avec vos collègues.</p>
         </div>
-        <i class="bi bi-chevron-right chevron-icon"></i>
+        <i class="bi bi-chevron-right text-light fs-4"></i>
       </a>
+
     </div>
 
   </div>

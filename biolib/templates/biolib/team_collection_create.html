@@ -3,157 +3,57 @@
 {% block title %}Nouvelle collection · {{ team.name }}{% endblock %}
 
 {% block content %}
-<style>
-  :root {
-    --bg-main: #f0f7ff;
-    --app-primary: #007bff;
-    --border-color: rgba(0, 123, 255, 0.1);
-    --text-dark: #004085;
-  }
-
-  body { background-color: var(--bg-main); }
-
-  .form-container { 
-    max-width: 650px; 
-    margin: 40px auto; 
-    padding-bottom: 100px; 
-  }
-
-  /* Le fameux bouton retour circulaire */
-  .btn-back-circle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 45px;
-    height: 45px;
-    background: #fff;
-    border: 1px solid var(--border-color);
-    border-radius: 15px;
-    color: var(--app-primary);
-    transition: all 0.2s;
-    text-decoration: none;
-    margin-bottom: 25px;
-    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.05);
-  }
-  .btn-back-circle:hover { 
-    background: var(--app-primary); 
-    color: #fff;
-    transform: translateX(-3px);
-  }
-
-  /* Section Formulaire */
-  .setup-section { 
-    background: #fff; 
-    border: 1px solid var(--border-color); 
-    border-radius: 30px; 
-    padding: 45px; 
-    box-shadow: 0 15px 35px rgba(0, 123, 255, 0.05); 
-  }
-
-  .form-label { 
-    font-size: 0.75rem; 
-    font-weight: 700; 
-    text-transform: uppercase; 
-    letter-spacing: 0.05em; 
-    color: var(--app-primary); 
-    margin-bottom: 10px; 
-    display: block; 
-  }
-
-  input, select, textarea { 
-    border-radius: 15px; 
-    border: 1px solid #e1e8ed; 
-    padding: 14px 18px; 
-    background: #fdfdfd; 
-    width: 100%; 
-    transition: all 0.2s; 
-    margin-bottom: 5px; 
-    font-size: 1rem;
-  }
-
-  input:focus, select:focus, textarea:focus {
-    background: #fff;
-    border-color: var(--app-primary);
-    outline: none;
-    box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.1);
-  }
-
-  textarea { min-height: 120px; resize: none; }
-
-  /* Bouton d'action */
-  .btn-bio-submit { 
-    background: var(--app-primary); 
-    color: #fff; 
-    border: none; 
-    border-radius: 20px; 
-    padding: 18px; 
-    font-weight: 800; 
-    width: 100%; 
-    margin-top: 30px; 
-    transition: all 0.2s; 
-    box-shadow: 0 8px 20px rgba(0, 123, 255, 0.2);
-  }
-  .btn-bio-submit:hover { 
-    background: #0056b3; 
-    transform: translateY(-2px); 
-    box-shadow: 0 12px 25px rgba(0, 123, 255, 0.3);
-  }
-
-  .page-title {
-    font-weight: 800;
-    font-size: 2.4rem;
-    color: var(--text-dark);
-    letter-spacing: -0.04em;
-    margin-bottom: 5px;
-  }
-</style>
-
-<div class="container">
-  <div class="form-container">
+<div class="container py-5">
+  <div class="mx-auto" style="max-width: 650px;">
     
-    <a href="{% url 'team_collections' team.id %}" class="btn-back-circle shadow-sm">
-      <i class="bi bi-arrow-left fs-5"></i>
-    </a>
-    
+    <div class="mb-4">
+      <a href="{% url 'team_collections' team.id %}" class="btn btn-outline-secondary btn-sm rounded-3">
+        <i class="bi bi-arrow-left me-1"></i> Retour
+      </a>
+    </div>
+
     <div class="text-center mb-5">
-      <h1 class="page-title">Nouvelle Collection</h1>
-      <p class="text-muted small text-uppercase fw-bold" style="letter-spacing: 0.1em;">
+      <h1 class="display-5 fw-bold text-dark mb-1">Nouvelle Collection</h1>
+      <p class="text-muted text-uppercase fw-bold small" style="letter-spacing: 0.1em;">
         Équipe : <span class="text-primary">{{ team.name }}</span>
       </p>
     </div>
 
     <form method="post">
       {% csrf_token %}
-      <div class="setup-section">
-        <div class="mb-4">
-          <label class="form-label">Nom de la collection</label>
-          <input type="text" name="name" required placeholder="Ex: Séquences CRISPR 2026">
-        </div>
+      <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
         
         <div class="mb-4">
-          <label class="form-label">Description (optionnelle)</label>
-          <textarea name="description" placeholder="À quoi servira cette collection ?"></textarea>
+          <label class="form-label small fw-bold text-primary text-uppercase">Nom de la collection</label>
+          <input type="text" name="name" class="form-control form-control-lg border-light bg-light rounded-3" required placeholder="Ex: Séquences CRISPR 2026">
         </div>
-        
+
+        <div class="mb-4">
+          <label class="form-label small fw-bold text-primary text-uppercase">Description (optionnelle)</label>
+          <textarea name="description" class="form-control border-light bg-light rounded-3" rows="3" placeholder="À quoi servira cette collection ?"></textarea>
+        </div>
+
         <div class="mb-0">
-          <label class="form-label">Propriétaire référent</label>
-          <select name="owner" required>
+          <label class="form-label small fw-bold text-primary text-uppercase">Propriétaire référent</label>
+          <select name="owner" class="form-select form-select-lg border-light bg-light rounded-3" required>
             {% for member in members %}
               <option value="{{ member.id }}" {% if member == user %}selected{% endif %}>
                 {{ member.email }}
               </option>
             {% endfor %}
           </select>
-          <small class="text-muted mt-2 d-block" style="font-size: 0.75rem;">
-            Le propriétaire aura les droits de gestion sur les fichiers.
-          </small>
+          <div class="form-text mt-2">
+            <i class="bi bi-info-circle me-1"></i> Le propriétaire aura les droits de gestion sur les fichiers de cette collection.
+          </div>
         </div>
+
       </div>
-      
-      <button type="submit" class="btn-bio-submit">
+
+      <button type="submit" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold shadow-sm mt-4 py-3">
         <i class="bi bi-check-circle-fill me-2"></i> Créer la collection
       </button>
     </form>
+    
   </div>
 </div>
 {% endblock %}

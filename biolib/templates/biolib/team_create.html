@@ -3,127 +3,38 @@
 {% block title %}Créer une équipe{% endblock %}
 
 {% block content %}
-<style>
-  :root {
-    --bg-main: #fcfcfc;
-    --border-color: #eee;
-  }
-
-  body { background-color: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-
-  .content-wrapper {
-    max-width: 800px;
-    margin: 0 auto;
-    padding-bottom: 50px;
-  }
-
-  .nav-header { padding: 20px 0; margin-bottom: 10px; }
-  
-  .btn-back {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    background: #fff;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    color: #666;
-    transition: 0.2s;
-    text-decoration: none;
-  }
-  .btn-back:hover { border-color: #000; color: #000; }
-
-  .hero-section { margin-bottom: 40px; }
-  .page-title { font-weight: 850; font-size: 2.8rem; letter-spacing: -0.05em; margin-bottom: 10px; }
-  
-  .form-container {
-    background: #fff;
-    border: 1px solid var(--border-color);
-    border-radius: 20px;
-    padding: 40px;
-  }
-
-  .form-label {
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #aaa;
-    margin-bottom: 8px;
-  }
-
-  .form-control, .form-select {
-    border: 1px solid #f0f0f0;
-    background: #fbfbfb;
-    border-radius: 12px;
-    padding: 12px 16px;
-    font-size: 1rem;
-    transition: all 0.2s;
-  }
-
-  .form-control:focus, .form-select:focus {
-    background: #fff;
-    border-color: #000;
-    box-shadow: 0 0 0 4px rgba(0,0,0,0.02);
-    outline: none;
-  }
-
-  .btn-submit {
-    background: #000;
-    color: #fff;
-    padding: 12px 30px;
-    border-radius: 12px;
-    font-weight: 600;
-    border: none;
-    transition: 0.2s;
-  }
-  .btn-submit:hover { background: #333; }
-
-  .btn-cancel {
-    color: #999;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.9rem;
-    transition: 0.2s;
-  }
-  .btn-cancel:hover { color: #000; }
-
-  .form-text { font-size: 0.8rem; color: #bbb; margin-top: 6px; }
-</style>
-
-<div class="container pb-5">
-  <div class="content-wrapper">
+<div class="container py-5">
+  <div class="mx-auto" style="max-width: 800px;">
     
-    <div class="nav-header">
-      <a href="{% url 'teams' %}" class="btn-back shadow-sm">
-        <i class="bi bi-arrow-left"></i>
+    <div class="mb-4">
+      <a href="{% url 'teams' %}" class="btn btn-outline-secondary btn-sm rounded-3">
+        <i class="bi bi-arrow-left me-1"></i> Retour
       </a>
     </div>
 
-    <div class="hero-section">
-      <h1 class="page-title">Nouvelle équipe</h1>
+    <div class="mb-5 text-center text-md-start">
+      <h1 class="display-5 fw-bold text-primary">Nouvelle équipe</h1>
       <p class="text-muted">Partagez vos ressources et collaborez sur vos projets.</p>
     </div>
 
-    <div class="form-container shadow-sm">
+    <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
       <form method="post">
         {% csrf_token %}
 
         <div class="mb-4">
-          <label class="form-label">Nom de l’équipe</label>
-          <input type="text" name="name" class="form-control" placeholder="Ex: Projet Plasmides 2026" required>
-          <div class="form-text">Choisissez un nom clair pour vos collaborateurs.</div>
+          <label class="form-label small fw-bold text-primary text-uppercase">Nom de l’équipe</label>
+          <input type="text" name="name" class="form-control form-control-lg border-light bg-light rounded-3" placeholder="Ex: Projet Plasmides 2026" required>
+          <div class="form-text text-muted">Choisissez un nom clair pour vos collaborateurs.</div>
         </div>
 
         <div class="mb-4">
-          <label class="form-label">Description <span style="font-weight: normal; text-transform: none;">(optionnel)</span></label>
-          <textarea name="description" class="form-control" rows="3" placeholder="Objectif ou contexte scientifique..."></textarea>
+          <label class="form-label small fw-bold text-primary text-uppercase">Description <span class="text-lowercase fw-normal">(optionnel)</span></label>
+          <textarea name="description" class="form-control border-light bg-light rounded-3" rows="3" placeholder="Objectif ou contexte scientifique..."></textarea>
         </div>
 
         <div class="mb-5">
-          <label class="form-label">Objectif principal</label>
-          <select name="purpose" class="form-select">
+          <label class="form-label small fw-bold text-primary text-uppercase">Objectif principal</label>
+          <select name="purpose" class="form-select border-light bg-light rounded-3">
             <option value="">— Sélectionner un objectif —</option>
             <option value="research">Recherche & développement</option>
             <option value="experiments">Expérimentations & campagnes</option>
@@ -131,11 +42,11 @@
           </select>
         </div>
 
-        <div class="d-flex align-items-center justify-content-end gap-4 mt-2">
-          <a href="{% url 'teams' %}" class="btn-cancel">
+        <div class="d-flex align-items-center justify-content-end gap-3">
+          <a href="{% url 'teams' %}" class="btn btn-link text-decoration-none text-muted fw-bold">
             Annuler
           </a>
-          <button type="submit" class="btn-submit">
+          <button type="submit" class="btn btn-primary btn-lg px-5 rounded-pill fw-bold">
             Créer
           </button>
         </div>
