@@ -1,27 +1,130 @@
-{% extends 'biolib/base.html' %}
+{% extends "biolib/base.html" %}
+
+{% block title %}Nouvelle table de correspondance{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0"><i class="bi bi-cloud-upload"></i> Nouvelle Table de Correspondance</h4>
-                </div>
-                <div class="card-body">
-                    <form method="post" enctype="multipart/form-data">
-                        {% csrf_token %}
+<div class="container py-5">
+  <div class="mx-auto" style="max-width: 800px;">
 
-                        {{ form.as_p }}
-
-                        <div class="d-grid gap-2 mt-4">
-                            <button type="submit" class="btn btn-primary">Enregistrer</button>
-                            <a href="{% url 'correspondence_list' %}" class="btn btn-outline-secondary">Annuler</a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+    <div class="mb-4">
+      <a href="{% url 'correspondence_list' %}" class="btn btn-outline-secondary btn-sm rounded-3">
+        <i class="bi bi-arrow-left me-1"></i> Retour
+      </a>
     </div>
+
+    <div class="mb-5">
+      <h1 class="display-5 fw-bold text-dark mb-1">
+        Nouvelle table de correspondance
+      </h1>
+      <p class="text-muted fs-5">
+        Importez un fichier et définissez sa visibilité.
+      </p>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger mb-4 rounded-3">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+
+        <!-- NOM -->
+        <div class="mb-4">
+          <label class="form-label small fw-bold text-primary text-uppercase">
+            {{ form.name.label }}
+          </label>
+          {{ form.name }}
+          {% if form.name.errors %}
+            <div class="text-danger small mt-1">{{ form.name.errors }}</div>
+          {% endif %}
+        </div>
+
+        <!-- DESCRIPTION -->
+        <div class="mb-4">
+          <label class="form-label small fw-bold text-primary text-uppercase">
+            {{ form.description.label }}
+          </label>
+          {{ form.description }}
+        </div>
+
+        <!-- FICHIER -->
+        <div class="mb-4">
+          <label class="form-label small fw-bold text-primary text-uppercase">
+            {{ form.file.label }}
+          </label>
+          {{ form.file }}
+          {% if form.file.errors %}
+            <div class="text-danger small mt-1">{{ form.file.errors }}</div>
+          {% endif %}
+        </div>
+
+        <hr class="my-5 opacity-10">
+
+        <!-- VISIBILITÉ -->
+        <div class="mb-4">
+          <label class="form-label small fw-bold text-primary text-uppercase">
+            {{ form.scope.label }}
+          </label>
+          <div class="bg-light p-3 rounded-3 border border-light">
+            {% for radio in form.scope %}
+              <div class="form-check mb-2">
+                {{ radio.tag }}
+                <label class="form-check-label fw-medium text-dark" for="{{ radio.id_for_label }}">
+                  {{ radio.choice_label }}
+                </label>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- ÉQUIPE -->
+        <div class="mb-4" id="team-selector-div" style="display: none;">
+          <label class="form-label small fw-bold text-dark text-uppercase">
+            <i class="bi bi-people-fill me-1"></i> {{ form.team.label }}
+          </label>
+          {{ form.team }}
+          {% if form.team.errors %}
+            <div class="text-danger small mt-1">{{ form.team.errors }}</div>
+          {% endif %}
+        </div>
+
+        <div class="d-flex align-items-center justify-content-end gap-3 mt-5">
+          <a href="{% url 'correspondence_list' %}" class="btn btn-link text-decoration-none text-muted fw-bold">
+            Annuler
+          </a>
+          <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow-sm">
+            Enregistrer
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+  </div>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const scopeRadios = document.querySelectorAll('input[name="scope"]');
+  const teamDiv = document.getElementById('team-selector-div');
+
+  function toggleTeamSelect() {
+    const checkedRadio = document.querySelector('input[name="scope"]:checked');
+    if (checkedRadio && checkedRadio.value === 'team') {
+      teamDiv.style.display = 'block';
+    } else {
+      teamDiv.style.display = 'none';
+    }
+  }
+
+  scopeRadios.forEach(radio => {
+    radio.addEventListener('change', toggleTeamSelect);
+  });
+
+  toggleTeamSelect();
+});
+</script>
 {% endblock %}

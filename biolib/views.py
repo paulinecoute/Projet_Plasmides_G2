@@ -1507,15 +1507,14 @@ def correspondences_view(request):
         "page_title": title,
     })
 
-
-
 @login_required
 def correspondence_upload(request):
     if request.method == "POST":
         Correspondence.objects.create(
             name=request.POST["name"],
             file=request.FILES["file"],
-            owner=request.user
+            owner=request.user,
+            publication_status="private"  
         )
         return redirect("correspondences")
 
@@ -2132,16 +2131,17 @@ def admin_reject_correspondence(request, pk):
     return redirect('admin_publication_list')
 def correspondence_create(request):
     if request.method == 'POST':
-        form = CorrespondenceForm(request.POST, request.FILES)
+        form = CorrespondenceForm(request.user, request.POST, request.FILES)
         if form.is_valid():
             table = form.save(commit=False)
             table.owner = request.user
             table.save()
             return redirect('correspondence_list')
     else:
-        form = CorrespondenceForm()
+        form = CorrespondenceForm(request.user)
 
     return render(request, 'biolib/correspondence_form.html', {'form': form})
+
 
 # --- AJOUTS POUR LA GESTION ADMIN DES TEMPLATES ---
 
