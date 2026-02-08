@@ -46,6 +46,7 @@
                                 <small>Compressez vos fichiers <strong>.gb</strong> dans une archive ZIP et déposez-la ici.</small>
                             </div>
                         </div>
+
                         {% if user.is_authenticated %}
                         <div class="card border-success mb-4 shadow-sm">
                             <div class="card-header bg-success text-white bg-opacity-75">
@@ -77,13 +78,16 @@
                                 </div>
                             </div>
                         </div>
+                        
                         <script>
                             document.addEventListener('DOMContentLoaded', function() {
                                 const checkSave = document.getElementById('{{ form.save_to_library.id_for_label }}');
                                 const nameField = document.getElementById('collection-name-field');
 
                                 function toggleName() {
-                                    nameField.style.display = checkSave.checked ? 'block' : 'none';
+                                    if(nameField && checkSave) {
+                                        nameField.style.display = checkSave.checked ? 'block' : 'none';
+                                    }
                                 }
 
                                 if(checkSave) {
@@ -92,12 +96,8 @@
                                 }
                             });
                         </script>
-                            {%else%}
-                            <input type="hidden" name="visibility" value="private">
-                        {% endif %}  <button type="submit" class="btn btn-primary w-100 btn-lg py-3 shadow-sm hover-scale">
-                            <i class="bi bi-play-circle-fill me-2"></i> Lancer la simulation
-                        </button>
-                    </form>
+                        {% endif %}
+
                         <div class="accordion mb-4" id="accordionOptions">
                             <div class="accordion-item border-0 shadow-sm">
                                 <h2 class="accordion-header" id="headingOptions">
@@ -117,22 +117,22 @@
                                             {{ form.pcr_primers }}
                                             <div class="form-text">Entrez les séquences (ex: ATCG...) pour simuler une PCR.</div>
                                         </div>
-                                    </div>
-                                </div>
-                                <div class="accordion-body bg-light bg-opacity-25">
-                                    <hr class="my-3"> <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-droplet-half me-2"></i> Paramètres de Dilution</h6>
+                                        
+                                        <hr class="my-3"> 
+                                        <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-droplet-half me-2"></i> Paramètres de Dilution</h6>
 
-                                    <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label fw-bold small">Concentration par défaut (ng/µL)</label>
-                                            {{ form.default_concentration }}
-                                            <div class="form-text">Valeur utilisée si inconnue (défaut : 200).</div>
-                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label fw-bold small">Concentration par défaut (ng/µL)</label>
+                                                {{ form.default_concentration }}
+                                                <div class="form-text">Valeur utilisée si inconnue (défaut : 200).</div>
+                                            </div>
 
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label fw-bold small">Fichier de concentrations (.csv)</label>
-                                            {{ form.concentration_file }}
-                                            <div class="form-text">CSV avec colonnes : <code>part_id, concentration</code></div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label fw-bold small">Fichier de concentrations (.csv)</label>
+                                                {{ form.concentration_file }}
+                                                <div class="form-text">CSV avec colonnes : <code>part_id, concentration</code></div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -171,8 +171,8 @@
                         <button type="submit" class="btn btn-primary w-100 btn-lg py-3 shadow-sm hover-scale">
                             <i class="bi bi-play-circle-fill me-2"></i> Lancer la simulation
                         </button>
-                    </form>
-                </div>
+
+                    </form> </div>
             </div>
         </div>
     </div>
@@ -180,7 +180,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const visibilitySelect = document.getElementById('id_visibility'); // Assure-toi que c'est le bon ID généré par Django
+        const visibilitySelect = document.getElementById('id_sim_visibility'); 
         const teamDiv = document.getElementById('sim-team-selector-div');
 
         function toggleTeamField() {
