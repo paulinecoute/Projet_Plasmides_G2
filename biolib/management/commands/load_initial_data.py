@@ -6,11 +6,11 @@ from django.core.files import File
 from biolib.models import Plasmid, PlasmidCollection, User, CampaignTemplate, TemplatePart
 
 class Command(BaseCommand):
-    help = 'Import robuste : Recherche automatique des coordonnées dans le fichier Excel'
+    help = 'Charge les plasmides et parse intelligemment les templates Excel'
 
     def handle(self, *args, **kwargs):
         data_dir = os.path.join(settings.BASE_DIR, 'data_web')
-        self.stdout.write("--- Démarrage de l'import 'Smart Search' ---")
+        self.stdout.write("--- Démarrage de l'import Intelligent ---")
 
         if not os.path.exists(data_dir):
             self.stdout.write(self.style.ERROR(f"ERREUR : '{data_dir}' n'existe pas !"))
@@ -27,7 +27,7 @@ class Command(BaseCommand):
         for root, dirs, files in os.walk(data_dir):
             folder_name = os.path.basename(root)
 
-            # 1. Collection
+            # 1. Gestion Collection
             collection = None
             if folder_name != 'data_web':
                 collection_name = f"Collection {folder_name}"
@@ -36,7 +36,7 @@ class Command(BaseCommand):
                     defaults={'owner': admin_user, 'publication_status': 'approved'}
                 )
 
-            # 2. Fichiers
+            # 2. Filtrage Fichiers
             valid_files = [f for f in files if f.lower().endswith(('.gb', '.dna', '.fasta', '.xlsx'))]
             
             for filename in valid_files:
@@ -44,11 +44,12 @@ class Command(BaseCommand):
                 identifier = os.path.splitext(filename)[0]
 
                 # ==========================================================
-                # TRAITEMENT TEMPLATE (.xlsx)
+                # TRAITEMENT TEMPLATE (.xlsx) -> ON LE PARSE !
                 # ==========================================================
                 if filename.lower().endswith('.xlsx'):
                     try:
                         template = CampaignTemplate.objects.filter(name=identifier, owner=admin_user).first()
+                        
                         if not template:
                             template = CampaignTemplate(
                                 name=identifier,
@@ -58,8 +59,9 @@ class Command(BaseCommand):
                                 is_public=True
                             )
                         else:
-                            template.description = ""
+                            template.description = "" # Nettoyage description
 
+                        # Sauvegarde physique du fichier
                         with open(file_path, 'rb') as f_byte:
                             template.file.save(filename, File(f_byte), save=True)
 
@@ -67,18 +69,19 @@ class Command(BaseCommand):
                         wb = openpyxl.load_workbook(file_path, data_only=True)
                         ws = wb.active
 
-                        # 1. Lire Enzyme/Séparateur (Positions fixes généralement)
+                        # 1. Métadonnées (Enzyme/Séparateur - Positions fixes standards)
+                        # B2 = Enzyme, B4 = Séparateur
                         enzyme_val = ws['B2'].value
                         separator_val = ws['B4'].value
                         if enzyme_val: template.enzyme = str(enzyme_val).strip()
                         if separator_val: template.output_separator = str(separator_val).strip()
                         template.save()
 
-                        # 2. TROUVER L'ORIGINE DU TABLEAU
-                        # On cherche "Part name ->" pour savoir où ça commence
-                        start_row = 9  # Fallback
-                        start_col = 3  # Fallback (Colonne C)
-                        found_anchor = False
+                        # 2. RECHERCHE DE L'ANCRE "Part name ->"
+                        # On ne suppose pas la ligne, on la cherche.
+                        start_row = 0
+                        start_col = 0
+                        found = False
 
                         # On scanne les 20 premières lignes et 5 premières colonnes
                         for r in range(1, 20):
@@ -86,67 +89,74 @@ class Command(BaseCommand):
                                 cell_val = str(ws.cell(row=r, column=c).value).strip()
                                 if "Part name" in cell_val and "->" in cell_val:
                                     start_row = r
-                                    start_col = c + 1 # La donnée commence juste après le label
-                                    found_anchor = True
-                                    self.stdout.write(f"   > Ancre trouvée en Ligne {r}, Colonne {c}. Données en Col {start_col}")
+                                    start_col = c + 1 # Les données commencent la colonne d'après
+                                    found = True
                                     break
-                            if found_anchor: break
+                            if found: break
                         
-                        if not found_anchor:
-                            self.stdout.write(self.style.WARNING(f"   ! Attention : 'Part name ->' non trouvé dans {filename}. Tentative en 9,3."))
+                        if not found:
+                            self.stdout.write(self.style.WARNING(f"   ! Impossible de trouver 'Part name ->' dans {filename}. Parsing annulé."))
+                            continue
 
-                        # 3. LECTURE DES DONNÉES
+                        # 3. CRÉATION DES PARTIES
+                        # On supprime les anciennes pour recréer proprement
                         template.parts.all().delete()
-                        
-                        # Les lignes sont relatives à start_row
+
+                        # Définition des lignes relatives à l'ancre trouvée
                         row_name = start_row
                         row_type = start_row + 1
-                        row_opt = start_row + 2
+                        row_opt  = start_row + 2
                         row_incl = start_row + 3
 
-                        col_idx = start_col
+                        current_col = start_col
                         order_counter = 1
 
                         while True:
-                            part_name = ws.cell(row=row_name, column=col_idx).value
+                            # Lecture du Nom
+                            part_name = ws.cell(row=row_name, column=current_col).value
 
-                            # Condition d'arrêt
+                            # Condition d'arrêt : Si vide ou si on tombe sur la section Output
                             if not part_name or str(part_name).strip() == "" or "output" in str(part_name).lower():
                                 break
 
-                            part_type = ws.cell(row=row_type, column=col_idx).value or "1"
+                            # Lecture Type
+                            part_type = ws.cell(row=row_type, column=current_col).value or "1"
                             
-                            val_opt = str(ws.cell(row=row_opt, column=col_idx).value).lower()
+                            # Lecture Optionnel (Excel : True = Optionnel)
+                            val_opt = str(ws.cell(row=row_opt, column=current_col).value).lower()
+                            # Django : is_mandatory (Inverse de optionnel)
                             is_mandatory = False if val_opt == 'true' else True
 
-                            val_inc = str(ws.cell(row=row_incl, column=col_idx).value).lower()
+                            # Lecture Include Output
+                            val_inc = str(ws.cell(row=row_incl, column=current_col).value).lower()
                             include_in_output = True if val_inc == 'true' else False
 
+                            # Création en base
                             TemplatePart.objects.create(
                                 template=template,
                                 name=str(part_name),
                                 type_id=str(part_type),
                                 order=order_counter,
                                 is_mandatory=is_mandatory,
-                                include_in_output=include_in_output
+                                include_in_output=include_in_output,
+                                is_separable=False # Valeur par défaut
                             )
 
-                            col_idx += 1
+                            current_col += 1
                             order_counter += 1
 
                         count_templates += 1
-                        self.stdout.write(f"   # Template OK : {filename} ({order_counter-1} parties)")
+                        self.stdout.write(f"   # Template OK : {filename} ({order_counter-1} parties générées)")
 
                     except Exception as e:
                          self.stdout.write(self.style.ERROR(f"Erreur Template {filename}: {e}"))
+                    
                     continue
 
                 # ==========================================================
                 # TRAITEMENT PLASMIDE
                 # ==========================================================
                 try:
-                    # Lecture séquentielle pour éviter de laisser des fichiers ouverts
-                    content_seq = ""
                     with open(file_path, 'r', encoding='utf-8', errors='ignore') as f_read:
                         content_seq = f_read.read()
 
