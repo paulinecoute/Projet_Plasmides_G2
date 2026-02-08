@@ -61,39 +61,80 @@ class CampaignTemplateForm(forms.ModelForm):
         self.fields['team'].required = False
         self.fields['team'].empty_label = "--- Sélectionner une équipe ---"
 
+# ==============================================================================
+# MODIFICATION ICI : Gestion Équipe pour Correspondance
+# ==============================================================================
 class CorrespondenceForm(forms.ModelForm):
+    SCOPE_CHOICES = [
+        ('private', '🔒 Privée (Moi uniquement)'),
+        ('team', '👥 Équipe (Partagée avec mes membres)')
+    ]
+    scope = forms.ChoiceField(
+        choices=SCOPE_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'list-unstyled', 'id': 'id_scope'}),
+        label="Visibilité",
+        initial='private'
+    )
+
     class Meta:
         model = Correspondence
-        fields = ['name', 'description', 'file']
+        fields = ['name', 'description', 'file', 'team'] # On ajoute 'team' ici
 
         labels = {
             'name': 'Nom de la table',
             'description': 'Description',
-            'file': 'Fichier de correspondance (.csv, .xlsx)'
+            'file': 'Fichier de correspondance (.csv, .xlsx)',
+            'team': 'Choisir l\'équipe'
         }
 
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Table conversion A'}),
             'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
-
             'file': forms.FileInput(attrs={
                 'class': 'form-control',
                 'accept': '.csv, .xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, text/csv'
             }),
+            'team': forms.Select(attrs={'class': 'form-select', 'id': 'id_team_select'}),
         }
 
-    # 3. Validation de sécurité (Backend)
-    def clean_file(self):
-        file = self.cleaned_data.get('file')
+    def __init__(self, user, *args, **kwargs):
+        """
+        On surcharge __init__ pour récupérer l'utilisateur connecté ('user')
+        et filtrer les équipes.
+        """
+        super().__init__(*args, **kwargs)
+        self.user = user
 
+        # On ne propose que les équipes dont l'utilisateur est membre
+        if user.is_authenticated:
+            self.fields['team'].queryset = Team.objects.filter(members=user)
+        else:
+            self.fields['team'].queryset = Team.objects.none()
+
+        self.fields['team'].required = False # On gère la validation manuellement dans clean()
+        self.fields['team'].empty_label = "--- Sélectionner une équipe ---"
+
+    def clean(self):
+        cleaned_data = super().clean()
+        scope = cleaned_data.get('scope')
+        team = cleaned_data.get('team')
+        file = cleaned_data.get('file')
+
+        # 1. Validation Fichier
         if file:
             ext = os.path.splitext(file.name)[1].lower()
             valid_extensions = ['.csv', '.xlsx']
-
             if ext not in valid_extensions:
-                raise ValidationError("Format non supporté. Veuillez utiliser uniquement .csv ou .xlsx")
+                self.add_error('file', "Format non supporté. Veuillez utiliser uniquement .csv ou .xlsx")
 
-        return file
+        # 2. Validation Équipe
+        if scope == 'team' and not team:
+            self.add_error('team', "Veuillez sélectionner une équipe pour le partage.")
+        
+        if scope == 'private':
+            cleaned_data['team'] = None
+
+        return cleaned_data
 
 class TemplatePartForm(forms.ModelForm):
     class Meta:
@@ -397,10 +438,6 @@ class CopyPlasmidForm(forms.Form):
             raise forms.ValidationError("Vous devez choisir une collection existante OU entrer un nom pour une nouvelle.")
 
         return cleaned_data
-
-# ==============================================================================
-# FORMULAIRE CAMPAGNES PUBLIQUES (ADMIN)
-# ==============================================================================
 
 class PublicCampaignForm(forms.ModelForm):
     class Meta:
