@@ -138,15 +138,37 @@ def signup(request):
 
 @login_required
 def dashboard(request):
-    collections_count = PlasmidCollection.objects.filter(owner=request.user).count()
-    correspondences_count = Correspondence.objects.filter(owner=request.user).count()
-    teams_count = request.user.teams.count()
+    user = request.user
+
+    collections_count = PlasmidCollection.objects.filter(owner=user).count()
+    collections_team_count = PlasmidCollection.objects.filter(
+        team__members=user
+    ).exclude(owner=user).count()
+
+    teams_count = user.teams.count()
+
+    productions_count = Simulation.objects.filter(user=user).count()
+    productions_team_count = Simulation.objects.filter(
+        visibility='team',
+        team__members=user
+    ).exclude(user=user).distinct().count()
+
+    templates_count = CampaignTemplate.objects.filter(owner=user).count()
+    templates_team_count = CampaignTemplate.objects.filter(
+        visibility='team',
+        team__members=user
+    ).exclude(owner=user).distinct().count()
 
     return render(request, "biolib/dashboard.html", {
         "collections_count": collections_count,
-        "correspondences_count": correspondences_count,
+        "collections_team_count": collections_team_count,
         "teams_count": teams_count,
+        "productions_count": productions_count,
+        "productions_team_count": productions_team_count,
+        "templates_count": templates_count,
+        "templates_team_count": templates_team_count,
     })
+
 
 
 # ==============================================================================

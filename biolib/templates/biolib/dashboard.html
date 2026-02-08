@@ -90,7 +90,7 @@
 
   .stat-card h3 {
     font-weight: 800;
-    font-size: 1.3rem; /* Taille diminuée ici */
+    font-size: 1.3rem; 
     color: #004085;
     margin: 5px 0 0 0;
   }
@@ -239,10 +239,18 @@
         <i class="bi bi-chevron-right chevron-icon"></i>
       </a>
 
-      <a href="{% url 'correspondences' %}" class="menu-item-row shadow-sm">
+      <a href="{% url 'correspondence_list' %}" class="menu-item-row shadow-sm">
         <div class="menu-content">
           <h5><i class="bi bi-map me-2 text-primary"></i>Correspondances</h5>
           <p>Configurez vos tables de mapping et fichiers de campagne.</p>
+        </div>
+        <i class="bi bi-chevron-right chevron-icon"></i>
+      </a>
+
+      <a href="{% url 'template' %}" class="menu-item-row shadow-sm">
+        <div class="menu-content">
+          <h5><i class="bi bi-layout-three-columns me-2 text-primary"></i>Templates</h5>
+          <p>Définissez et gérez vos modèles de construction biologique.</p>
         </div>
         <i class="bi bi-chevron-right chevron-icon"></i>
       </a>
