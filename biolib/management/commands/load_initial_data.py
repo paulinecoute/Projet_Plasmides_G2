@@ -1,17 +1,17 @@
 import os
-import openpyxl  
+import openpyxl
 from django.core.management.base import BaseCommand
 from django.conf import settings
 from django.core.files import File
 from biolib.models import Plasmid, PlasmidCollection, User, CampaignTemplate, TemplatePart
 
 class Command(BaseCommand):
-    help = 'Charge les plasmides et les templates récursivement et parse les fichiers Excel'
+    help = 'Charge les plasmides et les templates récursivement et PARSE les fichiers Excel'
 
     def handle(self, *args, **kwargs):
         data_dir = os.path.join(settings.BASE_DIR, 'data_web')
 
-        self.stdout.write("--- Démarrage de l'import  ---")
+        self.stdout.write("--- Démarrage de l'import Intelligent (Correctif Colonnes) ---")
 
         if not os.path.exists(data_dir):
             self.stdout.write(self.style.ERROR(f"ERREUR : '{data_dir}' n'existe pas !"))
@@ -28,6 +28,7 @@ class Command(BaseCommand):
         for root, dirs, files in os.walk(data_dir):
             folder_name = os.path.basename(root)
 
+            # --- 1. GESTION DE LA COLLECTION ---
             collection = None
             if folder_name != 'data_web':
                 collection_name = f"Collection {folder_name}"
@@ -40,15 +41,18 @@ class Command(BaseCommand):
             else:
                 self.stdout.write(f" > Racine '{folder_name}' : Pas de collection créée.")
 
+            # --- 2. TRAITEMENT DES FICHIERS ---
             valid_files = [f for f in files if f.lower().endswith(('.gb', '.dna', '.fasta', '.xlsx'))]
             
             for filename in valid_files:
                 file_path = os.path.join(root, filename)
                 identifier = os.path.splitext(filename)[0]
 
+                # ==========================================================
+                # BRANCHE A : TEMPLATE EXCEL (.xlsx)
+                # ==========================================================
                 if filename.lower().endswith('.xlsx'):
                     try:
-
                         template = CampaignTemplate.objects.filter(name=identifier, owner=admin_user).first()
                         
                         action_tpl = "Updated" if template else "Created"
@@ -57,17 +61,25 @@ class Command(BaseCommand):
                             template = CampaignTemplate(
                                 name=identifier,
                                 owner=admin_user,
-                                description="", # Description vide comme demandé
+                                description="",
                                 visibility='public',
                                 is_public=True
                             )
+                        else:
+                            # On force le nettoyage de la description pour les anciens
+                            template.description = ""
 
+                        # Sauvegarde physique
                         with open(file_path, 'rb') as f_byte:
                             template.file.save(filename, File(f_byte), save=True)
 
+                        # -----------------------------------------------------------
+                        # PARSING EXCEL (CORRIGÉ)
+                        # -----------------------------------------------------------
                         wb = openpyxl.load_workbook(file_path, data_only=True)
                         ws = wb.active
 
+                        # Métadonnées
                         enzyme_val = ws['B2'].value
                         separator_val = ws['B4'].value
 
@@ -78,25 +90,34 @@ class Command(BaseCommand):
                         
                         template.save()
 
+                        # On vide les anciennes parties
                         template.parts.all().delete()
 
-                        col_idx = 2 
+                        # --- CORRECTION ICI : ON COMMENCE COLONNE 3 (C) ---
+                        # Col A = Titre section
+                        # Col B = Libellés ("Part name ->")
+                        # Col C = Première donnée ("Input Plasmid 1")
+                        col_idx = 3 
                         order_counter = 1
 
                         while True:
+                            # Ligne 9 : Nom de la partie
                             part_name = ws.cell(row=9, column=col_idx).value
 
-                            if not part_name or "output" in str(part_name).lower() or "↓" in str(part_name):
+                            # Arrêt si vide ou si on tombe sur la section Output (souvent en bas)
+                            if not part_name or str(part_name).strip() == "" or "output" in str(part_name).lower():
                                 break
 
+                            # Ligne 10 : Type
                             part_type = ws.cell(row=10, column=col_idx).value or "1"
                             
-                            is_optional_val = str(ws.cell(row=11, column=col_idx).value).lower()
-           
-                            is_mandatory = False if is_optional_val == 'true' else True
+                            # Ligne 11 : Optionnel ?
+                            val_opt = str(ws.cell(row=11, column=col_idx).value).lower()
+                            is_mandatory = False if val_opt == 'true' else True
 
-                            in_output_val = str(ws.cell(row=12, column=col_idx).value).lower()
-                            include_in_output = True if in_output_val == 'true' else False
+                            # Ligne 12 : Inclus dans le nom ?
+                            val_inc = str(ws.cell(row=12, column=col_idx).value).lower()
+                            include_in_output = True if val_inc == 'true' else False
 
                             TemplatePart.objects.create(
                                 template=template,
@@ -111,13 +132,16 @@ class Command(BaseCommand):
                             order_counter += 1
 
                         count_templates += 1
-                        self.stdout.write(f"   
+                        self.stdout.write(f"   # Template {action_tpl} : {filename} ({order_counter-1} parties)")
 
                     except Exception as e:
                          self.stdout.write(self.style.ERROR(f"Erreur Template {filename}: {e}"))
                     
                     continue
 
+                # ==========================================================
+                # BRANCHE B : PLASMIDE
+                # ==========================================================
                 try:
                     with open(file_path, 'r', encoding='utf-8', errors='ignore') as f_read:
                         content_seq = f_read.read()
