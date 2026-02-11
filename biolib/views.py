@@ -2025,6 +2025,7 @@ def correspondence_list(request):
     })
 
 
+
 @login_required
 def correspondence_request_publication(request, pk):
     table = get_object_or_404(Correspondence, pk=pk)
